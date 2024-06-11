@@ -5,21 +5,6 @@ from rdflib import RDF
 from fpm import traversal
 
 
-def build_transformation_matrix(x, y, z, theta):
-    
-    c = np.cos 
-    s = np.sin
-
-    t = np.array([[x], [y], [z], [1]])
-    R = np.array([
-        [c(theta), -s(theta), 0],
-        [s(theta), c(theta), 0],
-        [0, 0, 1],
-        [0, 0, 0]]
-    )
-
-    return np.hstack((R, t))
-
 def get_transformation_matrix_wrt_frame(g, root, target):
     
     # Configure the traversal algorithm
