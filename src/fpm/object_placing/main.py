@@ -8,9 +8,6 @@ from pprint import pprint
 
 from fpm.utils import write_sdf_file, load_config_file
 
-from helpers.helpers import (
-    get_transformation_matrix_wrt_frame
-)
 from helpers.sdf import (
     get_sdf_geometry, 
     get_sdf_intertia, 
@@ -18,10 +15,9 @@ from helpers.sdf import (
     get_sdf_joint_type,
     get_sdf_axis_of_rotation,
 )
-from helpers.constants import ROOT_PATH
 
 from fpm.constants import *
-from fpm.graph import build_graph_from_directory, prefixed
+from fpm.graph import build_graph_from_directory, prefixed, get_transformation_matrix_wrt_frame
 
 if __name__ == "__main__":
 
