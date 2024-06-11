@@ -8,7 +8,7 @@ from pprint import pprint
 
 from fpm.utils import write_sdf_file, load_config_file
 
-from helpers.sdf import (
+from fpm.transformations.sdf import (
     get_sdf_geometry, 
     get_sdf_intertia, 
     get_sdf_pose_from_transformation_matrix,
