@@ -24,6 +24,31 @@ def prefixed(g, node):
     """
     return node.n3(g.namespace_manager)
 
+def get_list_from_ptr(g, ptr):
+    result_list = []
+    while True:
+        result_list.append(g.value(ptr, RDF.first))
+        ptr = g.value(ptr, RDF.rest)
+        if ptr == RDF.nil:
+                break
+    
+    return result_list
+
+
+def get_point_position(g, point):
+    position = g.value(predicate=GEOM["of"], object=point)
+    coordinates = g.value(predicate=COORD["of-position"], object=position)
+
+    x = g.value(coordinates, COORD["x"]).toPython()
+    y = g.value(coordinates, COORD["y"]).toPython()
+    asb = g.value(coordinates, COORD["as-seen-by"])
+
+    return {
+        "x": x,
+        "y": y,
+        "as-seen-by": prefixed(g, asb)
+    }
+
 def get_floorplan_model_name(g):
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
     model_name = prefixed(g, floorplan).split('floorplan:')[1]

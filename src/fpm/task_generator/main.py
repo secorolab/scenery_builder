@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import yaml
 
-from fpm.graph import build_graph_from_directory, prefixed, traverse_to_world_origin, get_floorplan_model_name
+from fpm.graph import build_graph_from_directory, get_point_position, prefixed, traverse_to_world_origin, get_floorplan_model_name, get_list_from_ptr
 from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
 from fpm.utils import load_config_file, build_transformation_matrix
 
@@ -118,55 +118,36 @@ if __name__=="__main__":
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
     model_name = get_floorplan_model_name(g)
 
-    spaces = []
+    # Get the list of spaces
+    print("Querying all spaces...")
     space_ptr = g.value(floorplan, FP["spaces"])
-    # Go through the list of spaces
-    while True:
-        spaces.append(g.value(space_ptr, RDF.first))
-        space_ptr = g.value(space_ptr, RDF.rest)
-        if space_ptr == RDF.nil:
-                break
+    spaces = get_list_from_ptr(g, space_ptr)
 
     # for each space, find the polygon
+    print("Get all points...")
     space_points = []
     for space in spaces:
-        point_nodes = []
         polygon = g.value(space, FP["shape"])
 
         point_ptr = g.value(polygon, POLY["points"])
 
-        while True:
-            point_nodes.append(g.value(point_ptr, RDF.first))
-            point_ptr = g.value(point_ptr, RDF.rest)
-            if point_ptr == RDF.nil:
-                break
+        point_nodes = get_list_from_ptr(g, point_ptr)
         
         positions = []
         for point in point_nodes:
-
-            position = g.value(predicate=GEOM["of"], object=point)
-            coordinates = g.value(predicate=COORD["of-position"], object=position)
-
-            x = g.value(coordinates, COORD["x"]).toPython()
-            y = g.value(coordinates, COORD["y"]).toPython()
-            asb = g.value(coordinates, COORD["as-seen-by"])
-
-            position = {
-                "x": x,
-                "y": y,
-                "as-seen-by": prefixed(g, asb)
-            }
+            position = get_point_position(g, point)
             positions.append(position)
+
         space_points_json = {
             "name": prefixed(g, space),
             "points": positions
         }
         space_points.append(space_points_json)
 
-    print("creating the insets...")
+    print("Creating the insets...")
     inset_model_framed = create_inset_json_ld(space_points, inset_width)
    
-    print("calculating transformation path...")
+    print("Calculating transformation path...")
     coordinates_map = {}
 
     for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
