@@ -20,7 +20,7 @@ from fpm.constants import *
 from fpm.graph import build_graph_from_directory, prefixed, get_transformation_matrix_wrt_frame, get_floorplan_model_name
 
 
-def get_link_information(g, my_object):
+def get_link_information(g, my_object, object_frame):
     for _, _, link in g.triples((my_object, OBJ["object-links"], None)):
 
         gazebo_representation = g.value(predicate=GZB["gz-link"], object=link)
@@ -59,7 +59,7 @@ def get_link_information(g, my_object):
             "material": material.toPython()
         }
 
-def get_joint_information(g, joint):
+def get_joint_information(g, joint, object_frame):
     # determine axis of joint
     joint_axis = get_sdf_axis_of_rotation(g, joint)
     
@@ -109,6 +109,31 @@ def get_joint_information(g, joint):
     }
 
 
+def get_object_model(g, my_object):
+    joint_list = []
+    link_list = []
+
+    object_frame = g.value(my_object, OBJ["object-frame"])
+    
+    # Collect the link information
+    link_info = get_link_information(g, my_object, object_frame)
+    link_list.append(link_info)
+            
+    # If the object is a kinematic chain, collect the joint information
+    if OBJ["ObjectWithKinematicChain"] in g.objects(my_object, RDF.type):
+        
+        kin_chain = g.value(my_object, OBJ["kinematic-chain"])
+        for _, _, joint in g.triples((kin_chain, KIN["joints"], None)):
+            joint_info = get_joint_information(g, joint, object_frame)
+            joint_list.append(joint_info)
+    # Build a dictionary with all the data for jinja
+    return {
+        "name": prefixed(g, my_object),
+        "static": "false",
+        "links": link_list,
+        "joints": joint_list
+    }
+    
 
 if __name__ == "__main__":
 
@@ -131,34 +156,12 @@ if __name__ == "__main__":
     
     fp_model_name = get_floorplan_model_name(g)
 
+    # Get object models
     for my_object, _, _ in g.triples((None, RDF.type, OBJ["Object"])):
-        joint_list = []
-        link_list = []
-
-        object_frame = g.value(my_object, OBJ["object-frame"])
-        
-        # Collect the link information
-        link_info = get_link_information(g, my_object)
-        link_list.append(link_info)
-                
-        # If the object is a kinematic chain, collect the joint information
-        if OBJ["ObjectWithKinematicChain"] in g.objects(my_object, RDF.type):
-            
-            kin_chain = g.value(my_object, OBJ["kinematic-chain"])
-            for _, _, joint in g.triples((kin_chain, KIN["joints"], None)):
-                joint_info = get_joint_information(g, joint)
-                joint_list.append(joint_info)
-        # Build a dictionary with all the data for jinja
-        my_object_tree = {
-            "name": prefixed(g, my_object),
-            "static": "false",
-            "links": link_list,
-            "joints": joint_list
-        }
-        
+        my_object_tree = get_object_model(g, my_object)
         if DEBUG:
             pprint(my_object_tree)
-
+            
         # Write the sdf model
         # TODO Fix hardcoded paths
         model_name = my_object_tree["name"][5:]
@@ -174,7 +177,7 @@ if __name__ == "__main__":
                        "../../../templates/object_placing",
                        )
 
-    # Querie for the pose path from the object instance to the world frame
+    # Query for the pose path from the object instance to the world frame
     world_frame_tag = g.value(predicate=RDF.type, object=OBJ["WorldFrame"])
     world_frame = g.value(world_frame_tag, OBJ["frame"])
 
