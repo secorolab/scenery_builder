@@ -10,15 +10,6 @@ def load_config_file(file_path):
     return data
 
 
-def loader(directory):
-    import os
-    def load(file):
-        with open(os.path.join(directory, file)) as f:
-            return f.read()
-        return ""
-    return load
-
-
 def load_template(template_name, template_folder):
     file_loader = FileSystemLoader(template_folder)
     env = Environment(loader=file_loader)

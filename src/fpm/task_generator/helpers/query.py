@@ -7,13 +7,6 @@ import json
 from pyld import jsonld
 from pprint import pprint
 
-def loader(directory):
-    import os
-    def load(file):
-        with open(os.path.join(directory, file)) as f:
-            return f.read()
-        return ""
-    return load
 
 if __name__ == "__main__":
     # 1. Construct the RDF graph

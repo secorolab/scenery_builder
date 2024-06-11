@@ -3,11 +3,10 @@
 import sys
 import os
 
-import rdflib
 from rdflib import RDF
 from pprint import pprint
 
-from fpm.utils import loader, write_sdf_file, load_config_file
+from fpm.utils import write_sdf_file, load_config_file
 
 from helpers.helpers import (
     prefixed, 
@@ -23,6 +22,7 @@ from helpers.sdf import (
 from helpers.constants import ROOT_PATH
 
 from fpm.constants import *
+from fpm.graph import build_graph_from_directory
 
 if __name__ == "__main__":
 
@@ -41,13 +41,7 @@ if __name__ == "__main__":
     output_folder = model_config.get("gazebo_models_location") if model_config['save_to_gazebo'] else model_config.get("output_folder")
     worlds_output_path = config["worlds"]["output"]
     
-    # Build the graph by reading all composable models in the input folder
-    load = loader("")
-    g = rdflib.Graph()
-    for (dirpath, dirnames, filenames) in os.walk(input_folder):
-        for filename in filenames:
-            #filenames_array.append(os.path.join(dirpath, filename))
-            g.parse(os.path.join(dirpath, filename), format="json-ld")
+    g = build_graph_from_directory(input_folder)
     
     fp_model_name = ''
     for floorplan in g.subjects(RDF.type, FP["FloorPlan"]):

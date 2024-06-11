@@ -4,10 +4,8 @@
 import sys
 import os
 
-import rdflib
 from rdflib import RDF
 
-from helpers.query import loader
 from helpers.compute import create_inset_json_ld
 from helpers.transformation import build_transformation_matrix, prefixed, traverse_to_world_origin
 
@@ -19,6 +17,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import yaml
 
+from fpm.graph import build_graph_from_directory
 from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
 from fpm.utils import load_config_file
 
@@ -37,13 +36,7 @@ if __name__=="__main__":
     pkg_path_output_path = config["launch"]["pkg_path"]
     inset_width = config["inset"]["width"]
 
-    load = loader("")
-    g = rdflib.Graph()
-    # filenames_array = []
-    for (dirpath, dirnames, filenames) in os.walk(input_folder):
-        for filename in filenames:
-            #filenames_array.append(os.path.join(dirpath, filename))
-            g.parse(os.path.join(dirpath, filename), format="json-ld")
+    g = build_graph_from_directory(input_folder)
 
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
     model_name = prefixed(g, floorplan).split('floorplan:')[1]
