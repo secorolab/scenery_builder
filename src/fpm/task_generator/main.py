@@ -6,8 +6,6 @@ import os
 
 from rdflib import RDF
 
-from helpers.compute import create_inset_json_ld
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as Pol
@@ -19,6 +17,86 @@ import yaml
 from fpm.graph import build_graph_from_directory, prefixed, traverse_to_world_origin
 from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
 from fpm.utils import load_config_file, build_transformation_matrix
+
+
+def inset_shape(points, width=0.3):
+    lines = []
+    for point_a, point_b in zip(points[0:-1], points[1:]):
+        dy = point_b[1]-point_a[1]
+        dx = point_b[0]-point_a[0]
+        if not dx == 0:
+            m = dy/dx
+            b = point_a[1] - m*point_a[0]
+            aux = width * np.sqrt(m**2 + 1)
+
+            b1 = b + aux
+            b2 = b - aux
+
+            if abs(b1) < abs(b2):
+                lines.append([m, -1, b1])
+            else:
+                lines.append([m, -1, b2])
+
+        else: 
+            c = point_a[0]
+            c1 = c - width
+            c2 = c + width
+
+            if abs(c1) < abs(c2):
+                lines.append([1, 0, -c1])
+            else:
+                lines.append([1, 0, -c2])
+
+    lines.append(lines[0])
+    lines = np.array(lines)
+    
+    inset = []
+    for line_a, line_b in zip(lines[0:-1], lines[1:]):
+        cross = np.cross(line_a, line_b)
+        x = cross[0]/cross[2]
+        y = cross[1]/cross[2]
+        inset.append([x, y])
+
+    return np.array(inset)
+    
+
+def create_inset_json_ld(model, width):
+
+    inset_graph = []
+    tree_structure = []
+
+    for space in model:
+
+        points = []
+        for point in space["points"]:
+            xs = point["x"]
+            ys = point["y"]
+            points.append([float(xs), float(ys), 0 , 1])
+        
+        points.append(points[0])
+        points = np.array(points)
+        inset = inset_shape(points, width)
+        space_name = space["name"][16:]
+        
+        # create a coordinate relation per point
+        tree_points = []
+        for i, point in enumerate(inset):
+            point = {
+                "name" : "position-inset-point-{i}-to-{name}-frame".format(i=i, name=space_name),
+                "as-seen-by" : "fp:frame-center-{name}".format(name=space_name),
+                "x": point[0],
+                "y": point[1]
+            }
+            tree_points.append(point)
+
+        # create a polygon with all points 
+        polygon = {
+            "fp:points" : tree_points,
+            "name" : space_name
+        }
+        tree_structure.append(polygon)
+    
+    return tree_structure
 
 if __name__=="__main__":
     
@@ -86,7 +164,7 @@ if __name__=="__main__":
         space_points.append(space_points_json)
 
     print("creating the insets...")
-    inset_model_framed = create_inset_json_ld(space_points, inset_width, input_folder)
+    inset_model_framed = create_inset_json_ld(space_points, inset_width)
    
     print("calculating transformation path...")
     coordinates_map = {}
