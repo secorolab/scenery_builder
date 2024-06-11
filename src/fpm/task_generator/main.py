@@ -139,7 +139,7 @@ def transform_insets(inset_model_framed, coordinates_map):
 
         for point in inset["fp:points"]:
             frame = point["as-seen-by"]
-            name = point["name"][27:-6]
+            name = point["name"][26:-6]
             point_name = point["name"][15:22]
             name = "{}-{}".format(name, point_name)
             path = traverse_to_world_origin(g, frame)
