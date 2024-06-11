@@ -6,7 +6,7 @@ import rdflib
 import json
 from pyld import jsonld
 from pprint import pprint
-from traversal import traversal
+from fpm import traversal
 
 from rdflib import URIRef
 from rdflib.namespace import RDF

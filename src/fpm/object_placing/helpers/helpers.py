@@ -2,7 +2,7 @@ import numpy as np
 from fpm.constants import *
 from rdflib import RDF
 
-from . import traversal
+from fpm import traversal
 
 
 def prefixed(g, node):
