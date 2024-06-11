@@ -1,6 +1,8 @@
 import os
 import tomllib
 
+import numpy as np
+
 from jinja2 import Environment, FileSystemLoader
 
 
@@ -29,3 +31,20 @@ def write_sdf_file(data, output_folder, file_name, template_name, template_folde
     with open(file_path, "w") as f:
         f.write(output)
         print("FILE: {path}".format(path=file_path))
+
+
+def build_transformation_matrix(x, y, theta):
+    
+    c = np.cos 
+    s = np.sin
+
+    a = np.deg2rad(theta)
+    t = np.array([[x], [y], [0], [1]])
+    R = np.array([
+        [c(a), -s(a), 0],
+        [s(a), c(a), 0],
+        [0, 0, 1],
+        [0, 0, 0]]
+    )
+
+    return np.hstack((R, t))

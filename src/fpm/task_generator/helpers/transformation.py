@@ -6,7 +6,6 @@ import rdflib
 import json
 from pyld import jsonld
 from pprint import pprint
-from fpm import traversal
 
 from rdflib import URIRef
 from rdflib.namespace import RDF
@@ -17,57 +16,6 @@ from matplotlib.patches import Polygon as Pol
 
 import yaml
 
-from fpm.constants import GEO, GEOM
-
-def build_transformation_matrix(x, y, theta):
-    
-    c = np.cos 
-    s = np.sin
-
-    a = np.deg2rad(theta)
-    t = np.array([[x], [y], [0], [1]])
-    R = np.array([
-        [c(a), -s(a), 0],
-        [s(a), c(a), 0],
-        [0, 0, 1],
-        [0, 0, 0]]
-    )
-
-    return np.hstack((R, t))
-
-def traverse_to_world_origin(g, frame):
-
-    # Go through the geometric relation predicates
-    pred_filter = traversal.filter_by_predicates([
-        GEOM["with-respect-to"],
-        GEOM["of"]
-    ])
-    # Algorithm to traverse the graph
-    open_set = traversal.BreadthFirst
-
-    # Set beginning and end point 
-    root = GEO[frame[3:]]
-    goal = GEO["world-frame"]
-
-    # Set map of visited nodes for path building
-    parent_map = {}
-
-    # Traverse the graph
-    t_np = traversal.traverse_nodes_with_parent(open_set, g, root, pred_filter)
-    for node, parent in ((node, parent) for (node, parent) in t_np if parent):
-        parent_map[node] = parent
-        if node == goal:
-            break
-    # Build the path
-    path = []
-    curr = goal
-    while (curr != root):
-        path.append(curr)
-        curr = parent_map[curr]
-    else:
-        path.append(root)
-
-    return path
 
 
 if __name__ == "__main__":
