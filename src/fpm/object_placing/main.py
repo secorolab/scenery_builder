@@ -135,6 +135,48 @@ def get_object_model(g, my_object):
     }
     
 
+def get_object_instance(g, instance):
+    #  Name of the object
+    of_obj = g.value(instance, OBJ["of-object"])
+
+    # ID of the frame
+    frame = g.value(instance, OBJ["frame"])
+    
+    # Get the transfomation from the instance pose frame and the world frame
+    T = get_transformation_matrix_wrt_frame(g, frame, world_frame)
+    pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
+
+    state = g.value(instance, ST["start-state"])
+    start_joint_states = []
+
+    # If the instance has a state, then include the initial state plugin
+    if state != None:
+        for joint_state, _, _ in g.triples((None, ST["state"], state)):
+
+            if not ST["JointState"] in g.value(joint_state, RDF.type):
+                continue
+                
+            joint = g.value(joint_state, ST["joint"])
+            joint_name = prefixed(g, joint)
+
+            pose = g.value(joint_state, ST["pose"])
+            value = g.value(pose, QUDT["value"]).toPython()
+
+            start_joint_states.append({
+                "joint": joint_name,
+                "position": value
+            })
+
+    # Build a dictionary for the instance for the jinja template
+    return {
+        "pose": pose_coordinates,
+        "static": "false",
+        "name": prefixed(g, of_obj)[5:],
+        "instance_name": prefixed(g, instance)[5:],
+        "start_joint_states": start_joint_states
+    }
+
+
 if __name__ == "__main__":
 
     # Read folder where composable models are located and other configs
@@ -187,53 +229,15 @@ if __name__ == "__main__":
         "model_name": None
     }
 
-    # Go through the object instances
+    # Get object instances
     for instance, _, _ in g.triples((None, RDF.type, OBJ["ObjectInstance"])):
-        
+
+        obj_instance = get_object_instance(g, instance)
+
         # Get the world name
         world = g.value(instance, OBJ["world"])
-
-        #  Name of the object
-        of_obj = g.value(instance, OBJ["of-object"])
-
-        # ID of the frame
-        frame = g.value(instance, OBJ["frame"])
         
-        # Get the transfomation from the instance pose frame and the world frame
-        T = get_transformation_matrix_wrt_frame(g, frame, world_frame)
-        pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
-
-        state = g.value(instance, ST["start-state"])
-        start_joint_states = []
-
-        # If the instance has a state, then include the initial state plugin
-        if state != None:
-            for joint_state, _, _ in g.triples((None, ST["state"], state)):
-
-                if not ST["JointState"] in g.value(joint_state, RDF.type):
-                    continue
-                    
-                joint = g.value(joint_state, ST["joint"])
-                joint_name = prefixed(g, joint)
-
-                pose = g.value(joint_state, ST["pose"])
-                value = g.value(pose, QUDT["value"]).toPython()
-
-                start_joint_states.append({
-                    "joint": joint_name,
-                    "position": value
-                })
-
-        # Build a dictionary for the instance for the jinja template
-        instance = {
-            "pose": pose_coordinates,
-            "static": "false",
-            "name": prefixed(g, of_obj)[5:],
-            "instance_name": prefixed(g, instance)[5:],
-            "start_joint_states": start_joint_states
-        }
-
-        data["instances"].append(instance)
+        data["instances"].append(obj_instance)
         data["model_name"] = prefixed(g, world)[10:]
         data["world_name"] = "{}".format(prefixed(g, world))
 
