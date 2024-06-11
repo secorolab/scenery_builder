@@ -17,6 +17,8 @@ from matplotlib.patches import Polygon as Pol
 
 import yaml
 
+from fpm.constants import GEO, GEOM
+
 def build_transformation_matrix(x, y, theta):
     
     c = np.cos 
@@ -38,21 +40,17 @@ def prefixed(g, node):
 
 def traverse_to_world_origin(g, frame):
 
-    # Set up the namespaces
-    GEOM = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/structural-entities#")
-    GEOR = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#")
-
     # Go through the geometric relation predicates
     pred_filter = traversal.filter_by_predicates([
-        GEOR["with-respect-to"],
-        GEOR["of"]
+        GEOM["with-respect-to"],
+        GEOM["of"]
     ])
     # Algorithm to traverse the graph
     open_set = traversal.BreadthFirst
 
     # Set beginning and end point 
-    root = GEOM[frame[3:]]
-    goal = GEOM["world-frame"]
+    root = GEO[frame[3:]]
+    goal = GEO["world-frame"]
 
     # Set map of visited nodes for path building
     parent_map = {}

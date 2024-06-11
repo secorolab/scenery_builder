@@ -18,6 +18,8 @@ from jinja2 import Environment, FileSystemLoader
 
 import yaml
 
+from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
+
 if __name__=="__main__":
     
     argv = sys.argv
@@ -41,13 +43,6 @@ if __name__=="__main__":
         for filename in filenames:
             #filenames_array.append(os.path.join(dirpath, filename))
             g.parse(os.path.join(dirpath, filename), format="json-ld")
-
-    FP = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan#")
-    POLY = rdflib.Namespace("https://secorolab.github.io/metamodels/polytope#")
-    GEOM = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/structural-entities#")
-    GEOR = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#")
-    COORD = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/coordinates#")
-    COORD_EXT = rdflib.Namespace("https://secorolab.github.io/metamodels/coordinates#")
 
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
     model_name = prefixed(g, floorplan).split('floorplan:')[1]
