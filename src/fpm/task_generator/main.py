@@ -98,35 +98,7 @@ def create_inset_json_ld(model, width):
     
     return tree_structure
 
-if __name__=="__main__":
-    
-    argv = sys.argv
-    input_folder = argv[1]
-
-    # Config
-    config = load_config_file('../../../config/setup.toml')
-
-    points_output_path = config["points"]["output"]
-    models_output_path = config["models"]["output"]
-    worlds_output_path = config["worlds"]["output"]
-    launch_output_path = config["launch"]["output"]
-    pkg_path_output_path = config["launch"]["pkg_path"]
-    inset_width = config["inset"]["width"]
-
-    g = build_graph_from_directory(input_folder)
-
-    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
-    model_name = get_floorplan_model_name(g)
-
-    # Get the list of spaces
-    print("Querying all spaces...")
-    space_ptr = g.value(floorplan, FP["spaces"])
-    spaces = get_list_from_ptr(g, space_ptr)
-
-    # for each space, find the polygon
-    print("Get all points...")
-    space_points = []
-    for space in spaces:
+def get_point_positions_in_space(g, space):
         polygon = g.value(space, FP["shape"])
 
         point_ptr = g.value(polygon, POLY["points"])
@@ -138,16 +110,13 @@ if __name__=="__main__":
             position = get_point_position(g, point)
             positions.append(position)
 
-        space_points_json = {
+        return {
             "name": prefixed(g, space),
             "points": positions
         }
-        space_points.append(space_points_json)
 
-    print("Creating the insets...")
-    inset_model_framed = create_inset_json_ld(space_points, inset_width)
-   
-    print("Calculating transformation path...")
+
+def get_coordinates_map(g):
     coordinates_map = {}
 
     for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
@@ -156,12 +125,14 @@ if __name__=="__main__":
             'y' : g.value(coord, COORD["y"]).toPython(),
             'theta' : g.value(coord, COORD_EXT["theta"]).toPython()
         }
-    
-    insets = []
+
+    return coordinates_map
+
+def transform_insets(inset_model_framed, coordinates_map):
     plt.axis('equal') 
     ax = plt.gca()
+    insets = []
 
-    print("transforming the insets")
     for inset in inset_model_framed:
 
         inset_points = []
@@ -209,12 +180,54 @@ if __name__=="__main__":
         ax.scatter(inset_points[:, 0], inset_points[:, 1])
         ax.add_patch(Pol(inset_points, closed=True, edgecolor='g', fill=False))
 
-
     plt.xlim([-30, 30])
     plt.ylim([-30, 30])
-
     # plt.show()
 
+    return insets
+
+
+if __name__=="__main__":
+    
+    argv = sys.argv
+    input_folder = argv[1]
+
+    # Config
+    config = load_config_file('../../../config/setup.toml')
+
+    points_output_path = config["points"]["output"]
+    models_output_path = config["models"]["output"]
+    worlds_output_path = config["worlds"]["output"]
+    launch_output_path = config["launch"]["output"]
+    pkg_path_output_path = config["launch"]["pkg_path"]
+    inset_width = config["inset"]["width"]
+
+    g = build_graph_from_directory(input_folder)
+
+    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
+    model_name = get_floorplan_model_name(g)
+
+    # Get the list of spaces
+    print("Querying all spaces...")
+    space_ptr = g.value(floorplan, FP["spaces"])
+    spaces = get_list_from_ptr(g, space_ptr)
+
+    # for each space, find the polygon
+    print("Get all points...")
+    space_points = []
+    for space in spaces:
+        space_points_json = get_point_positions_in_space(g, space)
+        space_points.append(space_points_json)
+
+    print("Creating the insets...")
+    inset_model_framed = create_inset_json_ld(space_points, inset_width)
+   
+    print("Calculating transformation path...")
+    coordinates_map = get_coordinates_map(g)
+    
+    print("Transforming the insets")
+    insets = transform_insets(inset_model_framed, coordinates_map)
+    
     print("wrinting all outputs...")
     # Write points to yaml file
 
