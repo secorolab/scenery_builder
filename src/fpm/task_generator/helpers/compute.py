@@ -137,7 +137,7 @@ def create_inset_json_ld(model, width, output):
     #     "https://comp-rob2b.github.io/metamodels/geometry/spatial-relations.json",
     #     "https://comp-rob2b.github.io/metamodels/geometry/coordinates.json",
     #     "https://comp-rob2b.github.io/metamodels/qudt.json",
-    #     "https://hbrs-sesame.github.io/metamodels/floor-plan/floor-plan.json"
+    #     "https://secorolab.github.io/metamodels/floor-plan/floor-plan.json"
     #     {
     #         "inset": "https://comp-rob2b.github.io/insets#",
     #         "geom": "https://comp-rob2b.github.io/metamodels/geometry/structural-entities#"

@@ -37,9 +37,11 @@ if __name__ == "__main__":
 
     # Read config file and set properties
     config = configparser.ConfigParser()
-    config.read(os.path.join(ROOT_PATH, 'setup.cfg'))
+    # TODO Fix this hardcoded path
+    config.read(os.path.join("../../../", 'config', 'setup.cfg'))
     model_config = config["models"]
     DEBUG = config["dev"].getboolean('debug')
+    # TODO Fix/Document these alternative paths and options
     output_folder = model_config.get("gazebo_models_location") if model_config.getboolean('save_to_gazebo') else model_config.get("output_folder")
     worlds_output_path = config["worlds"]["output"]
     

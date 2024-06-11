@@ -24,7 +24,7 @@ if __name__=="__main__":
     input_folder = argv[1]
 
     config = configparser.ConfigParser()
-    config.read('setup.cfg')
+    config.read('../../../config/setup.cfg')
 
     points_output_path = config["points"]["output"]
     models_output_path = config["models"]["output"]
@@ -42,12 +42,12 @@ if __name__=="__main__":
             #filenames_array.append(os.path.join(dirpath, filename))
             g.parse(os.path.join(dirpath, filename), format="json-ld")
 
-    FP = rdflib.Namespace("https://hbrs-sesame.github.io/metamodels/floorplan#")
-    POLY = rdflib.Namespace("https://hbrs-sesame.github.io/metamodels/polytope#")
+    FP = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan#")
+    POLY = rdflib.Namespace("https://secorolab.github.io/metamodels/polytope#")
     GEOM = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/structural-entities#")
     GEOR = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#")
     COORD = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/coordinates#")
-    COORD_EXT = rdflib.Namespace("https://hbrs-sesame.github.io/metamodels/coordinates#")
+    COORD_EXT = rdflib.Namespace("https://secorolab.github.io/metamodels/coordinates#")
 
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
     model_name = prefixed(g, floorplan).split('floorplan:')[1]
@@ -186,7 +186,8 @@ if __name__=="__main__":
             documents = yaml.dump(yaml_json, file, default_flow_style=None)
 
     # Model
-    file_loader = FileSystemLoader('templates')
+    # TODO Remove hardocoded paths!
+    file_loader = FileSystemLoader('../../../templates/task_generation')
     env = Environment(loader=file_loader)
 
     template = env.get_template('model.config.jinja')
@@ -205,6 +206,7 @@ if __name__=="__main__":
     with open(os.path.join(directory, "model.sdf"), "w") as f:
         f.write(output)
 
+    # TODO Folder is not created: Autocreate if it doesn't exists
     template = env.get_template('world.sdf.jinja')
     output = template.render(model_name=model_name)
 
@@ -214,6 +216,7 @@ if __name__=="__main__":
     template = env.get_template('gazebo.launch.jinja')
     output = template.render(pkg_path=pkg_path_output_path, world_name=model_name)
 
+    # TODO Folder is not created: Autocreate if it doesn't exists
     with open(os.path.join(launch_output_path, "{name}.launch".format(name=model_name)), "w") as f:
         f.write(output)
 

@@ -74,7 +74,8 @@ def get_sdf_axis_of_rotation(g, joint):
 
 def write_object_model_sdf(data, output_folder):
 
-    file_loader = FileSystemLoader(os.path.join(ROOT_PATH,'templates'))
+    # TODO Fix this path
+    file_loader = FileSystemLoader(os.path.join("../../../",'templates/object_placing'))
     env = Environment(loader=file_loader)
     
     name_without_id = data["name"][5:]
@@ -98,7 +99,8 @@ def write_object_model_sdf(data, output_folder):
 
 def write_world_model_sdf(data, output_folder):
     
-    file_loader = FileSystemLoader(os.path.join(ROOT_PATH,'templates'))
+    # TODO Fix this path
+    file_loader = FileSystemLoader(os.path.join("../../../",'templates/object_placing'))
     env = Environment(loader=file_loader)
 
     name_without_id = data["world_name"][10:]
@@ -110,6 +112,7 @@ def write_world_model_sdf(data, output_folder):
     template = env.get_template('world.sdf.jinja')
     output = template.render(data=data, trim_blocks=True, lstrip_blocks=True)
 
+    # TODO Fix this path
     with open(os.path.join(full_path, "{name_without_id}.world".format(name_without_id=name_without_id)), "w") as f:
         f.write(output)
-        print("{name} WORLD FILE: {path}".format(name=name_without_id, path=os.path.join(full_path, "{name_without_id}.world")))
+        print("{name} WORLD FILE: {path}".format(name=name_without_id, path=os.path.join(full_path, "{name_without_id}.world").format(name_without_id=name_without_id)))
