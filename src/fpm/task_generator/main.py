@@ -74,7 +74,7 @@ if __name__=="__main__":
         positions = []
         for point in point_nodes:
 
-            position = g.value(predicate=GEOR["of"], object=point)
+            position = g.value(predicate=GEOM["of"], object=point)
             coordinates = g.value(predicate=COORD["of-position"], object=position)
 
             x = g.value(coordinates, COORD["x"]).toPython()
