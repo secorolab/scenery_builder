@@ -1,6 +1,13 @@
 import os
+import tomllib
 
 from jinja2 import Environment, FileSystemLoader
+
+
+def load_config_file(file_path):
+    with open(file_path, "rb") as f:
+        data = tomllib.load(f)
+    return data
 
 
 def loader(directory):

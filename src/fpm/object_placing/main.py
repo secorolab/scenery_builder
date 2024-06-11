@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-import sys, os, configparser
+import sys
+import os
+
 import rdflib
 from rdflib import RDF
 from pprint import pprint
 
-from fpm.utils import loader, write_sdf_file 
+from fpm.utils import loader, write_sdf_file, load_config_file
 
 from helpers.helpers import (
     prefixed, 
@@ -29,13 +31,14 @@ if __name__ == "__main__":
     input_folder = argv[1]
 
     # Read config file and set properties
-    config = configparser.ConfigParser()
     # TODO Fix this hardcoded path
-    config.read(os.path.join("../../../", 'config', 'setup.cfg'))
+    config_file_path = os.path.join("../../../", 'config', 'setup.cfg')
+
+    config = load_config_file(config_file_path)
     model_config = config["models"]
-    DEBUG = config["dev"].getboolean('debug')
+    DEBUG = config["dev"]['debug']
     # TODO Fix/Document these alternative paths and options
-    output_folder = model_config.get("gazebo_models_location") if model_config.getboolean('save_to_gazebo') else model_config.get("output_folder")
+    output_folder = model_config.get("gazebo_models_location") if model_config['save_to_gazebo'] else model_config.get("output_folder")
     worlds_output_path = config["worlds"]["output"]
     
     # Build the graph by reading all composable models in the input folder

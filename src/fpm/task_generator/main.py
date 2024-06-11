@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 # SPDX-License-Identifier: LGPL-3.0-or-later
-import sys, os, configparser
+import sys
+import os
+
 import rdflib
 from rdflib import RDF
 
 from helpers.query import loader
 from helpers.compute import create_inset_json_ld
 from helpers.transformation import build_transformation_matrix, prefixed, traverse_to_world_origin
-from traversal import traversal
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,23 +20,23 @@ from jinja2 import Environment, FileSystemLoader
 import yaml
 
 from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
+from fpm.utils import load_config_file
 
 if __name__=="__main__":
     
     argv = sys.argv
     input_folder = argv[1]
 
-    config = configparser.ConfigParser()
-    config.read('../../../config/setup.cfg')
+    # Config
+    config = load_config_file('../../../config/setup.toml')
 
     points_output_path = config["points"]["output"]
     models_output_path = config["models"]["output"]
     worlds_output_path = config["worlds"]["output"]
     launch_output_path = config["launch"]["output"]
     pkg_path_output_path = config["launch"]["pkg_path"]
+    inset_width = config["inset"]["width"]
 
-
-    inset_width = config.getfloat("inset","width")
     load = loader("")
     g = rdflib.Graph()
     # filenames_array = []

@@ -1,0 +1,37 @@
+# Task generator
+[inset]
+width = 0.7
+
+[points]
+# output = ../../../output/task_generation/tasks
+output = "../../../output/consolidated/tasks"
+
+[models]
+# output = ../../../output/task_generation/models
+# Object modeling and placing
+# output = ../../../output/object_placing/models
+output = "../../../output/consolidated/models"
+
+# Object modeling and placing
+# gazebo_models_location = /home/samuel/.gazebo/models
+# gazebo_models_location = ../../../output/object_placing/models
+save_to_gazebo = true
+# output_folder = ../../../output/object_placing/models
+
+output_folder = "../../../output/consolidated/models"
+gazebo_models_location = "../../../output/consolidated/models"
+
+[worlds]
+# output = ../../../output/task_generation/worlds
+# Object modeling and placing
+# output = ../../../output/object_placing/worlds
+output = "../../../output/consolidated/worlds"
+
+[launch]
+# output = ../../../output/task_generation/launch
+pkg_path = "floorplan_models"
+output = "../../../output/consolidated/launch"
+
+# Object modeling and placing
+[dev]
+debug = false
