@@ -1,8 +1,6 @@
 import numpy as np
 from rdflib import RDF
 from fpm.constants import *
-from jinja2 import Environment, FileSystemLoader
-import os
 
 def get_sdf_geometry(g, polytope):
 
@@ -71,48 +69,3 @@ def get_sdf_axis_of_rotation(g, joint):
                 z = 1
 
     return "{x} {y} {z}".format(x=x, y=y, z=z)
-
-def write_object_model_sdf(data, output_folder):
-
-    # TODO Fix this path
-    file_loader = FileSystemLoader(os.path.join("../../../",'templates/object_placing'))
-    env = Environment(loader=file_loader)
-    
-    name_without_id = data["name"][5:]
-    full_path = os.path.join(output_folder, name_without_id)
-
-    if not os.path.exists(full_path):
-        os.makedirs(full_path)
-    template = env.get_template('model.sdf.jinja')
-    output = template.render(data=data, trim_blocks=True, lstrip_blocks=True)
-
-    with open(os.path.join(full_path, "model.sdf"), "w") as f:
-        f.write(output)
-        print("{name} MODEL FILE: {path}".format(name=name_without_id, path=os.path.join(full_path, "model.sdf")))
-
-    template = env.get_template('model.config.jinja')
-    output = template.render(data=data, trim_blocks=True, lstrip_blocks=True)
-
-    with open(os.path.join(full_path, "model.config".format(name=name_without_id)), "w") as f:
-        f.write(output)
-        print("{name} CONFIG FILE: {path}".format(name=name_without_id, path=os.path.join(full_path, "{name}.config".format(name=name_without_id))))
-
-def write_world_model_sdf(data, output_folder):
-    
-    # TODO Fix this path
-    file_loader = FileSystemLoader(os.path.join("../../../",'templates/object_placing'))
-    env = Environment(loader=file_loader)
-
-    name_without_id = data["world_name"][10:]
-    
-    full_path = os.path.join(output_folder)
-    if not os.path.exists(full_path):
-        os.makedirs(full_path)
-
-    template = env.get_template('world.sdf.jinja')
-    output = template.render(data=data, trim_blocks=True, lstrip_blocks=True)
-
-    # TODO Fix this path
-    with open(os.path.join(full_path, "{name_without_id}.world".format(name_without_id=name_without_id)), "w") as f:
-        f.write(output)
-        print("{name} WORLD FILE: {path}".format(name=name_without_id, path=os.path.join(full_path, "{name_without_id}.world").format(name_without_id=name_without_id)))

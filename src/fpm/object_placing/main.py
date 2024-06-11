@@ -5,7 +5,7 @@ import rdflib
 from rdflib import RDF
 from pprint import pprint
 
-from fpm.utils import loader
+from fpm.utils import loader, write_sdf_file 
 
 from helpers.helpers import (
     prefixed, 
@@ -17,8 +17,6 @@ from helpers.sdf import (
     get_sdf_pose_from_transformation_matrix,
     get_sdf_joint_type,
     get_sdf_axis_of_rotation,
-    write_object_model_sdf,
-    write_world_model_sdf
 )
 from helpers.constants import ROOT_PATH
 
@@ -165,7 +163,19 @@ if __name__ == "__main__":
             pprint(my_object_tree)
 
         # Write the sdf model
-        write_object_model_sdf(my_object_tree, output_folder)
+        # TODO Fix hardcoded paths
+        model_name = my_object_tree["name"][5:]
+        output_path = os.path.join(output_folder, model_name)
+        write_sdf_file(my_object_tree, output_path, 
+                       "{}.sdf".format(model_name),
+                       'model.sdf.jinja', 
+                       "../../../templates/object_placing",
+                       )
+        write_sdf_file(my_object_tree, output_path, 
+                       "{}.config".format(model_name),
+                       'model.config.jinja', 
+                       "../../../templates/object_placing",
+                       )
 
     # Querie for the pose path from the object instance to the world frame
     world_frame_tag = g.value(predicate=RDF.type, object=OBJ["WorldFrame"])
@@ -228,4 +238,9 @@ if __name__ == "__main__":
         data["world_name"] = "{}".format(prefixed(g, world))
 
     # Build and write the sdf world
-    write_world_model_sdf(data, worlds_output_path)
+    # TODO fix the data dictionary, probably hard-coded for a particular world
+    write_sdf_file(data, worlds_output_path, 
+                   "{}.world".format(data["world_name"][10:]), 
+                   'world.sdf.jinja', 
+                   "../../../templates/object_placing",
+                   )
