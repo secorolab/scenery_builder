@@ -14,7 +14,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import yaml
 
-from fpm.graph import build_graph_from_directory, prefixed, traverse_to_world_origin
+from fpm.graph import build_graph_from_directory, prefixed, traverse_to_world_origin, get_floorplan_model_name
 from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
 from fpm.utils import load_config_file, build_transformation_matrix
 
@@ -116,7 +116,7 @@ if __name__=="__main__":
     g = build_graph_from_directory(input_folder)
 
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
-    model_name = prefixed(g, floorplan).split('floorplan:')[1]
+    model_name = get_floorplan_model_name(g)
 
     spaces = []
     space_ptr = g.value(floorplan, FP["spaces"])

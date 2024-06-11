@@ -17,7 +17,8 @@ from fpm.transformations.sdf import (
 )
 
 from fpm.constants import *
-from fpm.graph import build_graph_from_directory, prefixed, get_transformation_matrix_wrt_frame
+from fpm.graph import build_graph_from_directory, prefixed, get_transformation_matrix_wrt_frame, get_floorplan_model_name
+
 
 if __name__ == "__main__":
 
@@ -38,9 +39,7 @@ if __name__ == "__main__":
     
     g = build_graph_from_directory(input_folder)
     
-    fp_model_name = ''
-    for floorplan in g.subjects(RDF.type, FP["FloorPlan"]):
-        fp_model_name = prefixed(g, floorplan).split('floorplan:')[1]
+    fp_model_name = get_floorplan_model_name(g)
 
     for my_object, _, _ in g.triples((None, RDF.type, OBJ["Object"])):
         joint_list = []

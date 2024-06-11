@@ -7,7 +7,7 @@ import rdflib
 from rdflib import RDF
 
 from fpm import traversal
-from fpm.constants import GEO, GEOM, COORD, COORD_EXT, QUDT, QUDT_VOCAB
+from fpm.constants import GEO, GEOM, COORD, COORD_EXT, QUDT, QUDT_VOCAB, FP
 from fpm.utils import build_transformation_matrix
 
 def build_graph_from_directory(input_folder):
@@ -23,6 +23,12 @@ def prefixed(g, node):
     """Return a Notation-3 (N3) prefixed namespace
     """
     return node.n3(g.namespace_manager)
+
+def get_floorplan_model_name(g):
+    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
+    model_name = prefixed(g, floorplan).split('floorplan:')[1]
+
+    return model_name
 
 def traverse_to_world_origin(g, frame):
 
