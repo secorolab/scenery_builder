@@ -128,6 +128,36 @@ def get_coordinates_map(g):
 
     return coordinates_map
 
+def get_waypoint_coord(g, point):
+    frame = point["as-seen-by"]
+    path = traverse_to_world_origin(g, frame)
+
+    path_positions = [str(prefixed(g, p)) for p in path]
+    path_positions = [p for p in path_positions if 'pose' in p]
+    
+    p = np.array([[point["x"]], [point["y"]], [0], [1]]).astype(float)
+
+    path_positions = path_positions[::-1]
+    path_positions.append(0)
+    for pose, next_pose in zip(path_positions[:-1], path_positions[1:]):
+        
+        coordinates = coordinates_map[pose]
+        T = build_transformation_matrix(coordinates['x'], 
+                                        coordinates['y'], 
+                                        0,
+                                        coordinates['theta']).astype(float)
+        if not next_pose == 0:
+            if next_pose.count('wall') > 1:
+                T = np.linalg.pinv(T)
+
+        p = np.dot(T, p)
+
+    #inset_points.append([round(p[0, 0].item(), 2), round(p[1, 0].item(), 2), 0])
+    x = round(p[0, 0].item(), 2)
+    y = round(p[1, 0].item(), 2)
+
+    return x, y
+
 def transform_insets(inset_model_framed, coordinates_map):
     plt.axis('equal') 
     ax = plt.gca()
@@ -138,38 +168,13 @@ def transform_insets(inset_model_framed, coordinates_map):
         inset_points = []
 
         for point in inset["fp:points"]:
-            frame = point["as-seen-by"]
             name = point["name"][26:-6]
             point_name = point["name"][15:22]
             name = "{}-{}".format(name, point_name)
-            path = traverse_to_world_origin(g, frame)
 
-            path_positions = [str(prefixed(g, p)) for p in path]
-            path_positions = [p for p in path_positions if 'pose' in p]
-            
-            p = np.array([[point["x"]], [point["y"]], [0], [1]]).astype(float)
-
-            path_positions = path_positions[::-1]
-            path_positions.append(0)
-            for pose, next_pose in zip(path_positions[:-1], path_positions[1:]):
-                
-                coordinates = coordinates_map[pose]
-                T = build_transformation_matrix(coordinates['x'], 
-                                                coordinates['y'], 
-                                                0,
-                                                coordinates['theta']).astype(float)
-                if not next_pose == 0:
-                    if next_pose.count('wall') > 1:
-                        T = np.linalg.pinv(T)
-
-                p = np.dot(T, p)
-
-            #inset_points.append([round(p[0, 0].item(), 2), round(p[1, 0].item(), 2), 0])
-            x = round(p[0, 0].item(), 2)
-            y = round(p[1, 0].item(), 2)
+            x, y = get_waypoint_coord(g, point)
     
             inset_points.append({"id":name, "x":x, "y":y, "z":0, "yaw":0})
-
         
         insets.append({
             "name" : inset["name"],
