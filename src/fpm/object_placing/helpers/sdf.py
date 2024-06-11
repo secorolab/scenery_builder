@@ -1,6 +1,6 @@
 import numpy as np
 from rdflib import RDF
-from .constants import *
+from fpm.constants import *
 from jinja2 import Environment, FileSystemLoader
 import os
 

@@ -1,5 +1,5 @@
 import numpy as np
-from .constants import *
+from fpm.constants import *
 from rdflib import RDF
 
 from . import traversal
