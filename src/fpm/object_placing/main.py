@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     # Read config file and set properties
     # TODO Fix this hardcoded path
-    config_file_path = os.path.join("../../../", 'config', 'setup.cfg')
+    config_file_path = os.path.join("../../../", 'config', 'setup.toml')
 
     config = load_config_file(config_file_path)
     model_config = config["models"]
