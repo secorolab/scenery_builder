@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.6">
+  <world name="{{data.world_name}}">
+    <gravity>0 0 -9.8</gravity>
+    <physics default="0" name="default_physics" type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <background>0.4 0.4 0.4 1</background>
+      <shadows>false</shadows>
+    </scene>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://{{data.model_name}}</uri>
+      <static>true</static>
+      <pose>-0.0 0.0 0.0 0.0 0.0 0.0</pose>
+    </include>
+    {% for instance in data.instances %}
+    <include>
+      <name>{{instance.instance_name}}</name>
+      <uri>model://{{instance.name}}</uri>
+      <static>{{instance.static}}</static>
+      <pose>{{instance.pose}}</pose>
+      {% for start_joint_state in instance.start_joint_states %}
+        <plugin name="initial_plugin" filename="libinitial_plugin.so">
+          <joint>{{start_joint_state.joint}}</joint>
+          <position>{{start_joint_state.position}}</position>
+        </plugin>
+      {% endfor %}
+    </include>
+    {% endfor %}
+  </world>
+</sdf>

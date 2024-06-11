@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+PREFIX geom-ent: <https://comp-rob2b.github.io/metamodels/geometry/structural-entities#>
+PREFIX geom-rel: <https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#>
+PREFIX coord: <https://comp-rob2b.github.io/metamodels/geometry/coordinates#>
+PREFIX fp: <http://exsce-floorplan.org/>
+
+CONSTRUCT {
+    ?object_instance rdf:type fp:ObjectInstance ;
+        coord:x ?x ;
+        coord:y ?y ;
+        coord:theta ?theta ;
+        coord:as-seen-by ?asb .
+    ?object rdf:type fp:Object .
+} WHERE {
+    ?object_instance a fp:ObjectInstance .
+    ?object_instance fp:object ?object .
+    ?object_instance fp:frame ?frame .
+    ?frame a geom-ent:Frame ;
+        ^geom-rel:of ?pose .
+    ?pose a geom-rel:Pose ;
+        ^coord:of-pose ?coordinate .
+    ?coordinate 
+        coord:x ?x ;
+        coord:y ?y ;
+        fp:theta ?theta ;
+        coord:as-seen-by ?asb .
+}
+
+#CONSTRUCT {
+#    ?o_a ?p ?a
+#} WHERE {
+#    ?o_a ?p ?a
+#} LIMIT 10

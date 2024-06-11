@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+PREFIX geom-ent: <https://comp-rob2b.github.io/metamodels/geometry/structural-entities#>
+PREFIX geom-rel: <https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#>
+PREFIX coord: <https://comp-rob2b.github.io/metamodels/geometry/coordinates#>
+PREFIX unit: <http://qudt.org/vocab/unit/>
+PREFIX qudt: <http://qudt.org/schema/qudt/>
+PREFIX env: <https://comp-rob2b.github.io/models/my-environment/>
+PREFIX fp: <http://exsce-floorplan.org/>
+
+CONSTRUCT {
+    ?p a coord:PoseReference ;
+        coord:of-pose ?pose;
+        coord:x ?x ; 
+        coord:y ?y ;
+        coord:theta ?theta
+}
+WHERE {
+    ?p a coord:PoseReference, coord:PoseCoordinate, coord:VectorXY ;
+        coord:of-pose ?pose;
+        coord:x ?x ;
+        coord:y ?y ;
+        coord:theta ?theta
+}
+
