@@ -202,7 +202,10 @@ if __name__=="__main__":
             for pose, next_pose in zip(path_positions[:-1], path_positions[1:]):
                 
                 coordinates = coordinates_map[pose]
-                T = build_transformation_matrix(coordinates['x'], coordinates['y'], coordinates['theta']).astype(float)
+                T = build_transformation_matrix(coordinates['x'], 
+                                                coordinates['y'], 
+                                                0,
+                                                coordinates['theta']).astype(float)
                 if not next_pose == 0:
                     if next_pose.count('wall') > 1:
                         T = np.linalg.pinv(T)

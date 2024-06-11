@@ -33,16 +33,17 @@ def write_sdf_file(data, output_folder, file_name, template_name, template_folde
         print("FILE: {path}".format(path=file_path))
 
 
-def build_transformation_matrix(x, y, theta):
+def build_transformation_matrix(x, y, z, theta):
     
     c = np.cos 
     s = np.sin
 
-    a = np.deg2rad(theta)
-    t = np.array([[x], [y], [0], [1]])
+    # TODO Task generation seems to use this and expect radians
+    # a = np.deg2rad(theta)
+    t = np.array([[x], [y], [z], [1]])
     R = np.array([
-        [c(a), -s(a), 0],
-        [s(a), c(a), 0],
+        [c(theta), -s(theta), 0],
+        [s(theta), c(theta), 0],
         [0, 0, 1],
         [0, 0, 0]]
     )
