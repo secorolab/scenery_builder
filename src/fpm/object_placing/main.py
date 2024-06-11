@@ -9,7 +9,6 @@ from pprint import pprint
 from fpm.utils import write_sdf_file, load_config_file
 
 from helpers.helpers import (
-    prefixed, 
     get_transformation_matrix_wrt_frame
 )
 from helpers.sdf import (
@@ -22,7 +21,7 @@ from helpers.sdf import (
 from helpers.constants import ROOT_PATH
 
 from fpm.constants import *
-from fpm.graph import build_graph_from_directory
+from fpm.graph import build_graph_from_directory, prefixed
 
 if __name__ == "__main__":
 

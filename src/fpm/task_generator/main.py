@@ -7,7 +7,7 @@ import os
 from rdflib import RDF
 
 from helpers.compute import create_inset_json_ld
-from helpers.transformation import build_transformation_matrix, prefixed, traverse_to_world_origin
+from helpers.transformation import build_transformation_matrix, traverse_to_world_origin
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import yaml
 
-from fpm.graph import build_graph_from_directory
+from fpm.graph import build_graph_from_directory, prefixed
 from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
 from fpm.utils import load_config_file
 

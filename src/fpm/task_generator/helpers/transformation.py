@@ -35,9 +35,6 @@ def build_transformation_matrix(x, y, theta):
 
     return np.hstack((R, t))
 
-def prefixed(g, node):
-    return node.n3(g.namespace_manager)
-
 def traverse_to_world_origin(g, frame):
 
     # Go through the geometric relation predicates

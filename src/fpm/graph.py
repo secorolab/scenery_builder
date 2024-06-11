@@ -12,3 +12,8 @@ def build_graph_from_directory(input_folder):
         g.parse(file_path, format="json-ld")
 
     return g
+
+def prefixed(g, node):
+    """Return a Notation-3 (N3) prefixed namespace
+    """
+    return node.n3(g.namespace_manager)

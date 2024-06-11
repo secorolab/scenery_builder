@@ -5,9 +5,6 @@ from rdflib import RDF
 from fpm import traversal
 
 
-def prefixed(g, node):
-    return node.n3(g.namespace_manager)
-
 def build_transformation_matrix(x, y, z, theta):
     
     c = np.cos 
