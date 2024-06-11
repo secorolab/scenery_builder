@@ -3,16 +3,11 @@
 import sys, os, configparser
 import rdflib
 from rdflib import RDF
-import json
-from pyld import jsonld
 from pprint import pprint
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon as Pol
+from fpm.utils import loader
 
 from helpers.helpers import (
-    loader, 
     prefixed, 
     get_transformation_matrix_wrt_frame
 )
@@ -27,7 +22,7 @@ from helpers.sdf import (
 )
 from helpers.constants import ROOT_PATH
 
-from helpers.constants import *
+from fpm.constants import *
 
 if __name__ == "__main__":
 

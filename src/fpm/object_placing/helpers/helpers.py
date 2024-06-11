@@ -4,13 +4,6 @@ from rdflib import RDF
 
 from . import traversal
 
-def loader(directory):
-    import os
-    def load(file):
-        with open(os.path.join(directory, file)) as f:
-            return f.read()
-        return ""
-    return load
 
 def prefixed(g, node):
     return node.n3(g.namespace_manager)
