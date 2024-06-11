@@ -59,6 +59,57 @@ def get_link_information(g, my_object):
             "material": material.toPython()
         }
 
+def get_joint_information(g, joint):
+    # determine axis of joint
+    joint_axis = get_sdf_axis_of_rotation(g, joint)
+    
+    # determine type of joint
+    joint_type = get_sdf_joint_type(g, joint)
+
+    # Get parent and children bodies
+    joint_with_tree = g.value(predicate=OBJ["joint-without-tree"], object=joint)
+    parent = g.value(joint_with_tree, OBJ["parent"])
+    children = [prefixed(g, c) for _, _, c in g.triples((joint_with_tree , OBJ["children"], None))]
+
+    # Determine the joint frame for the pose
+    common_axis = g.value(joint, KIN["common-axis"])
+    joint_frame = None
+    for _, _, vector in g.triples((common_axis, GEOM["lines"], None)):
+        for p in g.predicates(None, vector):
+
+            # If the vector is not related to the parent then ignore this vector
+            if len([p for p in g.predicates(parent, vector)]) == 0:
+                continue
+            
+            subject = g.value(predicate=p, object=vector)
+            for _, _, _ in g.triples((subject, RDF.type, GEO["Frame"])):
+                joint_frame = subject
+
+    # Determine frame of reference and pose wrt object frame
+    T = get_transformation_matrix_wrt_frame(g, joint_frame, object_frame)
+    pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
+
+    limits = {"upper": None, "lower": None}
+    for position, pre, _ in g.triples((None, KSTATE["of-joint"], joint)):
+        for p in g.objects(position, RDF.type):
+            if p == OBJ["JointLowerLimit"]:
+                limits["lower"] = g.value(position, QUDT["value"]).toPython()
+            elif p == OBJ["JointUpperLimit"]:
+                limits["upper"] = g.value(position, QUDT["value"]).toPython()
+
+    # Build a dictionary with all the data for jinja
+    return {
+        "name": prefixed(g, joint),
+        "type": joint_type,
+        "axis": joint_axis,
+        "pose": pose_coordinates,
+        "parent": prefixed(g, parent),
+        "children": children,
+        "limits": limits,
+    }
+
+
+
 if __name__ == "__main__":
 
     # Read folder where composable models are located and other configs
@@ -95,55 +146,8 @@ if __name__ == "__main__":
             
             kin_chain = g.value(my_object, OBJ["kinematic-chain"])
             for _, _, joint in g.triples((kin_chain, KIN["joints"], None)):
-                
-                # determine axis of joint
-                joint_axis = get_sdf_axis_of_rotation(g, joint)
-                
-                # determine type of joint
-                joint_type = get_sdf_joint_type(g, joint)
-
-                # Get parent and children bodies
-                joint_with_tree = g.value(predicate=OBJ["joint-without-tree"], object=joint)
-                parent = g.value(joint_with_tree, OBJ["parent"])
-                children = [prefixed(g, c) for _, _, c in g.triples((joint_with_tree , OBJ["children"], None))]
-
-                # Determine the joint frame for the pose
-                common_axis = g.value(joint, KIN["common-axis"])
-                joint_frame = None
-                for _, _, vector in g.triples((common_axis, GEOM["lines"], None)):
-                    for p in g.predicates(None, vector):
-
-                        # If the vector is not related to the parent then ignore this vector
-                        if len([p for p in g.predicates(parent, vector)]) == 0:
-                            continue
-                        
-                        subject = g.value(predicate=p, object=vector)
-                        for _, _, _ in g.triples((subject, RDF.type, GEO["Frame"])):
-                            joint_frame = subject
-
-                # Determine frame of reference and pose wrt object frame
-                T = get_transformation_matrix_wrt_frame(g, joint_frame, object_frame)
-                pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
-
-                limits = {"upper": None, "lower": None}
-                for position, pre, _ in g.triples((None, KSTATE["of-joint"], joint)):
-                    for p in g.objects(position, RDF.type):
-                        if p == OBJ["JointLowerLimit"]:
-                            limits["lower"] = g.value(position, QUDT["value"]).toPython()
-                        elif p == OBJ["JointUpperLimit"]:
-                            limits["upper"] = g.value(position, QUDT["value"]).toPython()
-       
-                # Build a dictionary with all the data for jinja
-                joint_list.append({
-                    "name": prefixed(g, joint),
-                    "type": joint_type,
-                    "axis": joint_axis,
-                    "pose": pose_coordinates,
-                    "parent": prefixed(g, parent),
-                    "children": children,
-                    "limits": limits,
-                })
-
+                joint_info = get_joint_information(g, joint)
+                joint_list.append(joint_info)
         # Build a dictionary with all the data for jinja
         my_object_tree = {
             "name": prefixed(g, my_object),
