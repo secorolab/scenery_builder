@@ -17,20 +17,23 @@ def load_template(template_name, template_folder):
     env = Environment(loader=file_loader)
     return env.get_template(template_name)
 
+def save_file(output_path, file_name, contents):
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    output_file = os.path.abspath(os.path.join(output_path, file_name))
+
+    with open(output_file, "w") as f:
+        f.write(contents)
+        print("Generated {path}".format(path=output_file))
 
 def write_sdf_file(data, output_folder, file_name, template_name, template_folder="templates"):
 
     template = load_template(template_name, template_folder)
-    
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
 
     output = template.render(data=data, trim_blocks=True, lstrip_blocks=True)
-    
-    file_path = os.path.join(output_folder, file_name) 
-    with open(file_path, "w") as f:
-        f.write(output)
-        print("FILE: {path}".format(path=file_path))
+
+    save_file(output_folder, file_name, output)
 
 
 def build_transformation_matrix(x, y, z, theta):
