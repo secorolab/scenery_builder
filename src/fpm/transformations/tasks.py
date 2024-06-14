@@ -1,22 +1,15 @@
 #!/usr/bin/env python
 
 # SPDX-License-Identifier: LGPL-3.0-or-later
-import sys
-import os
-
 from rdflib import RDF
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as Pol
 
-from jinja2 import Environment, FileSystemLoader
-
-import yaml
-
-from fpm.graph import build_graph_from_directory, get_point_position, prefixed, traverse_to_world_origin, get_floorplan_model_name, get_list_from_ptr
+from fpm.graph import get_point_position, prefixed, traverse_to_world_origin, get_list_from_ptr
 from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
-from fpm.utils import load_config_file, build_transformation_matrix
+from fpm.utils import build_transformation_matrix
 
 
 def inset_shape(points, width=0.3):

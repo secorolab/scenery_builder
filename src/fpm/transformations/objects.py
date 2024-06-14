@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 
-import sys
-import os
-
 from rdflib import RDF
-from pprint import pprint
-
-from fpm.utils import load_config_file
-from fpm.generators.gazebo import generate_sdf_file
 
 from fpm.transformations.sdf import (
     get_sdf_geometry, 
@@ -18,7 +11,7 @@ from fpm.transformations.sdf import (
 )
 
 from fpm.constants import *
-from fpm.graph import build_graph_from_directory, prefixed, get_transformation_matrix_wrt_frame, get_floorplan_model_name
+from fpm.graph import prefixed, get_transformation_matrix_wrt_frame, get_floorplan_model_name
 
 
 def get_link_information(g, my_object, object_frame):
