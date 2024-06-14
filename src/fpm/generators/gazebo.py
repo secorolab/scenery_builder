@@ -1,10 +1,10 @@
 from fpm.utils import load_template, save_file
 
 
-def write_sdf_file(data, output_folder, file_name, template_name, template_folder="templates"):
+def generate_sdf_file(model, output_folder, file_name, template_name, template_path="templates"):
 
-    template = load_template(template_name, template_folder)
+    template = load_template(template_name, template_path)
 
-    output = template.render(data=data, trim_blocks=True, lstrip_blocks=True)
+    output = template.render(model=model, trim_blocks=True, lstrip_blocks=True)
 
     save_file(output_folder, file_name, output)

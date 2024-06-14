@@ -194,6 +194,7 @@ def transform_insets(inset_model_framed, coordinates_map):
 
 if __name__=="__main__":
     from fpm.generators.ros import generate_launch_file
+    from fpm.generators.gazebo import generate_sdf_file
     
     argv = sys.argv
     input_folder = argv[1]
@@ -254,35 +255,28 @@ if __name__=="__main__":
         with open(os.path.join(points_output_path, model_name, '{name}_task.yaml'.format(name=name)), 'w') as file:
             documents = yaml.dump(yaml_json, file, default_flow_style=None)
 
-    # Model
-    # TODO Remove hardocoded paths!
-    file_loader = FileSystemLoader('../../../templates/task_generation')
-    env = Environment(loader=file_loader)
-
-    template = env.get_template('model.config.jinja')
-    output = template.render(model_name=model_name)
-
-    directory = os.path.join(models_output_path, model_name)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    
-    with open(os.path.join(directory, "model.config"), "w") as f:
-        f.write(output)
-
-    template = env.get_template('model.sdf.jinja')
-    output = template.render(model_name=model_name)
-
-    with open(os.path.join(directory, "model.sdf"), "w") as f:
-        f.write(output)
-
-    # TODO Folder is not created: Autocreate if it doesn't exists
-    template = env.get_template('world.sdf.jinja')
-    output = template.render(model_name=model_name)
-
-    with open(os.path.join(worlds_output_path, "{name}.world".format(name=model_name)), "w") as f:
-        f.write(output)
+    # Generate Gazebo models and ROS launch files
+    model = {"name": model_name}
+    output_path = os.path.join(models_output_path, model_name)
 
     # TODO Fix hardcoded paths
+    generate_sdf_file(model, output_path,
+                   "model.config",
+                   "model.config.jinja",
+                    template_path="../../../templates/gazebo"
+                   )
+
+    generate_sdf_file(model, output_path,
+                   "model.sdf",
+                   "floorplan.sdf.jinja",
+                    template_path="../../../templates/gazebo"
+                   )
+
+    generate_sdf_file(model, worlds_output_path,
+                   "{name}.world".format(name=model_name),
+                   template_name="world.sdf.jinja",
+                    template_path="../../../templates/gazebo"
+                   )
     generate_launch_file(model_name, launch_output_path, 
                          template_name="world.launch.jinja",
                          template_path="../../../templates/ros"

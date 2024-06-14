@@ -6,7 +6,8 @@ import os
 from rdflib import RDF
 from pprint import pprint
 
-from fpm.utils import write_sdf_file, load_config_file
+from fpm.utils import load_config_file
+from fpm.generators.gazebo import generate_sdf_file
 
 from fpm.transformations.sdf import (
     get_sdf_geometry, 
@@ -208,15 +209,15 @@ if __name__ == "__main__":
         # TODO Fix hardcoded paths
         model_name = my_object_tree["name"][5:]
         output_path = os.path.join(output_folder, model_name)
-        write_sdf_file(my_object_tree, output_path, 
+        generate_sdf_file(my_object_tree, output_path, 
                        "model.sdf",
-                       'model.sdf.jinja', 
-                       "../../../templates/object_placing",
+                       'door.sdf.jinja', 
+                       "../../../templates/gazebo",
                        )
-        write_sdf_file(my_object_tree, output_path, 
+        generate_sdf_file(my_object_tree, output_path, 
                        "model.config",
                        'model.config.jinja', 
-                       "../../../templates/object_placing",
+                       "../../../templates/gazebo",
                        )
 
     # Query for the pose path from the object instance to the world frame
@@ -243,8 +244,8 @@ if __name__ == "__main__":
 
     # Build and write the sdf world
     # TODO fix the data dictionary, probably hard-coded for a particular world
-    write_sdf_file(data, worlds_output_path, 
+    generate_sdf_file(data, worlds_output_path, 
                    "{}.world".format(data["world_name"][10:]), 
                    'world.sdf.jinja', 
-                   "../../../templates/object_placing",
+                   "../../../templates/gazebo",
                    )

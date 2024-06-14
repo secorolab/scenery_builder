@@ -1,22 +1,22 @@
 <?xml version="1.0" ?>
 <sdf version="1.6">
-  <model name="{{model_name}}">
+  <model name="{{model.name}}">
     <link name="link">
       <visual name="visual">
 	    <geometry>
           <mesh>
-            <uri>model://{{model_name}}/meshes/{{model_name}}.stl</uri>
+            <uri>model://{{model.name}}/meshes/{{model.name}}.stl</uri>
           </mesh>
         </geometry>
       </visual>
       <collision name="collision">
         <geometry>
           <mesh>
-            <uri>model://{{model_name}}/meshes/{{model_name}}.stl</uri>
+            <uri>model://{{model.name}}/meshes/{{model.name}}.stl</uri>
           </mesh>
         </geometry>
       </collision>    
-</link>
+    </link>
   <static>1</static>
   </model>
 </sdf>

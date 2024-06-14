@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <sdf version="1.6">
-  <world name="{{data.world_name}}">
+  <world name="{{model.name}}">
     <gravity>0 0 -9.8</gravity>
     <physics default="0" name="default_physics" type="ode">
       <max_step_size>0.001</max_step_size>
@@ -20,11 +20,11 @@
       <pose>0 0 0 0 0 0</pose>
     </include>
     <include>
-      <uri>model://{{data.model_name}}</uri>
+      <uri>model://{{model.name}}</uri>
       <static>true</static>
       <pose>-0.0 0.0 0.0 0.0 0.0 0.0</pose>
     </include>
-    {% for instance in data.instances %}
+    {% for instance in model.instances %}
     <include>
       <name>{{instance.instance_name}}</name>
       <uri>model://{{instance.name}}</uri>
