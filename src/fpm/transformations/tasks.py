@@ -158,7 +158,7 @@ def get_waypoint_coord(g, point, coordinates_map):
 
     return x, y
 
-def transform_insets(inset_model_framed, coordinates_map):
+def transform_insets(g, inset_model_framed, coordinates_map):
     plt.axis('equal') 
     ax = plt.gca()
     insets = []
@@ -193,7 +193,10 @@ def transform_insets(inset_model_framed, coordinates_map):
 
     return insets
 
-def get_all_disinfection_tasks(g, floorplan):
+def get_all_disinfection_tasks(g, inset_width):
+
+    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
+
     # Get the list of spaces
     print("Querying all spaces...")
     space_ptr = g.value(floorplan, FP["spaces"])
@@ -213,7 +216,7 @@ def get_all_disinfection_tasks(g, floorplan):
     coordinates_map = get_coordinates_map(g)
     
     print("Transforming the insets")
-    insets = transform_insets(inset_model_framed, coordinates_map)
+    insets = transform_insets(g, inset_model_framed, coordinates_map)
 
     return [dict(id=inset["name"],task=[inset]) for inset in insets]
 
@@ -237,10 +240,9 @@ if __name__=="__main__":
 
     g = build_graph_from_directory(input_folder)
 
-    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
     model_name = get_floorplan_model_name(g)
 
-    tasks = get_all_disinfection_tasks(g, floorplan)
+    tasks = get_all_disinfection_tasks(g)
     
     # Write points to yaml file
     directory = os.path.join(points_output_path, model_name)
