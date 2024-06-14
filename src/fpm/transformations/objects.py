@@ -48,9 +48,6 @@ def get_link_information(g, my_object, object_frame):
         T = get_transformation_matrix_wrt_frame(g, link_frame, object_frame)
         pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
 
-        if (DEBUG):
-            print(sdf_visual_geometry, sdf_physics_geometry, sdf_inertia, pose_coordinates)
-
         return {
             "pose": pose_coordinates,
             "inertial": sdf_inertia,
@@ -143,6 +140,10 @@ def get_object_instance(g, instance):
     # ID of the frame
     frame = g.value(instance, OBJ["frame"])
     
+    # Query for the pose path from the object instance to the world frame
+    world_frame_tag = g.value(predicate=RDF.type, object=OBJ["WorldFrame"])
+    world_frame = g.value(world_frame_tag, OBJ["frame"])
+    
     # Get the transfomation from the instance pose frame and the world frame
     T = get_transformation_matrix_wrt_frame(g, frame, world_frame)
     pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
@@ -190,78 +191,3 @@ def get_all_object_instances(g):
         obj_instance = get_object_instance(g, instance)
         instances.append(obj_instance)
     return instances
-
-
-if __name__ == "__main__":
-
-    # Read folder where composable models are located and other configs
-    argv = sys.argv
-    input_folder = argv[1]
-
-    # Read config file and set properties
-    # TODO Fix this hardcoded path
-    config_file_path = os.path.join("../../../", 'config', 'setup.toml')
-
-    config = load_config_file(config_file_path)
-    model_config = config["models"]
-    DEBUG = config["dev"]['debug']
-    # TODO Fix/Document these alternative paths and options
-    output_folder = model_config.get("gazebo_models_location") if model_config['save_to_gazebo'] else model_config.get("output_folder")
-    worlds_output_path = config["worlds"]["output"]
-    
-    g = build_graph_from_directory(input_folder)
-    
-    fp_model_name = get_floorplan_model_name(g)
-
-    # Get object models
-    object_models = get_all_object_models(g)
-    for my_object, _, _ in g.triples((None, RDF.type, OBJ["Object"])):
-        my_object_tree = get_object_model(g, my_object)
-        if DEBUG:
-            pprint(my_object_tree)
-            
-        # Write the sdf model
-        # TODO Fix hardcoded paths
-        model_name = my_object_tree["name"][5:]
-        output_path = os.path.join(output_folder, model_name)
-        generate_sdf_file(my_object_tree, output_path, 
-                       "model.sdf",
-                       'door.sdf.jinja', 
-                       "../../../templates/gazebo",
-                       )
-        generate_sdf_file(my_object_tree, output_path, 
-                       "model.config",
-                       'model.config.jinja', 
-                       "../../../templates/gazebo",
-                       )
-
-    # Query for the pose path from the object instance to the world frame
-    world_frame_tag = g.value(predicate=RDF.type, object=OBJ["WorldFrame"])
-    world_frame = g.value(world_frame_tag, OBJ["frame"])
-
-    data = {
-        "instances": [],
-        "world_name": None,
-        "model_name": None
-    }
-
-    # Get object instances
-    instances = get_all_object_instances(g)
-    for instance, _, _ in g.triples((None, RDF.type, OBJ["ObjectInstance"])):
-
-        obj_instance = get_object_instance(g, instance)
-
-        # Get the world name
-        world = g.value(instance, OBJ["world"])
-        
-        data["instances"].append(obj_instance)
-        data["model_name"] = prefixed(g, world)[10:]
-        data["world_name"] = "{}".format(prefixed(g, world))
-
-    # Build and write the sdf world
-    # TODO fix the data dictionary, probably hard-coded for a particular world
-    generate_sdf_file(data, worlds_output_path, 
-                   "{}.world".format(data["world_name"][10:]), 
-                   'world.sdf.jinja', 
-                   "../../../templates/gazebo",
-                   )
