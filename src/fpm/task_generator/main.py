@@ -128,7 +128,7 @@ def get_coordinates_map(g):
 
     return coordinates_map
 
-def get_waypoint_coord(g, point):
+def get_waypoint_coord(g, point, coordinates_map):
     frame = point["as-seen-by"]
     path = traverse_to_world_origin(g, frame)
 
@@ -172,14 +172,16 @@ def transform_insets(inset_model_framed, coordinates_map):
             point_name = point["name"][15:22]
             name = "{}-{}".format(name, point_name)
 
-            x, y = get_waypoint_coord(g, point)
+            x, y = get_waypoint_coord(g, point, coordinates_map)
     
             inset_points.append({"id":name, "x":x, "y":y, "z":0, "yaw":0})
         
-        insets.append({
-            "name" : inset["name"],
-            "waypoints" : inset_points
-        })
+        yaml_json = {
+                "name" : inset["name"],
+                "waypoints": inset_points,
+                "type":"waypoint_following"
+        }
+        insets.append(yaml_json)
 
         inset_points = np.array([np.array([i["x"], i["y"]]) for i in inset_points])
         ax.scatter(inset_points[:, 0], inset_points[:, 1])
@@ -191,29 +193,7 @@ def transform_insets(inset_model_framed, coordinates_map):
 
     return insets
 
-
-if __name__=="__main__":
-    from fpm.generators.ros import generate_launch_file
-    from fpm.generators.gazebo import generate_sdf_file
-    
-    argv = sys.argv
-    input_folder = argv[1]
-
-    # Config
-    config = load_config_file('../../../config/setup.toml')
-
-    points_output_path = config["points"]["output"]
-    models_output_path = config["models"]["output"]
-    worlds_output_path = config["worlds"]["output"]
-    launch_output_path = config["launch"]["output"]
-    pkg_path_output_path = config["launch"]["pkg_path"]
-    inset_width = config["inset"]["width"]
-
-    g = build_graph_from_directory(input_folder)
-
-    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
-    model_name = get_floorplan_model_name(g)
-
+def get_all_disinfection_tasks(g, floorplan):
     # Get the list of spaces
     print("Querying all spaces...")
     space_ptr = g.value(floorplan, FP["spaces"])
@@ -234,26 +214,38 @@ if __name__=="__main__":
     
     print("Transforming the insets")
     insets = transform_insets(inset_model_framed, coordinates_map)
+
+    return [dict(id=inset["name"],task=[inset]) for inset in insets]
+
+if __name__=="__main__":
+    from fpm.generators.ros import generate_launch_file
+    from fpm.generators.gazebo import generate_sdf_file
+    from fpm.generators.tasks import generate_task_specification
     
-    print("wrinting all outputs...")
+    argv = sys.argv
+    input_folder = argv[1]
+
+    # Config
+    config = load_config_file('../../../config/setup.toml')
+
+    points_output_path = config["points"]["output"]
+    models_output_path = config["models"]["output"]
+    worlds_output_path = config["worlds"]["output"]
+    launch_output_path = config["launch"]["output"]
+    pkg_path_output_path = config["launch"]["pkg_path"]
+    inset_width = config["inset"]["width"]
+
+    g = build_graph_from_directory(input_folder)
+
+    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
+    model_name = get_floorplan_model_name(g)
+
+    tasks = get_all_disinfection_tasks(g, floorplan)
+    
     # Write points to yaml file
-
     directory = os.path.join(points_output_path, model_name)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    for inset in insets:
-        name = inset["name"]
-        yaml_json = {
-            "task" : [{
-                "name" : name,
-                "waypoints": inset["waypoints"],
-                "type":"waypoint_following"
-            }]
-        }
-
-        with open(os.path.join(points_output_path, model_name, '{name}_task.yaml'.format(name=name)), 'w') as file:
-            documents = yaml.dump(yaml_json, file, default_flow_style=None)
+    for task in tasks:
+        generate_task_specification(task, directory)
 
     # Generate Gazebo models and ROS launch files
     model = {"name": model_name}
