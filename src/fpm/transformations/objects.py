@@ -177,6 +177,20 @@ def get_object_instance(g, instance):
         "start_joint_states": start_joint_states
     }
 
+def get_all_object_models(g):
+    objects = list()
+    for my_object, _, _ in g.triples((None, RDF.type, OBJ["Object"])):
+        my_object_tree = get_object_model(g, my_object)
+        objects.append(my_object_tree)
+    return objects
+
+def get_all_object_instances(g):
+    instances = list()
+    for instance, _, _ in g.triples((None, RDF.type, OBJ["ObjectInstance"])):
+        obj_instance = get_object_instance(g, instance)
+        instances.append(obj_instance)
+    return instances
+
 
 if __name__ == "__main__":
 
@@ -200,6 +214,7 @@ if __name__ == "__main__":
     fp_model_name = get_floorplan_model_name(g)
 
     # Get object models
+    object_models = get_all_object_models(g)
     for my_object, _, _ in g.triples((None, RDF.type, OBJ["Object"])):
         my_object_tree = get_object_model(g, my_object)
         if DEBUG:
@@ -231,6 +246,7 @@ if __name__ == "__main__":
     }
 
     # Get object instances
+    instances = get_all_object_instances(g)
     for instance, _, _ in g.triples((None, RDF.type, OBJ["ObjectInstance"])):
 
         obj_instance = get_object_instance(g, instance)
