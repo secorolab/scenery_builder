@@ -1,6 +1,8 @@
 import os
 import tomllib
 
+import yaml
+
 import numpy as np
 
 from jinja2 import Environment, FileSystemLoader
@@ -21,11 +23,17 @@ def save_file(output_path, file_name, contents):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
+    base_name, ext = os.path.splitext(file_name)
     output_file = os.path.abspath(os.path.join(output_path, file_name))
 
-    with open(output_file, "w") as f:
-        f.write(contents)
-        print("Generated {path}".format(path=output_file))
+    if ext in [".yaml"]:
+        with open(output_file, 'w') as f:
+            yaml.dump(contents, f, default_flow_style=None)
+    else:
+        with open(output_file, "w") as f:
+            f.write(contents)
+
+    print("Generated {path}".format(path=output_file))
 
 
 def build_transformation_matrix(x, y, z, theta):
