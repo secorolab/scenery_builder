@@ -193,6 +193,7 @@ def transform_insets(inset_model_framed, coordinates_map):
 
 
 if __name__=="__main__":
+    from fpm.generators.ros import generate_launch_file
     
     argv = sys.argv
     input_folder = argv[1]
@@ -281,11 +282,10 @@ if __name__=="__main__":
     with open(os.path.join(worlds_output_path, "{name}.world".format(name=model_name)), "w") as f:
         f.write(output)
 
-    template = env.get_template('gazebo.launch.jinja')
-    output = template.render(pkg_path=pkg_path_output_path, world_name=model_name)
-
-    # TODO Folder is not created: Autocreate if it doesn't exists
-    with open(os.path.join(launch_output_path, "{name}.launch".format(name=model_name)), "w") as f:
-        f.write(output)
+    # TODO Fix hardcoded paths
+    generate_launch_file(model_name, launch_output_path, 
+                         template_name="world.launch.jinja",
+                         template_path="../../../templates/ros"
+                         )
 
     print("done.")
