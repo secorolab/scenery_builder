@@ -209,12 +209,12 @@ if __name__ == "__main__":
         model_name = my_object_tree["name"][5:]
         output_path = os.path.join(output_folder, model_name)
         write_sdf_file(my_object_tree, output_path, 
-                       "{}.sdf".format(model_name),
+                       "model.sdf",
                        'model.sdf.jinja', 
                        "../../../templates/object_placing",
                        )
         write_sdf_file(my_object_tree, output_path, 
-                       "{}.config".format(model_name),
+                       "model.config",
                        'model.config.jinja', 
                        "../../../templates/object_placing",
                        )
