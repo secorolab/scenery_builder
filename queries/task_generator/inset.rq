@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+PREFIX geom-ent: <https://comp-rob2b.github.io/metamodels/geometry/structural-entities#>
+PREFIX geom-rel: <https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#>
+PREFIX coord: <https://comp-rob2b.github.io/metamodels/geometry/coordinates#>
+PREFIX unit: <http://qudt.org/vocab/unit/>
+PREFIX qudt: <http://qudt.org/schema/qudt/>
+PREFIX env: <https://comp-rob2b.github.io/models/my-environment/>
+PREFIX fp: <http://exsce-floorplan.org/>
+
+CONSTRUCT {
+    ?p a fp:polygon .
+       ?p fp:points ?members .
+    ?members geom-rel:Position ?position .
+    ?position 
+        coord:x ?x ;
+        coord:y ?y ;
+        coord:as-seen-by ?asb .
+}
+WHERE {
+    ?p a fp:Polygon ;
+        fp:points ?points .
+    ?points rdf:rest*/rdf:first ?members .
+    ?members a geom-ent:Point ;
+        ^geom-rel:of ?position .
+    ?position a geom-rel:Position ;
+        ^coord:of-position ?coordinate .
+    ?coordinate coord:x ?x ;
+                coord:y ?y ;
+                coord:as-seen-by ?asb .
+}
+
+
+# CONSTRUCT {
+#     ?w ?q ?o
+# } WHERE {
+#     ?w ?q ?o
+# }

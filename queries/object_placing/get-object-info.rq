@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+PREFIX geom-ent: <https://comp-rob2b.github.io/metamodels/geometry/structural-entities#>
+PREFIX geom-rel: <https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#>
+PREFIX coord: <https://comp-rob2b.github.io/metamodels/geometry/coordinates#>
+PREFIX kin-struct: <https://comp-rob2b.github.io/metamodels/kinematic-chain/structural-entities#>
+PREFIX kin-state: <https://comp-rob2b.github.io/metamodels/kinematic-chain/state.json#>
+PREFIX fp: <http://exsce-floorplan.org/>
+
+CONSTRUCT {
+    ?object rdf:type fp:Object .
+    ?object fp:kinematic-chain ?chain .
+} WHERE {
+    <object_name> ?p ?object.
+    ?object fp:kinematic-chain ?chain .
+}

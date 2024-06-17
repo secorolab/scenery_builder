@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+PREFIX launch: <https://sesame-project.github.io/exsce-to-launch-file/>
+PREFIX lmtc: <https://www.locomotec.com/>
+PREFIX wm: <https://comp-rob2b.github.io/metamodels/world-model/>
+PREFIX geom-ent: <https://comp-rob2b.github.io/metamodels/geometry/structural-entities#>
+PREFIX geom-rel: <https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#>
+PREFIX coord: <https://comp-rob2b.github.io/metamodels/geometry/coordinates#>
+PREFIX unit: <http://qudt.org/vocab/unit/>
+PREFIX qudt: <http://qudt.org/schema/qudt/>
+PREFIX env: <https://comp-rob2b.github.io/models/my-environment/>
+
+CONSTRUCT {
+    ?sensor
+       launch:pos-x ?x ;
+       launch:pos-y ?y .
+}
+WHERE {
+    ?sensor a lmtc:RadiationMeter ;
+            ^wm:entity / wm:located-at ?location .
+    ?location a geom-ent:Point ; 
+              ^geom-rel:of ?position .
+    ?position a geom-rel:Position, coord:PositionCoordinates, coord:VectorXY ;
+              geom-rel:with-respect-to env:world-origin ;
+              coord:as-seen-by env:world-frame ;
+              qudt:unit unit:M ;
+              coord:x ?x ;
+              coord:y ?y .
+}

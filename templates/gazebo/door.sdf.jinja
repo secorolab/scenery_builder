@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+{%- macro geometry_box_macro(model) -%}
+<box>
+<size>{{model.size}}</size>
+</box>
+{%- endmacro -%}
+{% macro geometry_macro(model) %}
+{%- if model.type == 'box' -%}
+{{geometry_box_macro(model)}}
+{%- endif -%}
+{% endmacro %}
+{% macro link_macro(model) %}
+<link name="{{model.name}}">
+<pose>{{model.pose}}</pose>
+<inertial>
+<mass>{{model.inertial.mass}}</mass>
+<inertia> 
+<ixx>{{model.inertial.inertia.ixx}}</ixx>
+<ixy>0.0</ixy>
+<ixz>0.0</ixz>
+<iyy>{{model.inertial.inertia.iyy}}</iyy> 
+<iyz>0.0</iyz>
+<izz>{{model.inertial.inertia.izz}}</izz>
+</inertia>
+</inertial>
+<collision name="collision">
+<geometry>
+{{geometry_macro(model.collision)}}
+</geometry>
+</collision>
+<visual name="visual">
+<geometry>
+{{geometry_macro(model.visual)}}
+</geometry>
+{%- if model.material != None -%}
+<material><script><name>Gazebo/{{model.material}}</name></script></material>
+{%- endif -%}
+</visual>
+</link>
+{%- endmacro -%}
+{%- macro joint_macro(model) -%}
+<joint type="{{model.type}}" name="{{model.name}}">
+<pose frame="{{model.parent}}">{{model.pose}}</pose>
+<child>{{model.children[0]}}</child>
+<parent>{{model.parent}}</parent>
+<axis>
+<xyz>{{model.axis}}</xyz>
+{% if model.limits.lower != None and model.limits.upper != None %}
+<limit>
+<lower>{{model.limits.lower}}</lower>
+<upper>{{model.limits.upper}}</upper>
+</limit>
+{% endif %}
+</axis>
+</joint>
+{%- endmacro -%}
+<sdf version="1.4">
+<model name="{{model.name}}">
+<pose>0 0 0 0 0 0</pose>
+<static>{{model.static}}</static>
+{% for link in model.links %}
+{{link_macro(link)}}
+{% endfor %}
+{% for joint in model.joints %}
+{{joint_macro(joint)}}
+{% endfor %}
+</model>
+</sdf>

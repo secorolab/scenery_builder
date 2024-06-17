@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+PREFIX geom-ent: <https://comp-rob2b.github.io/metamodels/geometry/structural-entities#>
+PREFIX geom-rel: <https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#>
+PREFIX coord: <https://comp-rob2b.github.io/metamodels/geometry/coordinates#>
+PREFIX fp: <https://hbrs-sesame.github.io/metamodels/floorplan#>
+PREFIX poly: <https://hbrs-sesame.github.io/metamodels/polytope#>
+
+CONSTRUCT {
+   ?space rdf:type fp:Space .
+   ?space fp:shape ?shape .
+   ?shape poly:points ?members .
+   ?members geom-rel:Position ?position .
+   ?position 
+      coord:x ?x ;
+      coord:y ?y ;
+      coord:as-seen-by ?asb ;
+} WHERE {
+   ?space a fp:Space ;
+      fp:shape ?shape .
+   ?shape poly:points ?points .
+   ?points rdf:rest*/rdf:first ?members .
+   ?members a geom-ent:Point ;
+      ^geom-rel:of ?position .
+   ?position a geom-rel:Position ;
+      ^coord:of-position ?coordinate .
+   ?coordinate 
+      coord:x ?x ;
+      coord:y ?y ;
+      coord:as-seen-by ?asb ;
+} 
