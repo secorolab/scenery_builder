@@ -1,7 +1,9 @@
 from fpm.utils import load_template, save_file
 
 
-def generate_sdf_file(model, output_folder, file_name, template_name, template_path="templates"):
+def generate_sdf_file(
+    model, output_folder, file_name, template_name, template_path="templates"
+):
 
     template = load_template(template_name, template_path)
 

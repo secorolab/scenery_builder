@@ -2,6 +2,7 @@ import numpy as np
 from rdflib import RDF
 from fpm.constants import *
 
+
 def get_sdf_geometry(g, polytope):
 
     if (polytope, RDF.type, POLY["CuboidWithSize"]):
@@ -9,11 +10,9 @@ def get_sdf_geometry(g, polytope):
         y = g.value(polytope, POLY["y-size"])
         z = g.value(polytope, POLY["z-size"])
 
-        return {
-            "type": "box",
-            "size": "{x} {y} {z}".format(x=x, y=y, z=z)
-        }
-    
+        return {"type": "box", "size": "{x} {y} {z}".format(x=x, y=y, z=z)}
+
+
 def get_sdf_intertia(g, inertia):
     sdf_inertia = {}
 
@@ -25,17 +24,19 @@ def get_sdf_intertia(g, inertia):
 
     return sdf_inertia
 
+
 def get_sdf_pose_from_transformation_matrix(T):
 
     x = T[0, 3]
     y = T[1, 3]
     z = T[2, 3]
 
-    tx = np.arctan2(T[2,1], T[2, 2])
-    ty = np.arctan2(-T[2,0], np.sqrt(T[2,1]**2 + T[2,2]**2))
-    tz = np.arctan2(T[1,0], T[0,0])
+    tx = np.arctan2(T[2, 1], T[2, 2])
+    ty = np.arctan2(-T[2, 0], np.sqrt(T[2, 1] ** 2 + T[2, 2] ** 2))
+    tz = np.arctan2(T[1, 0], T[0, 0])
 
     return "{x} {y} {z} {tx} {ty} {tz}".format(x=x, y=y, z=z, tx=tx, ty=ty, tz=tz)
+
 
 def get_sdf_joint_type(g, joint):
 
@@ -46,9 +47,10 @@ def get_sdf_joint_type(g, joint):
             return "prismatic"
     else:
         return "fixed"
-        
+
+
 def get_sdf_axis_of_rotation(g, joint):
-    
+
     common_axis = g.value(joint, KIN["common-axis"])
 
     if common_axis == None:

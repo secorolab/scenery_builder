@@ -1,5 +1,5 @@
 import os
-import click 
+import click
 
 from fpm.utils import load_config_file
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
@@ -23,51 +23,60 @@ def door_object_models(config, g):
     for model in object_models:
         model_name = model["name"][5:]
         output_path = get_output_path(config, "gazebo_models", model_name)
-        generate_sdf_file(model, output_path, 
-                       "model.sdf",
-                       'gazebo/door.sdf.jinja', 
-                        template_path=template_path
-                       )
-        generate_sdf_file(model, output_path, 
-                       "model.config",
-                       'gazebo/model.config.jinja', 
-                        template_path=template_path
-                       )
+        generate_sdf_file(
+            model,
+            output_path,
+            "model.sdf",
+            "gazebo/door.sdf.jinja",
+            template_path=template_path,
+        )
+        generate_sdf_file(
+            model,
+            output_path,
+            "model.config",
+            "gazebo/model.config.jinja",
+            template_path=template_path,
+        )
 
 
 def gazebo_world(config, g, model_name):
     template_path = config["templates"]["path"]
 
     instances = get_all_object_instances(g)
-    model = {
-        "instances": instances,
-        "name": model_name
-    }
+    model = {"instances": instances, "name": model_name}
 
     output_path = get_output_path(config, "gazebo_models", model_name)
-    generate_sdf_file(model, output_path,
-                   "model.config",
-                   "gazebo/model.config.jinja",
-                    template_path=template_path
-                   )
-    generate_sdf_file(model, output_path,
-                   "model.sdf",
-                   "gazebo/floorplan.sdf.jinja",
-                    template_path=template_path
-                   )
+    generate_sdf_file(
+        model,
+        output_path,
+        "model.config",
+        "gazebo/model.config.jinja",
+        template_path=template_path,
+    )
+    generate_sdf_file(
+        model,
+        output_path,
+        "model.sdf",
+        "gazebo/floorplan.sdf.jinja",
+        template_path=template_path,
+    )
 
     output_path = get_output_path(config, "gazebo_worlds")
-    generate_sdf_file(model, output_path,
-                   "{name}.world".format(name=model_name),
-                   template_name="gazebo/world.sdf.jinja",
-                    template_path=template_path
-                   )
+    generate_sdf_file(
+        model,
+        output_path,
+        "{name}.world".format(name=model_name),
+        template_name="gazebo/world.sdf.jinja",
+        template_path=template_path,
+    )
 
     output_path = get_output_path(config, "ros_launch")
-    generate_launch_file(model_name, output_path, 
-                         template_name="ros/world.launch.jinja",
-                         template_path=template_path
-                         )
+    generate_launch_file(
+        model_name,
+        output_path,
+        template_name="ros/world.launch.jinja",
+        template_path=template_path,
+    )
 
 
 def tasks(config, g, model_name):
@@ -84,7 +93,7 @@ def get_output_path(config, model_type, model_name=None):
     subfolder = output_config.get(model_type)
     if model_name is None:
         return os.path.join(output_config["base_path"], subfolder)
-    else: 
+    else:
         return os.path.join(output_config["base_path"], subfolder, model_name)
 
 
@@ -104,5 +113,5 @@ def generate(configfile, inputs):
     gazebo_world(config, g, model_name)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     floorplan()
