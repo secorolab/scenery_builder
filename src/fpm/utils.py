@@ -19,6 +19,7 @@ def load_template(template_name, template_folder):
     env = Environment(loader=file_loader)
     return env.get_template(template_name)
 
+
 def save_file(output_path, file_name, contents):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -27,7 +28,7 @@ def save_file(output_path, file_name, contents):
     output_file = os.path.abspath(os.path.join(output_path, file_name))
 
     if ext in [".yaml"]:
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             yaml.dump(contents, f, default_flow_style=None)
     else:
         with open(output_file, "w") as f:
@@ -37,18 +38,20 @@ def save_file(output_path, file_name, contents):
 
 
 def build_transformation_matrix(x, y, z, theta):
-    
-    c = np.cos 
+
+    c = np.cos
     s = np.sin
 
     # TODO Task generation seems to use this and expect radians
     # a = np.deg2rad(theta)
     t = np.array([[x], [y], [z], [1]])
+    # fmt: off
     R = np.array([
         [c(theta), -s(theta), 0],
         [s(theta), c(theta), 0],
         [0, 0, 1],
         [0, 0, 0]]
     )
+    # fmt: on
 
     return np.hstack((R, t))

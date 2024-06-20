@@ -8,19 +8,31 @@ OBJ = rdflib.Namespace("https://secorolab.github.io/metamodels/object#")
 ST = rdflib.Namespace("https://secorolab.github.io/metamodels/state#")
 
 # Kinematic chain metamodels
-KIN = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/kinematic-chain/structural-entities#")
-KSTATE = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/kinematic-chain/state#")
+KIN = rdflib.Namespace(
+    "https://comp-rob2b.github.io/metamodels/kinematic-chain/structural-entities#"
+)
+KSTATE = rdflib.Namespace(
+    "https://comp-rob2b.github.io/metamodels/kinematic-chain/state#"
+)
 
 # Rigid Body Dynamic metamodels
-RBD = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/newtonian-rigid-body-dynamics/structural-entities#")
+RBD = rdflib.Namespace(
+    "https://comp-rob2b.github.io/metamodels/newtonian-rigid-body-dynamics/structural-entities#"
+)
 
 # Geometry metamodels
-GEOM = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#")
-GEO = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/structural-entities#")
+GEOM = rdflib.Namespace(
+    "https://comp-rob2b.github.io/metamodels/geometry/spatial-relations#"
+)
+GEO = rdflib.Namespace(
+    "https://comp-rob2b.github.io/metamodels/geometry/structural-entities#"
+)
 POLY = rdflib.Namespace("https://secorolab.github.io/metamodels/polytope#")
 QUDT = rdflib.Namespace("http://qudt.org/schema/qudt/")
 QUDT_VOCAB = rdflib.Namespace("http://qudt.org/vocab/unit/")
-COORD = rdflib.Namespace("https://comp-rob2b.github.io/metamodels/geometry/coordinates#")
+COORD = rdflib.Namespace(
+    "https://comp-rob2b.github.io/metamodels/geometry/coordinates#"
+)
 COORD_EXT = rdflib.Namespace("https://secorolab.github.io/metamodels/coordinates#")
 
 # simulator metamodel

@@ -10,6 +10,7 @@ from fpm import traversal
 from fpm.constants import GEO, GEOM, COORD, COORD_EXT, QUDT, QUDT_VOCAB, FP
 from fpm.utils import build_transformation_matrix
 
+
 def build_graph_from_directory(input_folder):
     # Build the graph by reading all composable models in the input folder
     g = rdflib.Graph()
@@ -19,10 +20,11 @@ def build_graph_from_directory(input_folder):
 
     return g
 
+
 def prefixed(g, node):
-    """Return a Notation-3 (N3) prefixed namespace
-    """
+    """Return a Notation-3 (N3) prefixed namespace"""
     return node.n3(g.namespace_manager)
+
 
 def get_list_from_ptr(g, ptr):
     result_list = []
@@ -30,8 +32,8 @@ def get_list_from_ptr(g, ptr):
         result_list.append(g.value(ptr, RDF.first))
         ptr = g.value(ptr, RDF.rest)
         if ptr == RDF.nil:
-                break
-    
+            break
+
     return result_list
 
 
@@ -43,29 +45,24 @@ def get_point_position(g, point):
     y = g.value(coordinates, COORD["y"]).toPython()
     asb = g.value(coordinates, COORD["as-seen-by"])
 
-    return {
-        "x": x,
-        "y": y,
-        "as-seen-by": prefixed(g, asb)
-    }
+    return {"x": x, "y": y, "as-seen-by": prefixed(g, asb)}
+
 
 def get_floorplan_model_name(g):
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
-    model_name = prefixed(g, floorplan).split('floorplan:')[1]
+    model_name = prefixed(g, floorplan).split("floorplan:")[1]
 
     return model_name
+
 
 def traverse_to_world_origin(g, frame):
 
     # Go through the geometric relation predicates
-    pred_filter = traversal.filter_by_predicates([
-        GEOM["with-respect-to"],
-        GEOM["of"]
-    ])
+    pred_filter = traversal.filter_by_predicates([GEOM["with-respect-to"], GEOM["of"]])
     # Algorithm to traverse the graph
     open_set = traversal.BreadthFirst
 
-    # Set beginning and end point 
+    # Set beginning and end point
     root = GEO[frame[3:]]
     goal = GEO["world-frame"]
 
@@ -81,7 +78,7 @@ def traverse_to_world_origin(g, frame):
     # Build the path
     path = []
     curr = goal
-    while (curr != root):
+    while curr != root:
         path.append(curr)
         curr = parent_map[curr]
     else:
@@ -93,10 +90,7 @@ def traverse_to_world_origin(g, frame):
 def get_transformation_matrix_wrt_frame(g, root, target):
 
     # Configure the traversal algorithm
-    filter = [
-        GEOM["with-respect-to"],
-        GEOM["of"]
-        ]
+    filter = [GEOM["with-respect-to"], GEOM["of"]]
     pred_filter = traversal.filter_by_predicates(filter)
     open_set = traversal.BreadthFirst
 
@@ -114,7 +108,7 @@ def get_transformation_matrix_wrt_frame(g, root, target):
     # Get the path from the frame to transform to the target frame
     poses_path = []
     current_node = target
-    while (current_node != root):
+    while current_node != root:
         # If the node is a frame, do not append to the path
         if not GEO["Frame"] in g.objects(current_node, RDF.type):
             poses_path.append(current_node)
@@ -148,6 +142,6 @@ def get_transformation_matrix_wrt_frame(g, root, target):
             new_T = np.linalg.pinv(new_T)
 
         # Apply the transform
-        T =  np.dot(new_T, T)
+        T = np.dot(new_T, T)
 
     return T

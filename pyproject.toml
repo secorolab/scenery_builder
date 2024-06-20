@@ -18,3 +18,9 @@ readme = "README.md"
 maintainers = [
   {name = "SECORO Group", email = "secoro@groups.uni-bremen.de"}
 ]
+
+[project.optional-dependencies]
+dev = ["black>=24.4.2"]
+
+[tool.black]
+required-version = "24.4.2"
