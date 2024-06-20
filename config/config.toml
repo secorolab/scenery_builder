@@ -1,14 +1,6 @@
-[output]
-base_path = "../../output/consolidated"
-
-tasks = "tasks"
-gazebo_models = "models"
-gazebo_worlds = "worlds"
-ros_launch = "launch"
-ros_pkg = "floorplan_models"
-
-[transformations.tasks]
+# Parametrize the transformations
+[tasks]
 inset_width = 0.7
 
-[templates]
-path = "../../templates"
+[roslaunch]
+ros_pkg = "floorplan_models"
