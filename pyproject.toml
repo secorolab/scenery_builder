@@ -22,6 +22,9 @@ maintainers = [
 [project.optional-dependencies]
 dev = ["black>=24.4.2"]
 
+[project.scripts]
+floorplan = "fpm.cli:floorplan"
+
 [tool.setuptools.package-data]
 "*" = ["*.jinja"]
 
