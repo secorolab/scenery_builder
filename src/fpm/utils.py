@@ -5,7 +5,7 @@ import yaml
 
 import numpy as np
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, PackageLoader
 
 
 def load_config_file(file_path):
@@ -14,9 +14,12 @@ def load_config_file(file_path):
     return data
 
 
-def load_template(template_name, template_folder):
-    file_loader = FileSystemLoader(template_folder)
-    env = Environment(loader=file_loader)
+def load_template(template_name, template_folder=None):
+    if template_folder is None:
+        loader = PackageLoader("fpm")
+    else:
+        loader = FileSystemLoader(template_folder)
+    env = Environment(loader=loader)
     return env.get_template(template_name)
 
 
