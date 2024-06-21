@@ -11,12 +11,16 @@ from fpm.constants import GEO, GEOM, COORD, COORD_EXT, QUDT, QUDT_VOCAB, FP
 from fpm.utils import build_transformation_matrix
 
 
-def build_graph_from_directory(input_folder):
+def build_graph_from_directory(inputs: tuple):
     # Build the graph by reading all composable models in the input folder
     g = rdflib.Graph()
-    input_models = glob.glob(os.path.join(input_folder, "*.json"))
-    for file_path in input_models:
-        g.parse(file_path, format="json-ld")
+    for input_folder in inputs:
+        input_models = glob.glob(os.path.join(input_folder, "*.json"))
+        print("Found {} models in {}".format(len(input_models), input_folder))
+        print("Adding to the graph...")
+        for file_path in input_models:
+            print("\t{}".format(file_path))
+            g.parse(file_path, format="json-ld")
 
     return g
 

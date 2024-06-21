@@ -1,52 +1,52 @@
 # scenery_builder
 
+## Installation
+
+```shell
+pip install -e .
+```
+
+## Usage
+
+This module adds `floorplan` as a command line interface. You can use the `generate` command as shown below:
+
+```shell
+floorplan generate <path to config file> <path to input folder>
+```
+
+Where the input folder must contain:
+- the composable models generated from the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL)
+    - `coordinate.json`
+    - `floorplan.json`
+    - `shape.json`
+    - `skeleton.json`
+    - `spatial_relations.json`
+- the door object models
+    - `object-door.json`
+    - `object-door-states.json`
+- any object instance models, e.g. `object-door-instance-X.json` where `X` is a unique numeric ID.
 
 ## Task generator
 
-FloorPlan DSL inset and gazebo world generator
+It uses the FloorPlan insets to generate a task specification.
+The inset width -- a float value representing the distance between the sides of the inset and original shapes -- can be configured in the [config](config/config.toml)
 
-Requirements
-============
-* Python 3: [https://www.python.org/]
-* RDFLib: [https://github.com/RDFLib/rdflib]
-* PyLD: [https://github.com/digitalbazaar/pyld]
-* StringTemplate Standalone Tool (v4): [https://github.com/jsnyders/STSTv4]
+## Object placing
 
-# Usage
+This tool places objects in indoor environments. 
+By using the composable modelling approach, a scenery can compose the static FloorPlan models with objects such as doors.
 
-```
-python3 <input_folder_with_floorplan_models>
-```
+![](docs/images/gazebo-screenshot.png)
 
-# Configuration
-* Width of inset: float, distance between the sides of the inset and original shapes. 
-* output for waypoints: string, full path.
-* output for models: string, full path.
-* output for world files: string, full path.
-* output for launch: string, full path. This launch files assumes that the world model is located in the pkg.
-* pkg path: string, name of the ROS package. 
+### Models that can be composed into a scenery
 
-## Object modelling and placing
+* **Model objects with movement constraits**: composition of objects with revolute, prismatic, or fixed joints into a scenery. 
+* **Model object states**: composition of objects with motion constraints defined as finite state machines, and their intial state in the scene.
 
-This tool is a companion tool for the FloorPlan DSL, which enables the modelling of objects and their placement in the indoor environments from the FloorPlan DSL. 
+## Gazebo world generation
 
-![](images/gazebo-screenshot.png)
-
-## Features:
-* **Model objects with movement constraits**: the tool enables the specification of objects with revolute, prismatic, or fixed joints. 
-* **Place objects in indoor environments**: by using the composable modelling approach the FloorPlan models can become scenes filled with objects with ease.
-* **Model object states**: the tool allows for finate state machines for objects with motion constraints to be modelled, as well as selecting the intial state of each object in the scene.
-* **Gazebo world generation and plugin**: the tool generates SDF format world files for gazebo, while a companion plugin sets up the scene as determined by the initial state. The plugin is available [here](https://github.com/hbrs-sesame/floorplan-gazebo-initial-state-plugin)
-
-## Getting Startedith Python 3.8.10,
-
-
-Install the [requirements](requirements.txt), then you may run the example:
-
-```sh
-python3 main.py <input folder> 
-```
-Tested on Python 3.8.10
+The tool generates SDF format world files for Gazebo.
+The [initial state plugin](https://github.com/secorolab/floorplan-gazebo-plugins) sets up the scene as determined by the initial state for each object included in the world file. 
 
 ## Tutorials
 
@@ -57,6 +57,6 @@ Tutorials on how to model objects with movement constraints, and how to place th
 This work is part of a project that has received funding from the European Union's Horizon 2020 research and innovation programme SESAME under grant agreement No 101017258.
 
 <p align="center">
-    <img src="images/EU.jpg" alt="drawing" height="100"/>
-    <img src="images/SESAME.jpg" alt="drawing" height="100"/>
+    <img src="docs/images/EU.jpg" alt="drawing" height="100"/>
+    <img src="docs/images/SESAME.jpg" alt="drawing" height="100"/>
 </p>

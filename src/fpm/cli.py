@@ -15,14 +15,14 @@ def floorplan():
     pass
 
 
-def door_object_models(config, g):
-    template_path = config["templates"]["path"]
+def door_object_models(g, base_path, **kwargs):
+    template_path = kwargs.get("template_path")
 
     object_models = get_all_object_models(g)
 
     for model in object_models:
         model_name = model["name"][5:]
-        output_path = get_output_path(config, "gazebo_models", model_name)
+        output_path = get_output_path(base_path, "gazebo/models", model_name)
         generate_sdf_file(
             model,
             output_path,
@@ -39,13 +39,10 @@ def door_object_models(config, g):
         )
 
 
-def gazebo_world(config, g, model_name):
-    template_path = config["templates"]["path"]
-
-    instances = get_all_object_instances(g)
-    model = {"instances": instances, "name": model_name}
-
-    output_path = get_output_path(config, "gazebo_models", model_name)
+def gazebo_floorplan_model(model_name, base_path, **kwargs):
+    template_path = kwargs.get("template_path")
+    model = {"name": model_name}
+    output_path = get_output_path(base_path, "gazebo/models", model_name)
     generate_sdf_file(
         model,
         output_path,
@@ -61,7 +58,13 @@ def gazebo_world(config, g, model_name):
         template_path=template_path,
     )
 
-    output_path = get_output_path(config, "gazebo_worlds")
+
+def gazebo_world_model(g, model_name, base_path, **kwargs):
+    template_path = kwargs.get("template_path")
+    instances = get_all_object_instances(g)
+    model = {"instances": instances, "name": model_name}
+
+    output_path = get_output_path(base_path, "gazebo/worlds")
     generate_sdf_file(
         model,
         output_path,
@@ -70,7 +73,10 @@ def gazebo_world(config, g, model_name):
         template_path=template_path,
     )
 
-    output_path = get_output_path(config, "ros_launch")
+
+def gazebo_world_launch(model_name, base_path, **kwargs):
+    template_path = kwargs.get("template_path")
+    output_path = get_output_path(base_path, "ros/launch")
     generate_launch_file(
         model_name,
         output_path,
@@ -79,38 +85,60 @@ def gazebo_world(config, g, model_name):
     )
 
 
-def tasks(config, g, model_name):
-    output_path = get_output_path(config, "tasks", model_name)
-    inset_width = config["transformations"]["tasks"]["inset_width"]
+def gazebo_world(g, model_name, base_path, **kwargs):
+
+    gazebo_floorplan_model(model_name, base_path, **kwargs)
+    gazebo_world_model(g, model_name, base_path, **kwargs)
+    gazebo_world_launch(model_name, base_path, **kwargs)
+
+
+def tasks(g, base_path, config, **kwargs):
+    output_path = get_output_path(base_path, "tasks")
+    inset_width = config["tasks"]["inset_width"]
 
     tasks = get_all_disinfection_tasks(g, inset_width)
     for task in tasks:
         generate_task_specification(task, output_path)
 
 
-def get_output_path(config, model_type, model_name=None):
-    output_config = config.get("output")
-    subfolder = output_config.get(model_type)
+def get_output_path(base_path, subfolder, model_name=None):
     if model_name is None:
-        return os.path.join(output_config["base_path"], subfolder)
+        return os.path.join(base_path, subfolder)
     else:
-        return os.path.join(output_config["base_path"], subfolder, model_name)
+        return os.path.join(base_path, subfolder, model_name)
 
 
 @floorplan.command()
 @click.argument("configfile", type=click.Path(exists=True, resolve_path=True))
-@click.argument("inputs", type=click.Path(exists=True, resolve_path=True))
-def generate(configfile, inputs):
-    click.echo(click.format_filename(configfile))
+@click.option(
+    "--inputs",
+    "-i",
+    type=click.Path(exists=True, resolve_path=True),
+    required=True,
+    multiple=True,
+)
+@click.option(
+    "--output-path",
+    type=click.Path(exists=True, resolve_path=True),
+    default=os.path.join("."),
+)
+@click.option(
+    "--templates",
+    type=click.Path(exists=True, resolve_path=True),
+    default=os.path.join("."),
+)
+def generate(configfile, inputs, output_path, **kwargs):
     config = load_config_file(configfile)
 
     g = build_graph_from_directory(inputs)
     model_name = get_floorplan_model_name(g)
 
-    tasks(config, g, model_name)
+    base_path = os.path.join(output_path, model_name)
 
-    door_object_models(config, g)
-    gazebo_world(config, g, model_name)
+    tasks(g, base_path, config)
+
+    door_object_models(g, base_path, **kwargs)
+    gazebo_world(g, model_name, base_path, **kwargs)
 
 
 if __name__ == "__main__":
