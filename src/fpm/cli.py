@@ -133,12 +133,10 @@ def generate(configfile, inputs, output_path, **kwargs):
     g = build_graph_from_directory(inputs)
     model_name = get_floorplan_model_name(g)
 
-    base_path = os.path.join(output_path, model_name)
+    tasks(g, output_path, config)
 
-    tasks(g, base_path, config)
-
-    door_object_models(g, base_path, **kwargs)
-    gazebo_world(g, model_name, base_path, **kwargs)
+    door_object_models(g, output_path, **kwargs)
+    gazebo_world(g, model_name, output_path, **kwargs)
 
 
 if __name__ == "__main__":
