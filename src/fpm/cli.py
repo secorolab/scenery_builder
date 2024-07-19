@@ -65,10 +65,15 @@ def gazebo_world_model(g, model_name, base_path, **kwargs):
     model = {"instances": instances, "name": model_name}
 
     output_path = get_output_path(base_path, "gazebo/worlds")
+    if kwargs.get("ros_version", "ros2") == "ros2":
+        file_name = "{name}.sdf".format(name=model_name)
+    else:
+        file_name = "{name}.world".format(name=model_name)
+
     generate_sdf_file(
         model,
         output_path,
-        "{name}.world".format(name=model_name),
+        file_name,
         template_name="gazebo/world.sdf.jinja",
         template_path=template_path,
     )
@@ -77,10 +82,19 @@ def gazebo_world_model(g, model_name, base_path, **kwargs):
 def gazebo_world_launch(model_name, base_path, **kwargs):
     template_path = kwargs.get("template_path")
     output_path = get_output_path(base_path, "ros/launch")
+
+    if kwargs.get("ros_version", "ros2") == "ros2":
+        file_name = "{name}.ros2.launch".format(name=model_name)
+        template_name = "ros/world.ros2.launch.jinja"
+    else:
+        file_name = "{name}.ros1.launch".format(name=model_name)
+        template_name = "ros/world.ros1.launch.jinja"
+
     generate_launch_file(
         model_name,
         output_path,
-        template_name="ros/world.launch.jinja",
+        file_name,
+        template_name=template_name,
         template_path=template_path,
     )
 
@@ -127,7 +141,13 @@ def get_output_path(base_path, subfolder, model_name=None):
     type=click.Path(exists=True, resolve_path=True),
     default=os.path.join("."),
 )
+@click.option(
+    "--ros-version",
+    type=click.STRING,
+    default="ros2",
+)
 def generate(configfile, inputs, output_path, **kwargs):
+    print(kwargs)
     config = load_config_file(configfile)
 
     g = build_graph_from_directory(inputs)
