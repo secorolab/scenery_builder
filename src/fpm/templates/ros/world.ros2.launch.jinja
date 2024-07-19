@@ -10,7 +10,7 @@
     <arg name="headless" default="true"/>
     <arg name="debug" default="false"/>
     <arg name="paused" default="false"/>
-    <arg name="world_name" default="worlds/{{model_name}}.world"/>
+    <arg name="world_name" default="worlds/{{model_name}}.sdf"/>
 
     <set_env name="GAZEBO_MODEL_PATH" value="$(find-pkg-prefix floorplan_models)/models:$(find-pkg-prefix floorplan_models)/worlds:$(env GAZEBO_MODEL_PATH)"/>
 
