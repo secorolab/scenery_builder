@@ -11,7 +11,7 @@ pip install -e .
 This module adds `floorplan` as a command line interface. You can use the `generate` command as shown below:
 
 ```shell
-floorplan generate <path to config file> <path to input folder>
+floorplan generate <path to config file> -i <path to input folder>
 ```
 
 Where the input folder must contain:
