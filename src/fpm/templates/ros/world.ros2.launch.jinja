@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<!-- ROS2 Launch File - Supports ROS2 Jazzy -->
+<launch>
+    
+
+    <!-- GAZEBO SETUP ARGUMENTS -->
+    <arg name="use_sim_time" default="true"/>
+    <arg name="gazebo_gui" default="false"/>
+    <arg name="headless" default="true"/>
+    <arg name="debug" default="false"/>
+    <arg name="paused" default="false"/>
+    <arg name="world_name" default="worlds/{{model_name}}.sdf"/>
+
+    <set_env name="GAZEBO_MODEL_PATH" value="$(find-pkg-prefix floorplan_models)/models:$(find-pkg-prefix floorplan_models)/worlds:$(env GAZEBO_MODEL_PATH)"/>
+
+    <!-- launch gazebo with empty world -->
+    <include file="$(find floorplan_models)/launch/gazebo_world.launch">
+        <let name="world_name" value="$(var world_name)"/>
+        <let name="paused" value="$(var paused)"/>
+        <let name="use_sim_time" value="$(var use_sim_time)"/>
+        <let name="gui" value="$(var gazebo_gui)"/>
+        <let name="headless" value="$(var headless)"/>
+        <let name="debug" value="$(var debug)"/>
+    </include>
+
+</launch>
