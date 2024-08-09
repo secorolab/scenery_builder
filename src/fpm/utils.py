@@ -19,7 +19,8 @@ def load_template(template_name, template_folder=None):
         loader = PackageLoader("fpm")
     else:
         loader = FileSystemLoader(template_folder)
-    env = Environment(loader=loader)
+    env = Environment(loader=loader,
+                      lstrip_blocks=True)
     return env.get_template(template_name)
 
 

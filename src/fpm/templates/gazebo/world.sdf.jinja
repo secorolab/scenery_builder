@@ -24,19 +24,34 @@
       <static>true</static>
       <pose>-0.0 0.0 0.0 0.0 0.0 0.0</pose>
     </include>
-    {% for instance in model.instances %}
+    {%- for instance in model.instances %}
+        {# Just here to add a newline before each include for readability#}
     <include>
       <name>{{instance.instance_name}}</name>
       <uri>model://{{instance.name}}</uri>
       <static>{{instance.static}}</static>
       <pose>{{instance.pose}}</pose>
-      {% for start_joint_state in instance.start_joint_states %}
+      {%- for start_joint_state in instance.start_joint_states %}
+          {%- if instance.plugin_type == 'initial' %}
         <plugin name="initial_plugin" filename="libinitial_plugin.so">
           <joint>{{start_joint_state.joint}}</joint>
           <position>{{start_joint_state.position}}</position>
         </plugin>
-      {% endfor %}
+          {%- elif instance.plugin_type == 'dynamic' %}
+        <plugin name="dynamic_joint_pluginss" filename="libdynamic_joint_plugin.so">
+          <joint>{{start_joint_state.joint}}</joint>
+          <uri>{{start_joint_state.uri}}</uri>
+        </plugin>
+          {%- elif instance.plugin_type == 'adversarial' %}
+        <plugin name="adversarial_joint_plugin" filename="libadversarial_joint_plugin.so">
+          <joint>{{start_joint_state.joint}}</joint>
+          <x>{{start_joint_state.position_before}}</x>
+          <near>{{start_joint_state.distance_to_trigger}}</near>
+          <y>{{start_joint_state.position_after}}</y>
+        </plugin>
+        {%- endif %}
+      {%- endfor %}
     </include>
-    {% endfor %}
+    {%- endfor %}
   </world>
 </sdf>

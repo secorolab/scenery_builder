@@ -1,5 +1,6 @@
 import os
 import glob
+import re
 
 import numpy as np
 
@@ -14,10 +15,16 @@ from fpm.utils import build_transformation_matrix
 def build_graph_from_directory(inputs: tuple):
     # Build the graph by reading all composable models in the input folder
     g = rdflib.Graph()
+
+    def natural_sort_key(s):
+        """Split the string into a list of substrings, with numbers as numbers."""
+        return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
+
     for input_folder in inputs:
         input_models = glob.glob(os.path.join(input_folder, "*.json"))
         print("Found {} models in {}".format(len(input_models), input_folder))
         print("Adding to the graph...")
+        input_models = sorted(input_models, key=natural_sort_key)
         for file_path in input_models:
             print("\t{}".format(file_path))
             g.parse(file_path, format="json-ld")
@@ -60,7 +67,6 @@ def get_floorplan_model_name(g):
 
 
 def traverse_to_world_origin(g, frame):
-
     # Go through the geometric relation predicates
     pred_filter = traversal.filter_by_predicates([GEOM["with-respect-to"], GEOM["of"]])
     # Algorithm to traverse the graph
@@ -92,7 +98,6 @@ def traverse_to_world_origin(g, frame):
 
 
 def get_transformation_matrix_wrt_frame(g, root, target):
-
     # Configure the traversal algorithm
     filter = [GEOM["with-respect-to"], GEOM["of"]]
     pred_filter = traversal.filter_by_predicates(filter)

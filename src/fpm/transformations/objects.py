@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from rdflib import RDF
+from rdflib import RDF, URIRef
 
 from fpm.transformations.sdf import (
     get_sdf_geometry,
@@ -149,6 +149,11 @@ def get_object_instance(g, instance):
     T = get_transformation_matrix_wrt_frame(g, frame, world_frame)
     pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
 
+    plugin_type = g.value(instance, OBJ["plugin"])
+    if plugin_type:
+        plugin_uri = URIRef(plugin_type)
+        plugin_type = plugin_uri.split("#")[-1]
+
     state = g.value(instance, ST["start-state"])
     start_joint_states = []
 
@@ -173,6 +178,7 @@ def get_object_instance(g, instance):
         "static": "false",
         "name": prefixed(g, of_obj)[5:],
         "instance_name": prefixed(g, instance)[5:],
+        "plugin_type": plugin_type,
         "start_joint_states": start_joint_states,
     }
 
