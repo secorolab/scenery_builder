@@ -6,6 +6,7 @@ from pathlib import Path
 FP = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan#")
 OBJ = rdflib.Namespace("https://secorolab.github.io/metamodels/object#")
 ST = rdflib.Namespace("https://secorolab.github.io/metamodels/state#")
+PL = rdflib.Namespace("https://secorolab.github.io/metamodels/plugin#")
 
 # Kinematic chain metamodels
 KIN = rdflib.Namespace(

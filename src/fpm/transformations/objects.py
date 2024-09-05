@@ -20,7 +20,6 @@ from fpm.graph import (
 
 def get_link_information(g, my_object, object_frame):
     for _, _, link in g.triples((my_object, OBJ["object-links"], None)):
-
         gazebo_representation = g.value(predicate=GZB["gz-link"], object=link)
 
         # Get the objects for the link geometry
@@ -149,28 +148,61 @@ def get_object_instance(g, instance):
     T = get_transformation_matrix_wrt_frame(g, frame, world_frame)
     pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
 
-    plugin_type = g.value(instance, OBJ["plugin"])
-    if plugin_type:
-        plugin_uri = URIRef(plugin_type)
-        plugin_type = plugin_uri.split("#")[-1]
+    joint_name = f"{prefixed(g, instance)}-hinge-joint"
+    plugins = []
 
-    state = g.value(instance, ST["start-state"])
-    start_joint_states = []
-
-    # If the instance has a state, then include the initial state plugin
-    if state != None:
+    def get_joint_state_value(state):
+        """Helper function to get the joint state value."""
         for joint_state, _, _ in g.triples((None, ST["state"], state)):
+            if ST["JointState"] in g.value(joint_state, RDF.type):
+                return float(g.value(g.value(joint_state, ST["pose"]), QUDT["value"]))
+        return None
 
-            if not ST["JointState"] in g.value(joint_state, RDF.type):
-                continue
+    for _, _, plugin in g.triples((instance, OBJ["plugins"], None)):
+        ########################################################
+        # Use this code to query the triples in the graph by choosing subject, predicate, or object, and replacing the
+        # code plugin with the desired variable.
+        #
+        # for subj, pred, obj in g:
+        #    if subj == plugin:
+        #         print(f"Subject: {subj}, Predicate: {pred}, Object: {obj}")
+        ########################################################
+        plugin_type = str(g.value(plugin, PL["plugin-type"]))
+        state = g.value(plugin, ST["state"])
 
-            joint = g.value(joint_state, ST["joint"])
-            joint_name = prefixed(g, joint)
+        if plugin_type == "initial":
+            start_value = get_joint_state_value(state)
 
-            pose = g.value(joint_state, ST["pose"])
-            value = g.value(pose, QUDT["value"]).toPython()
+            if not start_value:
+                raise ValueError("Initial plugin must have a start value")
 
-            start_joint_states.append({"joint": joint_name, "position": value})
+            plugins.append({
+                "plugin_type": plugin_type,
+                "joint": joint_name,
+                "position": start_value
+            })
+
+
+        elif plugin_type == "dynamic":
+            uri = g.value(plugin, PL["uri"])
+            plugins.append({
+                "plugin_type": plugin_type,
+                "joint": joint_name,
+                "uri": uri
+            })
+
+        elif plugin_type == "adversarial":
+            if ST["Transition"] in g.value(state, RDF.type):
+                start_value = get_joint_state_value(g.value(state, ST["start-state"]))
+                end_value = get_joint_state_value(g.value(state, ST["end-state"]))
+                distance = float(g.value(plugin, PL["distance"]))
+                plugins.append({
+                    "plugin_type": plugin_type,
+                    "joint": joint_name,
+                    "position_before": start_value,
+                    "distance_to_trigger": distance,
+                    "position_after": end_value
+                })
 
     # Build a dictionary for the instance for the jinja template
     return {
@@ -178,8 +210,7 @@ def get_object_instance(g, instance):
         "static": "false",
         "name": prefixed(g, of_obj)[5:],
         "instance_name": prefixed(g, instance)[5:],
-        "plugin_type": plugin_type,
-        "start_joint_states": start_joint_states,
+        "plugin_configs": plugins,
     }
 
 
