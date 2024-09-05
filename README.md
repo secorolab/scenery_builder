@@ -14,17 +14,34 @@ This module adds `floorplan` as a command line interface. You can use the `gener
 floorplan generate <path to config file> <path to input folder>
 ```
 
-Where the input folder must contain:
-- the composable models generated from the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL)
+for example: 
+
+```shell
+floorplan generate <path_to_workspace>/src/scenery_builder/config/config.toml -i <path_to_workspace>/src/floorplan_models/frontiers_brsu_building_c/models/
+```
+
+Where the input folder must contain two subfolders:
+- one folder containing the composable models generated from the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL)
     - `coordinate.json`
     - `floorplan.json`
     - `shape.json`
     - `skeleton.json`
     - `spatial_relations.json`
-- the door object models
+- one folder containing the door plugins, the door object models, and their specific instances 
     - `object-door.json`
     - `object-door-states.json`
-- any object instance models, e.g. `object-door-instance-X.json` where `X` is a unique numeric ID.
+    - `initial-state-plugin-states.json`
+    - `dynamic-plugin-states.json`
+    - `adversarial-plugin-states.json`
+    - any object instance models, e.g. `object-door-instance-X.json` where `X` is a unique numeric ID.
+
+if any of these json files contain `localhost:8000` link in its context, for example `"http://localhost:8000/floor-plan/plugin.json`,
+it is probably because we have not gotten around to hosting that file yet, or forgot to update the link. In that case, locate
+the file inside our repositories (probably [metamodels](https://github.com/secorolab/metamodels)), navigate to the root of the cloned repository, and run:
+
+```shell
+python3 -m http.server 8000
+```
 
 ## Task generator
 
