@@ -21,13 +21,22 @@ def build_graph_from_directory(inputs: tuple):
         return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', s)]
 
     for input_folder in inputs:
-        input_models = glob.glob(os.path.join(input_folder, "*.json"))
-        print("Found {} models in {}".format(len(input_models), input_folder))
-        print("Adding to the graph...")
-        input_models = sorted(input_models, key=natural_sort_key)
-        for file_path in input_models:
-            print("\t{}".format(file_path))
-            g.parse(file_path, format="json-ld")
+        subdirectories = [d for d in glob.glob(os.path.join(input_folder, "*")) if os.path.isdir(d)]
+        for subdirectory in subdirectories:
+            input_models = glob.glob(os.path.join(subdirectory, "*.json"))
+
+            if not input_models:
+                print(f"No models found in {subdirectory}")
+                continue
+                
+            print("Found {} models in {}".format(len(input_models), input_folder))
+            print("Adding to the graph...")
+            input_models = sorted(input_models, key=natural_sort_key)
+            for file_path in input_models:
+                try:
+                    g.parse(file_path, format="json-ld")
+                except Exception as e:
+                    print(f"\tError parsing {file_path}: {e}")
 
     return g
 
