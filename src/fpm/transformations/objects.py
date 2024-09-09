@@ -168,9 +168,9 @@ def get_object_instance(g, instance):
         #         print(f"Subject: {subj}, Predicate: {pred}, Object: {obj}")
         ########################################################
         plugin_type = str(g.value(plugin, PL["plugin-type"]))
-        state = g.value(plugin, ST["state"])
 
         if plugin_type == "initial":
+            state = g.value(plugin, ST["state"])
             start_value = get_joint_state_value(state)
 
             if not start_value:
@@ -192,17 +192,17 @@ def get_object_instance(g, instance):
             })
 
         elif plugin_type == "adversarial":
-            if ST["Transition"] in g.value(state, RDF.type):
-                start_value = get_joint_state_value(g.value(state, ST["start-state"]))
-                end_value = get_joint_state_value(g.value(state, ST["end-state"]))
-                distance = float(g.value(plugin, PL["distance"]))
-                plugins.append({
-                    "plugin_type": plugin_type,
-                    "joint": joint_name,
-                    "position_before": start_value,
-                    "distance_to_trigger": distance,
-                    "position_after": end_value
-                })
+            transition = g.value(plugin, ST["transition"])
+            start_value = get_joint_state_value(g.value(transition, ST["start-state"]))
+            end_value = get_joint_state_value(g.value(transition, ST["end-state"]))
+            distance = float(g.value(plugin, PL["distance"]))
+            plugins.append({
+                "plugin_type": plugin_type,
+                "joint": joint_name,
+                "position_before": start_value,
+                "distance_to_trigger": distance,
+                "position_after": end_value
+            })
 
     # Build a dictionary for the instance for the jinja template
     return {
