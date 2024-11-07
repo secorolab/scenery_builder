@@ -28,6 +28,3 @@ floorplan = "fpm.cli:floorplan"
 
 [tool.setuptools.package-data]
 "*" = ["*.jinja"]
-
-[tool.black]
-required-version = "24.4.2"
