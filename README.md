@@ -2,6 +2,27 @@
 
 ## Installation
 
+Install all the requirements:
+
+```shell
+sudo apt-get install blender python3-pip python3-venv -y
+```
+
+First, create a virtual environment and activate it: 
+
+```shell
+python -m venv .venv
+source .venv/bin/activate
+```
+
+For Blender to regonize the virtual environment, add it to your `PYTHONPATH`:
+
+```shell
+export PYTHONPATH=<Path to .venv directory>/lib/python3.11/site-packages   
+```
+
+From the root directory of the repo, install the python packages by running: 
+
 ```shell
 pip install -e .
 ```
@@ -25,6 +46,52 @@ Where the input folder must contain:
     - `object-door.json`
     - `object-door-states.json`
 - any object instance models, e.g. `object-door-instance-X.json` where `X` is a unique numeric ID.
+
+### Generating 3D meshes and occupancy grid maps
+
+> [!WARNING]
+> The generation of 3D meshes and occupancy grid maps is currently being moved from the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) repository. The instructions below may not work and/or may be outdated.
+
+This tool is currently in active development. To use the tool you can execute the following command: 
+
+```sh
+blender --python src/floorplan_dsl/generators/floorplan.py --background
+--python-use-system-env -- <path to model>
+```
+
+Optionally, you can remove the `--background` flag to see directly the result opened in Blender.
+
+***Note**: The `--` before `<model_path>` is intentional and important.*
+
+#### Example
+
+![3D asset generated from the environment description](images/hospital_no_brackground.png)
+
+An example model for a building is available [here](../models/examples/hospital.floorplan). To generate the 3D mesh and occupancy grid:
+
+
+```sh
+blender --background --python src/exsce_floorplan/exsce_floorplan.py --python-use-system-env -- models/examples/hospital.floorplan
+```
+
+The `--` after the variable paths are important to distinguish the blender parameters and the parameters for the tooling. You will obtain an occupancy grid map and a `.stl` file with the 3D mesh of the environment.
+
+That should generate the following files:
+
+```bash
+.
+├── map
+│   ├── hospital.pgm
+│   └── hospital.yaml
+└── mesh
+    └── hospital.stl
+```
+
+The output path for the generated models in configurable (see [confg/setup.cfg](../config/setup.cfg) and note they are relative paths from where you're calling the command).
+
+The `.stl` mesh can now be used to specify the Gazebo models and included in a Gazebo world. See, for example, [this tutorial](https://classic.gazebosim.org/tutorials?tut=import_mesh&cat=build_robot).
+
+
 
 ## Task generator
 
