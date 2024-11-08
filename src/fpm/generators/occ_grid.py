@@ -78,38 +78,23 @@ def generate_occ_grid(model, output_path, **custom_args):
     )
 
     for shape in points:
-        shape[:, 0] = (shape[:, 0] + abs(west)) / resolution
-        shape[:, 1] = (shape[:, 1] + abs(south)) / resolution
-        shape += border / 2
-        shape = shape.astype(int)
-
-        draw.polygon(shape[:, 0:2].flatten().tolist(), fill=free)
+        shape = get_2d_shape(west, south, resolution, border, shape=shape)
+        draw_2d_shape(draw, shape, fill=free)
 
     for space in spaces:
         for wall in space.walls:
             points, _ = wall.generate_3d_structure()
-
-            shape = points[0 : int(len(points) / 2), 0:2]
-            shape[:, 0] = (shape[:, 0] + abs(west)) / resolution
-            shape[:, 1] = (shape[:, 1] + abs(south)) / resolution
-            shape += border / 2
-            shape = shape.astype(int)
-
-            draw.polygon(shape[:, 0:2].flatten().tolist(), fill=occupied)
+            shape = get_2d_shape(west, south, resolution, border, points=points)
+            draw_2d_shape(draw, shape, fill=occupied)
 
     for wall_opening in wall_openings:
-
         shape = wall_opening.generate_2d_structure(laser_height)
 
         if shape is None:
             continue
 
-        shape[:, 0] = (shape[:, 0] + abs(west)) / resolution
-        shape[:, 1] = (shape[:, 1] + abs(south)) / resolution
-        shape += border / 2
-        shape = shape.astype(int)
-
-        draw.polygon(shape[:, 0:2].flatten().tolist(), fill=free)
+        shape = get_2d_shape(west, south, resolution, border, shape=shape)
+        draw_2d_shape(draw, shape, fill=free)
 
     for space in spaces:
         for feature in space.floor_features:
@@ -118,17 +103,27 @@ def generate_occ_grid(model, output_path, **custom_args):
             if points[int(len(points) / 2) :, 2][0] < laser_height:
                 continue
 
-            shape = points[0 : int(len(points) / 2), 0:2]
-            shape[:, 0] = (shape[:, 0] + abs(west)) / resolution
-            shape[:, 1] = (shape[:, 1] + abs(south)) / resolution
-            shape += border / 2
-            shape = shape.astype(int)
-
-            draw.polygon(shape[:, 0:2].flatten().tolist(), fill=occupied)
+            shape = get_2d_shape(west, south, resolution, border, points=points)
+            draw_2d_shape(draw, shape, fill=occupied)
 
     name_image = "{}.pgm".format(model.name)
     im = ImageOps.flip(im)
     im.save(os.path.join(output_path, name_image), quality=95)
+
+
+def draw_2d_shape(draw, shape, fill):
+    draw.polygon(shape[:, 0:2].flatten().tolist(), fill=fill)
+
+
+def get_2d_shape(west, south, resolution, border, points=None, shape=None):
+    if shape is None:
+        shape = points[0 : int(len(points) / 2), 0:2]
+    shape[:, 0] = (shape[:, 0] + abs(west)) / resolution
+    shape[:, 1] = (shape[:, 1] + abs(south)) / resolution
+    shape += border / 2
+    shape = shape.astype(int)
+
+    return shape
 
 
 def save_map_metadata(
