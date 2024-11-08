@@ -52,15 +52,6 @@ def generate_occ_grid(model, output_path, **custom_args):
     east = np.amax(directions[:, 2])
     west = np.amin(directions[:, 3])
 
-    # Create canvas
-    floor = (
-        int(abs(east - west) / resolution) + border,
-        int(abs(north - south) / resolution) + border,
-    )
-
-    im = Image.new("L", floor, unknown)
-    draw = ImageDraw.Draw(im)
-
     center = [
         -float(abs(west) + border * resolution / 2),
         -float(abs(south) + border * resolution / 2),
@@ -76,6 +67,15 @@ def generate_occ_grid(model, output_path, **custom_args):
         free_thresh,
         negate,
     )
+
+    # Create canvas
+    floor = (
+        int(abs(east - west) / resolution) + border,
+        int(abs(north - south) / resolution) + border,
+    )
+
+    im = Image.new("L", floor, unknown)
+    draw = ImageDraw.Draw(im)
 
     for shape in points:
         shape = get_2d_shape(west, south, resolution, border, shape=shape)
