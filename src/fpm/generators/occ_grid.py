@@ -14,9 +14,6 @@ def generate_occ_grid(model, output_path, **custom_args):
     wall_openings = model.wall_openings
 
     resolution = custom_args.get("resolution", 0.05)
-    occupied_thresh = custom_args.get("occupied_thresh", 0.65)
-    free_thresh = custom_args.get("free_thresh", 0.196)
-    negate = custom_args.get("negate", 0)
 
     unknown = custom_args.get("unknown", 200)
     occupied = custom_args.get("occupied", 0)
@@ -58,15 +55,7 @@ def generate_occ_grid(model, output_path, **custom_args):
         0,
     ]
 
-    save_map_metadata(
-        output_path,
-        model,
-        resolution,
-        center,
-        occupied_thresh,
-        free_thresh,
-        negate,
-    )
+    save_map_metadata(output_path, model, center, **custom_args)
 
     # Create canvas
     floor = (
@@ -126,10 +115,12 @@ def get_2d_shape(west, south, resolution, border, points=None, shape=None):
     return shape
 
 
-def save_map_metadata(
-    output_path, model, resolution, center, occupied_thresh, free_thresh, negate
-):
+def save_map_metadata(output_path, model, center, **custom_args):
     file_name = "{}.yaml".format(model.name)
+    negate = custom_args.get("negate", 0)
+    resolution = custom_args.get("resolution", 0.05)
+    occupied_thresh = custom_args.get("occupied_thresh", 0.65)
+    free_thresh = custom_args.get("free_thresh", 0.196)
     map_metadata = {
         "resolution": resolution,
         "origin": center,
