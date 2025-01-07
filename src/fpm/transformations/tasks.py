@@ -12,6 +12,7 @@ from fpm.graph import (
     prefixed,
     traverse_to_world_origin,
     get_list_from_ptr,
+    get_space_points,
 )
 from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
 from fpm.utils import build_transformation_matrix
@@ -96,21 +97,6 @@ def create_inset_json_ld(model, width):
     return tree_structure
 
 
-def get_point_positions_in_space(g, space):
-    polygon = g.value(space, FP["shape"])
-
-    point_ptr = g.value(polygon, POLY["points"])
-
-    point_nodes = get_list_from_ptr(g, point_ptr)
-
-    positions = []
-    for point in point_nodes:
-        position = get_point_position(g, point)
-        positions.append(position)
-
-    return {"name": prefixed(g, space), "points": positions}
-
-
 def get_coordinates_map(g):
     coordinates_map = {}
 
@@ -192,19 +178,7 @@ def transform_insets(g, inset_model_framed, coordinates_map):
 
 def get_all_disinfection_tasks(g, inset_width):
 
-    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
-
-    # Get the list of spaces
-    print("Querying all spaces...")
-    space_ptr = g.value(floorplan, FP["spaces"])
-    spaces = get_list_from_ptr(g, space_ptr)
-
-    # for each space, find the polygon
-    print("Get all points...")
-    space_points = []
-    for space in spaces:
-        space_points_json = get_point_positions_in_space(g, space)
-        space_points.append(space_points_json)
+    space_points = get_space_points(g)
 
     print("Creating the insets...")
     inset_model_framed = create_inset_json_ld(space_points, inset_width)
