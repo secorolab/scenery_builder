@@ -180,3 +180,27 @@ def get_point_positions_in_space(g, space):
         positions.append(position)
 
     return {"name": prefixed(g, space), "points": positions}
+
+
+def get_coordinates_map(g):
+    coordinates_map = {}
+
+    for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
+        coordinates_map[prefixed(g, g.value(coord, COORD["of-pose"]))] = {
+            "x": g.value(coord, COORD["x"]).toPython(),
+            "y": g.value(coord, COORD["y"]).toPython(),
+            "theta": g.value(coord, COORD_EXT["theta"]).toPython(),
+        }
+
+    return coordinates_map
+
+
+def get_path_positions(g, path):
+    positions = list()
+
+    for p in path:
+        position = str(prefixed(g, p))
+        if "pose" in position:
+            positions.append(position)
+
+    return positions

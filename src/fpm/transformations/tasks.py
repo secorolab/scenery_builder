@@ -1,20 +1,17 @@
 #!/usr/bin/env python
 
 # SPDX-License-Identifier: LGPL-3.0-or-later
-from rdflib import RDF
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as Pol
 
 from fpm.graph import (
-    get_point_position,
-    prefixed,
     traverse_to_world_origin,
-    get_list_from_ptr,
     get_space_points,
+    get_coordinates_map,
+    get_path_positions,
 )
-from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
 from fpm.utils import build_transformation_matrix
 
 
@@ -97,25 +94,11 @@ def create_inset_json_ld(model, width):
     return tree_structure
 
 
-def get_coordinates_map(g):
-    coordinates_map = {}
-
-    for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
-        coordinates_map[prefixed(g, g.value(coord, COORD["of-pose"]))] = {
-            "x": g.value(coord, COORD["x"]).toPython(),
-            "y": g.value(coord, COORD["y"]).toPython(),
-            "theta": g.value(coord, COORD_EXT["theta"]).toPython(),
-        }
-
-    return coordinates_map
-
-
 def get_waypoint_coord(g, point, coordinates_map):
     frame = point["as-seen-by"]
     path = traverse_to_world_origin(g, frame)
 
-    path_positions = [str(prefixed(g, p)) for p in path]
-    path_positions = [p for p in path_positions if "pose" in p]
+    path_positions = get_path_positions(g, path)
 
     p = np.array([[point["x"]], [point["y"]], [0], [1]]).astype(float)
 
