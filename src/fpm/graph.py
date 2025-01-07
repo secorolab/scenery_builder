@@ -60,7 +60,6 @@ def get_floorplan_model_name(g):
 
 
 def traverse_to_world_origin(g, frame):
-
     # Go through the geometric relation predicates
     pred_filter = traversal.filter_by_predicates([GEOM["with-respect-to"], GEOM["of"]])
     # Algorithm to traverse the graph
@@ -92,10 +91,9 @@ def traverse_to_world_origin(g, frame):
 
 
 def get_transformation_matrix_wrt_frame(g, root, target):
-
     # Configure the traversal algorithm
-    filter = [GEOM["with-respect-to"], GEOM["of"]]
-    pred_filter = traversal.filter_by_predicates(filter)
+    f = [GEOM["with-respect-to"], GEOM["of"]]
+    pred_filter = traversal.filter_by_predicates(f)
     open_set = traversal.BreadthFirst
 
     # Traverse the graph
@@ -130,7 +128,7 @@ def get_transformation_matrix_wrt_frame(g, root, target):
 
         # If the pose is defined with a VectorXYZ, read the z value, otherwise the value is 0
         z_value = g.value(current_frame_coordinates, COORD["z"])
-        z = 0 if z_value == None else z_value.toPython()
+        z = 0 if z_value is None else z_value.toPython()
 
         # Read the theta value, if the values is in degrees, transform to radians
         t = g.value(current_frame_coordinates, COORD_EXT["theta"]).toPython()
