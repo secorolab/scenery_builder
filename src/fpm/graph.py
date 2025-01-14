@@ -71,8 +71,11 @@ def traverse_to_world_origin(g, frame):
     open_set = traversal.BreadthFirst
 
     # Set beginning and end point
-    root = g.namespace_manager.expand_curie("fpmodel:{}".format(frame))
-    goal = g.namespace_manager.expand_curie("fpmodel:world-frame")
+    if "fpm:" in frame:
+        root = g.namespace_manager.expand_curie(frame)
+    else:
+        root = g.namespace_manager.expand_curie("fpm:{}".format(frame))
+    goal = g.namespace_manager.expand_curie("fpm:world-frame")
 
     # Set map of visited nodes for path building
     parent_map = {}
@@ -136,7 +139,7 @@ def get_transformation_matrix_wrt_frame(g, root, target):
         z = 0 if z_value is None else z_value.toPython()
 
         # Read the theta value, if the values is in degrees, transform to radians
-        t = g.value(current_frame_coordinates, COORD_EXT["theta"]).toPython()
+        t = g.value(current_frame_coordinates, COORD_EXT["alpha"]).toPython()
         if QUDT_VOCAB["degrees"] in g.objects(current_frame_coordinates, QUDT["unit"]):
             t = np.deg2rad(t)
 
