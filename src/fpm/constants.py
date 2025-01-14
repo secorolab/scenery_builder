@@ -3,9 +3,10 @@ import os
 from pathlib import Path
 
 # FloorPlan metamodels
-FP = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan#")
-OBJ = rdflib.Namespace("https://secorolab.github.io/metamodels/object#")
-ST = rdflib.Namespace("https://secorolab.github.io/metamodels/state#")
+FP = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan/floorplan#")
+FPMODEL = rdflib.Namespace("https://secorolab.github.io/models/floorplan/")
+OBJ = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan/object#")
+ST = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan/state#")
 
 # Kinematic chain metamodels
 KIN = rdflib.Namespace(
@@ -27,13 +28,13 @@ GEOM = rdflib.Namespace(
 GEO = rdflib.Namespace(
     "https://comp-rob2b.github.io/metamodels/geometry/structural-entities#"
 )
-POLY = rdflib.Namespace("https://secorolab.github.io/metamodels/polytope#")
-QUDT = rdflib.Namespace("http://qudt.org/schema/qudt/")
-QUDT_VOCAB = rdflib.Namespace("http://qudt.org/vocab/unit/")
+POLY = rdflib.Namespace("https://secorolab.github.io/metamodels/geometry/polytope#")
+QUDT = rdflib.Namespace("https://qudt.org/schema/qudt/")
+QUDT_VOCAB = rdflib.Namespace("https://qudt.org/vocab/unit/")
 COORD = rdflib.Namespace(
     "https://comp-rob2b.github.io/metamodels/geometry/coordinates#"
 )
-COORD_EXT = rdflib.Namespace("https://secorolab.github.io/metamodels/coordinates#")
+COORD_EXT = rdflib.Namespace("https://secorolab.github.io/metamodels/geometry/coordinates#")
 
 # simulator metamodel
 GZB = rdflib.Namespace("https://secorolab.github.io/metamodels/gazebo#")

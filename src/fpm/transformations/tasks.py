@@ -11,9 +11,10 @@ from fpm.graph import (
     get_space_points,
     get_coordinates_map,
     get_path_positions,
+    get_floorplan_model_name
 )
 from fpm.utils import build_transformation_matrix
-
+from fpm.constants import FPMODEL
 
 def inset_shape(points, width=0.3):
     lines = []
@@ -58,12 +59,11 @@ def inset_shape(points, width=0.3):
 
 def create_inset_json_ld(model, width):
 
-    inset_graph = []
     tree_structure = []
 
     for space in model:
 
-        points = []
+        points = list()
         for point in space["points"]:
             xs = point["x"]
             ys = point["y"]
@@ -72,7 +72,7 @@ def create_inset_json_ld(model, width):
         points.append(points[0])
         points = np.array(points)
         inset = inset_shape(points, width)
-        space_name = space["name"][16:]
+        space_name = space["name"].split(":")[1]
 
         # create a coordinate relation per point
         tree_points = []
@@ -81,20 +81,21 @@ def create_inset_json_ld(model, width):
                 "name": "position-inset-point-{i}-to-{name}-frame".format(
                     i=i, name=space_name
                 ),
-                "as-seen-by": "fp:frame-center-{name}".format(name=space_name),
+                "as-seen-by": "{name}-frame".format(name=space_name),
                 "x": point[0],
                 "y": point[1],
             }
             tree_points.append(point)
 
         # create a polygon with all points
-        polygon = {"fp:points": tree_points, "name": space_name}
+        polygon = {"points": tree_points, "name": space_name}
         tree_structure.append(polygon)
 
     return tree_structure
 
 
 def get_waypoint_coord(g, point, coordinates_map):
+    # Gets the coordinates of a point wrt world frame
     frame = point["as-seen-by"]
     path = traverse_to_world_origin(g, frame)
 
@@ -108,7 +109,7 @@ def get_waypoint_coord(g, point, coordinates_map):
 
         coordinates = coordinates_map[pose]
         T = build_transformation_matrix(
-            coordinates["x"], coordinates["y"], 0, coordinates["theta"]
+            coordinates["x"], coordinates["y"], 0, coordinates["alpha"]
         ).astype(float)
         if not next_pose == 0:
             if next_pose.count("wall") > 1:
@@ -132,7 +133,7 @@ def transform_insets(g, inset_model_framed, coordinates_map):
 
         inset_points = []
 
-        for point in inset["fp:points"]:
+        for point in inset["points"]:
             name = point["name"][26:-6]
             point_name = point["name"][15:22]
             name = "{}-{}".format(name, point_name)
@@ -161,12 +162,16 @@ def transform_insets(g, inset_model_framed, coordinates_map):
 
 def get_all_disinfection_tasks(g, inset_width):
 
+    model_name = get_floorplan_model_name(g)
+
+    g.bind("fpmodel", FPMODEL["{}/".format(model_name)])
     space_points = get_space_points(g)
 
     print("Creating the insets...")
     inset_model_framed = create_inset_json_ld(space_points, inset_width)
 
     print("Calculating transformation path...")
+    # This just gets the coordinates of all poses in the graph, it doesn't calculate anything
     coordinates_map = get_coordinates_map(g)
 
     print("Transforming the insets")
