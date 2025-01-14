@@ -45,13 +45,12 @@ def build_transformation_matrix(x, y, z, alpha):
     c = np.cos
     s = np.sin
 
-    # TODO Task generation seems to use this and expect radians
-    # a = np.deg2rad(theta)
+    a = np.deg2rad(alpha)
     t = np.array([[x], [y], [z], [1]])
     # fmt: off
     R = np.array([
-        [c(alpha), -s(alpha), 0],
-        [s(alpha), c(alpha), 0],
+        [c(a), -s(a), 0],
+        [s(a), c(a), 0],
         [0, 0, 1],
         [0, 0, 0]]
     )
