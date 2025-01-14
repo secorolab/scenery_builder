@@ -40,7 +40,7 @@ def save_file(output_path, file_name, contents):
     print("Generated {path}".format(path=output_file))
 
 
-def build_transformation_matrix(x, y, z, theta):
+def build_transformation_matrix(x, y, z, alpha):
 
     c = np.cos
     s = np.sin
@@ -50,8 +50,8 @@ def build_transformation_matrix(x, y, z, theta):
     t = np.array([[x], [y], [z], [1]])
     # fmt: off
     R = np.array([
-        [c(theta), -s(theta), 0],
-        [s(theta), c(theta), 0],
+        [c(alpha), -s(alpha), 0],
+        [s(alpha), c(alpha), 0],
         [0, 0, 1],
         [0, 0, 0]]
     )

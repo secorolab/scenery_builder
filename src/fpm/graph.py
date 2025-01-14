@@ -5,9 +5,10 @@ import numpy as np
 
 import rdflib
 from rdflib import RDF
+from rdflib.tools.rdf2dot import rdf2dot
 
 from fpm import traversal
-from fpm.constants import GEO, GEOM, COORD, COORD_EXT, QUDT, QUDT_VOCAB, FP, POLY
+from fpm.constants import GEO, GEOM, COORD, COORD_EXT, QUDT, QUDT_VOCAB, FP, POLY, FPMODEL
 from fpm.utils import build_transformation_matrix
 
 
@@ -21,6 +22,9 @@ def build_graph_from_directory(inputs: tuple):
         for file_path in input_models:
             print("\t{}".format(file_path))
             g.parse(file_path, format="json-ld")
+
+    with open("floorplan.dot", "w+") as dotfile:
+        rdf2dot(g, dotfile)
 
     return g
 
@@ -45,16 +49,17 @@ def get_point_position(g, point):
     position = g.value(predicate=GEOM["of"], object=point)
     coordinates = g.value(predicate=COORD["of-position"], object=position)
 
-    x = g.value(coordinates, COORD["x"]).toPython()
-    y = g.value(coordinates, COORD["y"]).toPython()
+    x = get_coord_value(g.value(coordinates, COORD["x"], default=0.0))
+    y = get_coord_value(g.value(coordinates, COORD["y"], default=0.0))
     asb = g.value(coordinates, COORD["as-seen-by"])
+    name = prefixed(g, coordinates)
 
-    return {"x": x, "y": y, "as-seen-by": prefixed(g, asb)}
+    return {"name": name, "x": x, "y": y, "as-seen-by": prefixed(g, asb)}
 
 
 def get_floorplan_model_name(g):
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
-    model_name = prefixed(g, floorplan).split("floorplan:")[1]
+    model_name = prefixed(g, floorplan).split(":")[1]
 
     return model_name
 
@@ -66,8 +71,8 @@ def traverse_to_world_origin(g, frame):
     open_set = traversal.BreadthFirst
 
     # Set beginning and end point
-    root = GEO[frame[3:]]
-    goal = GEO["world-frame"]
+    root = g.namespace_manager.expand_curie("fpmodel:{}".format(frame))
+    goal = g.namespace_manager.expand_curie("fpmodel:world-frame")
 
     # Set map of visited nodes for path building
     parent_map = {}
@@ -187,13 +192,18 @@ def get_coordinates_map(g):
 
     for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
         coordinates_map[prefixed(g, g.value(coord, COORD["of-pose"]))] = {
-            "x": g.value(coord, COORD["x"]).toPython(),
-            "y": g.value(coord, COORD["y"]).toPython(),
-            "theta": g.value(coord, COORD_EXT["theta"]).toPython(),
+            "x": get_coord_value(g.value(coord, COORD["x"], default=0.0)),
+            "y": get_coord_value(g.value(coord, COORD["y"], default=0.0)),
+            "alpha": get_coord_value(g.value(coord, COORD_EXT["alpha"], default=0.0)),
         }
 
     return coordinates_map
 
+def get_coord_value(v):
+    if v is not None and isinstance(v, float):
+        return v
+    else:
+        return v.toPython()
 
 def get_path_positions(g, path):
     positions = list()
