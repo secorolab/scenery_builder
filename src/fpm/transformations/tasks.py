@@ -57,7 +57,7 @@ def inset_shape(points, width=0.3):
     return np.array(inset)
 
 
-def create_inset_json_ld(model, width):
+def create_inset_json_ld(g, model, width):
 
     tree_structure = []
 
@@ -95,7 +95,8 @@ def create_inset_json_ld(model, width):
 
 
 def get_waypoint_coord(g, point, coordinates_map):
-    # Gets the coordinates of a point wrt world frame
+    """Gets the coordinates of a point wrt world frame"""
+
     frame = point["as-seen-by"]
     path = traverse_to_world_origin(g, frame)
 
@@ -134,7 +135,9 @@ def transform_insets(g, inset_model_framed, coordinates_map):
         inset_points = []
 
         for point in inset["points"]:
+            # Get the space name from the inset ID
             name = point["name"][26:-6]
+            # Get the point id (e.g. point-1) from the inset ID
             point_name = point["name"][15:22]
             name = "{}-{}".format(name, point_name)
 
@@ -164,11 +167,10 @@ def get_all_disinfection_tasks(g, inset_width):
 
     model_name = get_floorplan_model_name(g)
 
-    g.bind("fpmodel", FPMODEL["{}/".format(model_name)])
     space_points = get_space_points(g)
 
     print("Creating the insets...")
-    inset_model_framed = create_inset_json_ld(space_points, inset_width)
+    inset_model_framed = create_inset_json_ld(g,space_points, inset_width)
 
     print("Calculating transformation path...")
     # This just gets the coordinates of all poses in the graph, it doesn't calculate anything
