@@ -8,6 +8,7 @@ from fpm.generators.gazebo import generate_sdf_file
 from fpm.generators.tasks import generate_task_specification
 from fpm.transformations.tasks import get_all_disinfection_tasks
 from fpm.transformations.objects import get_all_object_models, get_all_object_instances
+from fpm.generators.occ_grid import generate_occ_grid
 
 
 @click.group()
@@ -115,6 +116,10 @@ def tasks(g, base_path, config, **kwargs):
         generate_task_specification(task, output_path)
 
 
+def get_occ_grid(g, base_path, **kwargs):
+    generate_occ_grid(g, base_path, **kwargs)
+
+
 def get_output_path(base_path, subfolder, model_name=None):
     if model_name is None:
         return os.path.join(base_path, subfolder)
@@ -157,6 +162,8 @@ def generate(configfile, inputs, output_path, **kwargs):
 
     door_object_models(g, output_path, **kwargs)
     gazebo_world(g, model_name, output_path, **kwargs)
+
+    get_occ_grid(g, output_path, **kwargs)
 
 
 if __name__ == "__main__":

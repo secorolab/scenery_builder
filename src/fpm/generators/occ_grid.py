@@ -1,17 +1,16 @@
 import os
-import io
 
-import yaml
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
 
+from fpm.graph import get_space_points, get_coordinates_map, get_floorplan_model_name, get_wall_points, get_opening_points
+from fpm.transformations.tasks import get_waypoint_coord
 from fpm.utils import load_template, save_file
+from fpm.constants import FPMODEL
 
 
-def generate_occ_grid(model, output_path, **custom_args):
-    model = model
-    spaces = model.spaces
-    wall_openings = model.wall_openings
+def generate_occ_grid(g, output_path, **custom_args):
+    map_name = get_floorplan_model_name(g)
 
     resolution = custom_args.get("resolution", 0.05)
 
@@ -22,40 +21,49 @@ def generate_occ_grid(model, output_path, **custom_args):
     border = custom_args.get("border", 50)
 
     if "{{model_name}}" in output_path:
-        output_path = output_path.replace("{{model_name}}", model.name)
+        output_path = output_path.replace("{{model_name}}", map_name)
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
     points = []
     directions = []
 
-    for space in spaces:
-        shape = space.get_shape()
-        shape_points = shape.get_points()
-        points.append(shape_points)
+    coords_m = get_coordinates_map(g)
+    space_points = get_space_points(g)
+    for s in space_points:
+        w_coords = list()
+        for p in s.get("points"):
+            x, y = get_waypoint_coord(g, p, coords_m)
+            w_coords.append([x, y, 0, 1])
 
+        w_coords = np.array(w_coords)
+        points.append(w_coords)
+
+        # Get the left/right, top/bottom of each space
         directions.append(
             [
-                np.amax(shape_points[:, 1]),  # north
-                np.amin(shape_points[:, 1]),  # south
-                np.amax(shape_points[:, 0]),  # east
-                np.amin(shape_points[:, 0]),  # west
+                np.amax(w_coords[:, 1]),  # north
+                np.amin(w_coords[:, 1]),  # south
+                np.amax(w_coords[:, 0]),  # east
+                np.amin(w_coords[:, 0]),  # west
             ]
         )
 
+    # Get the left/right, top/bottom of the entire map
     directions = np.array(directions)
     north = np.amax(directions[:, 0])
     south = np.amin(directions[:, 1])
     east = np.amax(directions[:, 2])
     west = np.amin(directions[:, 3])
 
+    # Get center of the map
     center = [
         -float(abs(west) + border * resolution / 2),
         -float(abs(south) + border * resolution / 2),
         0,
     ]
 
-    save_map_metadata(output_path, model, center, **custom_args)
+    save_map_metadata(output_path, map_name, center, **custom_args)
 
     # Create canvas
     floor = (
@@ -66,47 +74,77 @@ def generate_occ_grid(model, output_path, **custom_args):
     im = Image.new("L", floor, unknown)
     draw = ImageDraw.Draw(im)
 
-    for shape in points:
-        shape = get_2d_shape(west, south, resolution, border, shape=shape)
-        draw_2d_shape(draw, shape, fill=free)
+    # Draw free space from floorplan spaces (rooms)
+    draw_floorplan_element(points, draw, free, west=west, south=south, resolution=resolution, border=border)
 
-    for space in spaces:
-        for wall in space.walls:
-            points, _ = wall.generate_3d_structure()
-            shape = get_2d_shape(west, south, resolution, border, points=points)
-            draw_2d_shape(draw, shape, fill=occupied)
+    # Draw obstacles (walls and columns)
+    draw_floorplan_obstacle(g, "Wall", draw, west, south, resolution, border, occupied, coords_m)
+    draw_floorplan_obstacle(g, "Column", draw, west, south, resolution, border, occupied, coords_m)
+    draw_floorplan_obstacle(g, "Divider", draw, west, south, resolution, border, occupied, coords_m)
 
-    for wall_opening in wall_openings:
-        shape = wall_opening.generate_2d_structure(laser_height)
+    # Clear out wall openings; mark them as free space
+    draw_floorplan_opening(g, "Entryway", draw, west, south, resolution, border, free, coords_m)
+    # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
-        if shape is None:
-            continue
-
-        shape = get_2d_shape(west, south, resolution, border, shape=shape)
-        draw_2d_shape(draw, shape, fill=free)
-
-    for space in spaces:
-        for feature in space.floor_features:
-            points, _ = feature.generate_3d_structure()
-
-            if points[int(len(points) / 2) :, 2][0] < laser_height:
-                continue
-
-            shape = get_2d_shape(west, south, resolution, border, points=points)
-            draw_2d_shape(draw, shape, fill=occupied)
-
-    name_image = "{}.pgm".format(model.name)
+    name_image = "{}.pgm".format(map_name)
     im = ImageOps.flip(im)
     im.save(os.path.join(output_path, name_image), quality=95)
 
 
-def draw_2d_shape(draw, shape, fill):
-    draw.polygon(shape[:, 0:2].flatten().tolist(), fill=fill)
+def draw_floorplan_obstacle(g, element, draw, west, south, resolution, border, fill, coords_map, **kwargs):
+    column_points = get_wall_points(g, element)
+    c_points = list()
+    for s in column_points:
+        c_coords = list()
+        for p in s.get("points"):
+            x, y = get_waypoint_coord(g, p, coords_map)
+            c_coords.append([x, y, 0, 1])
+
+        c_coords = np.array(c_coords)
+        c_points.append(c_coords)
+
+    draw_floorplan_element(c_points, draw, fill, west=west, south=south, resolution=resolution, border=border, **kwargs)
+
+
+def draw_floorplan_opening(g, element, draw, west, south, resolution, border, fill, coords_map, **kwargs):
+    opening_points = get_opening_points(g, element)
+
+    all_points = list()
+    for opening in opening_points:
+        for face in opening:
+            y_vals = [p.get("y") for p in face]
+            if np.all(np.array(y_vals) == y_vals[0]):
+                continue
+            f_coords = list()
+            for p in face:
+                if p["y"] == 0.0:
+                    p["y"] = p["y"] - resolution
+                else:
+                    p["y"] = p["y"] + resolution
+                x, y = get_waypoint_coord(g, p, coords_map)
+                f_coords.append([x, y, 0, 1])
+            f_coords = np.array(f_coords)
+            all_points.append(f_coords)
+
+    draw_floorplan_element(all_points, draw, fill, west=west, south=south, resolution=resolution, border=border)
+
+def draw_floorplan_element(points, draw, fill, **kwargs):
+    west = kwargs.get("west")
+    south = kwargs.get("south")
+    resolution = kwargs.get("resolution", 0.05)
+    border = kwargs.get("border", 50)
+
+    for shape in points:
+        element_shape = get_2d_shape(west, south, resolution, border, shape=shape)
+        draw_2d_shape(draw, element_shape, fill=fill, **kwargs)
+
+def draw_2d_shape(draw, shape, fill, outline=None, width=1, **kwargs):
+    draw.polygon(shape[:, 0:2].flatten().tolist(), fill=fill, outline=outline, width=width)
 
 
 def get_2d_shape(west, south, resolution, border, points=None, shape=None):
     if shape is None:
-        shape = points[0 : int(len(points) / 2), 0:2]
+        shape = points[0: int(len(points) / 2), 0:2]
     shape[:, 0] = (shape[:, 0] + abs(west)) / resolution
     shape[:, 1] = (shape[:, 1] + abs(south)) / resolution
     shape += border / 2
@@ -115,8 +153,8 @@ def get_2d_shape(west, south, resolution, border, points=None, shape=None):
     return shape
 
 
-def save_map_metadata(output_path, model, center, **custom_args):
-    file_name = "{}.yaml".format(model.name)
+def save_map_metadata(output_path, map_name, center, **custom_args):
+    file_name = "{}.yaml".format(map_name)
     negate = custom_args.get("negate", 0)
     resolution = custom_args.get("resolution", 0.05)
     occupied_thresh = custom_args.get("occupied_thresh", 0.65)
@@ -127,7 +165,7 @@ def save_map_metadata(output_path, model, center, **custom_args):
         "occupied_thresh": occupied_thresh,
         "free_thresh": free_thresh,
         "negate": negate,
-        "image": "{}.pgm".format(model.name),
+        "image": "{}.pgm".format(map_name),
     }
 
     save_file(output_path, file_name, map_metadata)
