@@ -167,13 +167,43 @@ def get_space_points(g):
     spaces = get_list_from_ptr(g, space_ptr)
 
     # for each space, find the polygon
-    print("Get all points...")
+    print("Get all points of a space...")
     space_points = []
     for space in spaces:
         space_points_json = get_point_positions_in_space(g, space)
         space_points.append(space_points_json)
 
     return space_points
+
+def get_wall_points(g, element="Wall"):
+    print("Querying all {}s...".format(element))
+    wall_points = list()
+    for wall, _, _ in g.triples((None, RDF.type, FP[element])):
+        wall_points_json = get_point_positions_in_space(g, wall)
+        wall_points.append(wall_points_json)
+
+    return wall_points
+
+def get_opening_points(g, element="Entryway"):
+    print("Querying all {}s...".format(element))
+    opening_points = list()
+    for opening, _, _ in g.triples((None, RDF.type, FP[element])):
+        poly = g.value(opening, FP["3d-shape"])
+        faces_ptr = g.value(poly, POLY["faces"])
+        faces_nodes = get_list_from_ptr(g, faces_ptr)
+        face_positions = list()
+        for f in faces_nodes:
+            face_vertices = get_list_from_ptr(g, f)
+            positions = list()
+            for point in face_vertices:
+                p = get_point_position(g, point)
+                positions.append(p)
+            face_positions.append(positions)
+
+
+        opening_points.append(face_positions)
+
+    return opening_points
 
 
 def get_point_positions_in_space(g, space):
