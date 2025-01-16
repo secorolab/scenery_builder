@@ -2,6 +2,7 @@ import os
 import tomllib
 
 import yaml
+import bpy
 
 import numpy as np
 
@@ -35,6 +36,10 @@ def save_file(output_path, file_name, contents):
             yaml.dump(contents, f, default_flow_style=None)
     elif ext in [".pgm"]:
         contents.save(output_file, quality=95)
+    elif ext in [".stl"]:
+        bpy.ops.export_mesh.stl(filepath=output_file)
+    elif ext in [".dae"]:
+        bpy.ops.wm.collada_export(filepath=output_file)
     else:
         with open(output_file, "w") as f:
             f.write(contents)

@@ -51,14 +51,3 @@ def boolean_operation_difference(obj_name, cutter_name):
     # apply modifier
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.modifier_apply(modifier="boolean")
-
-
-def export_blender_scene(path, name, mesh_format="stl"):
-    """Exports scene into a mesh with the specified format, path, and name"""
-
-    if mesh_format == "stl":
-        name = "{name}.stl".format(name=name)
-        bpy.ops.export_mesh.stl(filepath=os.path.join(path, name))
-    elif mesh_format == "dae":
-        name = "{name}.dae".format(name=name)
-        bpy.ops.wm.collada_export(filepath=os.path.join(path, name))
