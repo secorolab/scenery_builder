@@ -8,9 +8,8 @@ from fpm.graph import (
     get_coordinates_map,
     get_floorplan_model_name,
     get_wall_points,
-    get_opening_points,
+    get_opening_points, get_waypoint_coord,
 )
-from fpm.transformations.tasks import get_waypoint_coord
 from fpm.utils import load_template, save_file
 from fpm.constants import FPMODEL
 

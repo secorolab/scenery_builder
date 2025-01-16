@@ -7,14 +7,10 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as Pol
 
 from fpm.graph import (
-    traverse_to_world_origin,
     get_space_points,
     get_coordinates_map,
-    get_path_positions,
-    get_floorplan_model_name,
+    get_floorplan_model_name, get_waypoint_coord,
 )
-from fpm.utils import build_transformation_matrix
-from fpm.constants import FPMODEL
 
 
 def inset_shape(points, width=0.3):
@@ -94,36 +90,6 @@ def create_inset_json_ld(g, model, width):
         tree_structure.append(polygon)
 
     return tree_structure
-
-
-def get_waypoint_coord(g, point, coordinates_map):
-    """Gets the coordinates of a point wrt world frame"""
-
-    frame = point["as-seen-by"]
-    path = traverse_to_world_origin(g, frame)
-
-    path_positions = get_path_positions(g, path)
-
-    p = np.array([[point["x"]], [point["y"]], [point["z"]], [1]]).astype(float)
-
-    path_positions = path_positions[::-1]
-    path_positions.append(0)
-    for pose, next_pose in zip(path_positions[:-1], path_positions[1:]):
-
-        coordinates = coordinates_map[pose]
-        T = build_transformation_matrix(
-            coordinates["x"], coordinates["y"], coordinates["z"], coordinates["alpha"]
-        ).astype(float)
-        if not next_pose == 0:
-            if next_pose.count("wall") > 1:
-                T = np.linalg.pinv(T)
-
-        p = np.dot(T, p)
-
-    x = p[0, 0].item()
-    y = p[1, 0].item()
-
-    return x, y
 
 
 def transform_insets(g, inset_model_framed, coordinates_map):
