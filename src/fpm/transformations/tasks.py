@@ -119,9 +119,8 @@ def get_waypoint_coord(g, point, coordinates_map):
 
         p = np.dot(T, p)
 
-    # inset_points.append([round(p[0, 0].item(), 2), round(p[1, 0].item(), 2), 0])
-    x = round(p[0, 0].item(), 2)
-    y = round(p[1, 0].item(), 2)
+    x = p[0, 0].item()
+    y = p[1, 0].item()
 
     return x, y
 
