@@ -51,10 +51,11 @@ def get_point_position(g, point):
 
     x = get_coord_value(g.value(coordinates, COORD["x"], default=0.0))
     y = get_coord_value(g.value(coordinates, COORD["y"], default=0.0))
+    z = get_coord_value(g.value(coordinates, COORD["z"], default=0.0))
     asb = g.value(coordinates, COORD["as-seen-by"])
     name = prefixed(g, coordinates)
 
-    return {"name": name, "x": x, "y": y, "as-seen-by": prefixed(g, asb)}
+    return {"name": name, "x": x, "y": y, "z": z,  "as-seen-by": prefixed(g, asb)}
 
 
 def get_floorplan_model_name(g):
@@ -197,7 +198,9 @@ def get_coordinates_map(g):
         coordinates_map[prefixed(g, g.value(coord, COORD["of-pose"]))] = {
             "x": get_coord_value(g.value(coord, COORD["x"], default=0.0)),
             "y": get_coord_value(g.value(coord, COORD["y"], default=0.0)),
+            "z": get_coord_value(g.value(coord, COORD["z"], default=0.0)),
             "alpha": get_coord_value(g.value(coord, COORD_EXT["alpha"], default=0.0)),
+            "beta": get_coord_value(g.value(coord, COORD_EXT["beta"], default=0.0)),
         }
 
     return coordinates_map

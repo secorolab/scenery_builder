@@ -84,6 +84,7 @@ def create_inset_json_ld(g, model, width):
                 "as-seen-by": "{name}-frame".format(name=space_name),
                 "x": point[0],
                 "y": point[1],
+                "z": 0.0,
             }
             tree_points.append(point)
 
@@ -102,7 +103,7 @@ def get_waypoint_coord(g, point, coordinates_map):
 
     path_positions = get_path_positions(g, path)
 
-    p = np.array([[point["x"]], [point["y"]], [0], [1]]).astype(float)
+    p = np.array([[point["x"]], [point["y"]], [point["z"]], [1]]).astype(float)
 
     path_positions = path_positions[::-1]
     path_positions.append(0)
@@ -110,7 +111,7 @@ def get_waypoint_coord(g, point, coordinates_map):
 
         coordinates = coordinates_map[pose]
         T = build_transformation_matrix(
-            coordinates["x"], coordinates["y"], 0, coordinates["alpha"]
+        coordinates["x"], coordinates["y"], coordinates["z"], coordinates["alpha"]
         ).astype(float)
         if not next_pose == 0:
             if next_pose.count("wall") > 1:
