@@ -1,5 +1,3 @@
-import os
-
 import bpy
 
 from fpm.transformations.blender import (
@@ -7,26 +5,21 @@ from fpm.transformations.blender import (
     clear_scene,
     create_mesh,
     create_collection,
-    export_blender_scene,
 )
+from fpm.graph import get_floorplan_model_name
+from fpm.utils import save_file
 
 
-def generate_3d_mesh(model, output_path, **custom_args):
+def generate_3d_mesh(g, output_path, **custom_args):
     file_format = custom_args.get("format", "stl")
 
-    if "{{model_name}}" in output_path:
-        output_path = output_path.replace("{{model_name}}", model.name)
-        print(output_path)
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
+    model_name = get_floorplan_model_name(g)
 
-    spaces = model.spaces
-    wall_openings = model.wall_openings
-
-    building = create_collection(model.name)
+    building = create_collection(model_name)
     # clear the blender scene
     clear_scene()
 
+    spaces = model.spaces
     # create wall spaces
     for space in spaces:
         for i, wall in enumerate(space.walls):
@@ -37,6 +30,7 @@ def generate_3d_mesh(model, output_path, **custom_args):
             vertices, faces = feature.generate_3d_structure()
             create_mesh(building, feature.name, vertices, faces)
 
+    wall_openings = model.wall_openings
     # create wall openings
     for wall_opening in wall_openings:
 
@@ -51,4 +45,5 @@ def generate_3d_mesh(model, output_path, **custom_args):
         bpy.data.objects[wall_opening.name].select_set(True)
         bpy.ops.object.delete()
 
-    export_blender_scene(output_path, model.name, mesh_format=file_format)
+    file_name = "{name}.{ext}".format(name=model_name, ext=file_format)
+    save_file(output_path, file_name, None)
