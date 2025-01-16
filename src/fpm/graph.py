@@ -263,3 +263,33 @@ def get_path_positions(g, path):
             positions.append(position)
 
     return positions
+
+
+def get_waypoint_coord(g, point, coordinates_map):
+    """Gets the coordinates of a point wrt world frame"""
+
+    frame = point["as-seen-by"]
+    path = traverse_to_world_origin(g, frame)
+
+    path_positions = get_path_positions(g, path)
+
+    p = np.array([[point["x"]], [point["y"]], [point["z"]], [1]]).astype(float)
+
+    path_positions = path_positions[::-1]
+    path_positions.append(0)
+    for pose, next_pose in zip(path_positions[:-1], path_positions[1:]):
+
+        coordinates = coordinates_map[pose]
+        T = build_transformation_matrix(
+            coordinates["x"], coordinates["y"], coordinates["z"], coordinates["alpha"]
+        ).astype(float)
+        if not next_pose == 0:
+            if next_pose.count("wall") > 1:
+                T = np.linalg.pinv(T)
+
+        p = np.dot(T, p)
+
+    x = p[0, 0].item()
+    y = p[1, 0].item()
+
+    return x, y
