@@ -3,7 +3,13 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
 
-from fpm.graph import get_space_points, get_coordinates_map, get_floorplan_model_name, get_wall_points, get_opening_points
+from fpm.graph import (
+    get_space_points,
+    get_coordinates_map,
+    get_floorplan_model_name,
+    get_wall_points,
+    get_opening_points,
+)
 from fpm.transformations.tasks import get_waypoint_coord
 from fpm.utils import load_template, save_file
 from fpm.constants import FPMODEL
@@ -75,15 +81,25 @@ def generate_occ_grid(g, output_path, **custom_args):
     draw = ImageDraw.Draw(im)
 
     # Draw free space from floorplan spaces (rooms)
-    draw_floorplan_element(points, draw, free, west=west, south=south, resolution=resolution, border=border)
+    draw_floorplan_element(
+        points, draw, free, west=west, south=south, resolution=resolution, border=border
+    )
 
     # Draw obstacles (walls and columns)
-    draw_floorplan_obstacle(g, "Wall", draw, west, south, resolution, border, occupied, coords_m)
-    draw_floorplan_obstacle(g, "Column", draw, west, south, resolution, border, occupied, coords_m)
-    draw_floorplan_obstacle(g, "Divider", draw, west, south, resolution, border, occupied, coords_m)
+    draw_floorplan_obstacle(
+        g, "Wall", draw, west, south, resolution, border, occupied, coords_m
+    )
+    draw_floorplan_obstacle(
+        g, "Column", draw, west, south, resolution, border, occupied, coords_m
+    )
+    draw_floorplan_obstacle(
+        g, "Divider", draw, west, south, resolution, border, occupied, coords_m
+    )
 
     # Clear out wall openings; mark them as free space
-    draw_floorplan_opening(g, "Entryway", draw, west, south, resolution, border, free, coords_m)
+    draw_floorplan_opening(
+        g, "Entryway", draw, west, south, resolution, border, free, coords_m
+    )
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
     name_image = "{}.pgm".format(map_name)
@@ -91,7 +107,9 @@ def generate_occ_grid(g, output_path, **custom_args):
     im.save(os.path.join(output_path, name_image), quality=95)
 
 
-def draw_floorplan_obstacle(g, element, draw, west, south, resolution, border, fill, coords_map, **kwargs):
+def draw_floorplan_obstacle(
+    g, element, draw, west, south, resolution, border, fill, coords_map, **kwargs
+):
     column_points = get_wall_points(g, element)
     c_points = list()
     for s in column_points:
@@ -103,10 +121,21 @@ def draw_floorplan_obstacle(g, element, draw, west, south, resolution, border, f
         c_coords = np.array(c_coords)
         c_points.append(c_coords)
 
-    draw_floorplan_element(c_points, draw, fill, west=west, south=south, resolution=resolution, border=border, **kwargs)
+    draw_floorplan_element(
+        c_points,
+        draw,
+        fill,
+        west=west,
+        south=south,
+        resolution=resolution,
+        border=border,
+        **kwargs,
+    )
 
 
-def draw_floorplan_opening(g, element, draw, west, south, resolution, border, fill, coords_map, **kwargs):
+def draw_floorplan_opening(
+    g, element, draw, west, south, resolution, border, fill, coords_map, **kwargs
+):
     opening_points = get_opening_points(g, element)
 
     all_points = list()
@@ -126,7 +155,16 @@ def draw_floorplan_opening(g, element, draw, west, south, resolution, border, fi
             f_coords = np.array(f_coords)
             all_points.append(f_coords)
 
-    draw_floorplan_element(all_points, draw, fill, west=west, south=south, resolution=resolution, border=border)
+    draw_floorplan_element(
+        all_points,
+        draw,
+        fill,
+        west=west,
+        south=south,
+        resolution=resolution,
+        border=border,
+    )
+
 
 def draw_floorplan_element(points, draw, fill, **kwargs):
     west = kwargs.get("west")
@@ -138,13 +176,16 @@ def draw_floorplan_element(points, draw, fill, **kwargs):
         element_shape = get_2d_shape(west, south, resolution, border, shape=shape)
         draw_2d_shape(draw, element_shape, fill=fill, **kwargs)
 
+
 def draw_2d_shape(draw, shape, fill, outline=None, width=1, **kwargs):
-    draw.polygon(shape[:, 0:2].flatten().tolist(), fill=fill, outline=outline, width=width)
+    draw.polygon(
+        shape[:, 0:2].flatten().tolist(), fill=fill, outline=outline, width=width
+    )
 
 
 def get_2d_shape(west, south, resolution, border, points=None, shape=None):
     if shape is None:
-        shape = points[0: int(len(points) / 2), 0:2]
+        shape = points[0 : int(len(points) / 2), 0:2]
     shape[:, 0] = (shape[:, 0] + abs(west)) / resolution
     shape[:, 1] = (shape[:, 1] + abs(south)) / resolution
     shape += border / 2

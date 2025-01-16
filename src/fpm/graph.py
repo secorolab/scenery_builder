@@ -8,7 +8,17 @@ from rdflib import RDF
 from rdflib.tools.rdf2dot import rdf2dot
 
 from fpm import traversal
-from fpm.constants import GEO, GEOM, COORD, COORD_EXT, QUDT, QUDT_VOCAB, FP, POLY, FPMODEL
+from fpm.constants import (
+    GEO,
+    GEOM,
+    COORD,
+    COORD_EXT,
+    QUDT,
+    QUDT_VOCAB,
+    FP,
+    POLY,
+    FPMODEL,
+)
 from fpm.utils import build_transformation_matrix
 
 
@@ -55,7 +65,7 @@ def get_point_position(g, point):
     asb = g.value(coordinates, COORD["as-seen-by"])
     name = prefixed(g, coordinates)
 
-    return {"name": name, "x": x, "y": y, "z": z,  "as-seen-by": prefixed(g, asb)}
+    return {"name": name, "x": x, "y": y, "z": z, "as-seen-by": prefixed(g, asb)}
 
 
 def get_floorplan_model_name(g):
@@ -175,6 +185,7 @@ def get_space_points(g):
 
     return space_points
 
+
 def get_wall_points(g, element="Wall"):
     print("Querying all {}s...".format(element))
     wall_points = list()
@@ -183,6 +194,7 @@ def get_wall_points(g, element="Wall"):
         wall_points.append(wall_points_json)
 
     return wall_points
+
 
 def get_opening_points(g, element="Entryway"):
     print("Querying all {}s...".format(element))
@@ -199,7 +211,6 @@ def get_opening_points(g, element="Entryway"):
                 p = get_point_position(g, point)
                 positions.append(p)
             face_positions.append(positions)
-
 
         opening_points.append(face_positions)
 
@@ -235,11 +246,13 @@ def get_coordinates_map(g):
 
     return coordinates_map
 
+
 def get_coord_value(v):
     if v is not None and isinstance(v, float):
         return v
     else:
         return v.toPython()
+
 
 def get_path_positions(g, path):
     positions = list()
