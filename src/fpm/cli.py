@@ -117,7 +117,8 @@ def tasks(g, base_path, config, **kwargs):
 
 
 def get_occ_grid(g, base_path, **kwargs):
-    generate_occ_grid(g, base_path, **kwargs)
+    output_path = get_output_path(base_path, "maps")
+    generate_occ_grid(g, output_path, **kwargs)
 
 
 def get_output_path(base_path, subfolder, model_name=None):
