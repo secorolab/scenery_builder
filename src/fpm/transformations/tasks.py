@@ -11,10 +11,11 @@ from fpm.graph import (
     get_space_points,
     get_coordinates_map,
     get_path_positions,
-    get_floorplan_model_name
+    get_floorplan_model_name,
 )
 from fpm.utils import build_transformation_matrix
 from fpm.constants import FPMODEL
+
 
 def inset_shape(points, width=0.3):
     lines = []
@@ -111,7 +112,7 @@ def get_waypoint_coord(g, point, coordinates_map):
 
         coordinates = coordinates_map[pose]
         T = build_transformation_matrix(
-        coordinates["x"], coordinates["y"], coordinates["z"], coordinates["alpha"]
+            coordinates["x"], coordinates["y"], coordinates["z"], coordinates["alpha"]
         ).astype(float)
         if not next_pose == 0:
             if next_pose.count("wall") > 1:
@@ -170,7 +171,7 @@ def get_all_disinfection_tasks(g, inset_width):
     space_points = get_space_points(g)
 
     print("Creating the insets...")
-    inset_model_framed = create_inset_json_ld(g,space_points, inset_width)
+    inset_model_framed = create_inset_json_ld(g, space_points, inset_width)
 
     print("Calculating transformation path...")
     # This just gets the coordinates of all poses in the graph, it doesn't calculate anything

@@ -34,7 +34,9 @@ QUDT_VOCAB = rdflib.Namespace("https://qudt.org/vocab/unit/")
 COORD = rdflib.Namespace(
     "https://comp-rob2b.github.io/metamodels/geometry/coordinates#"
 )
-COORD_EXT = rdflib.Namespace("https://secorolab.github.io/metamodels/geometry/coordinates#")
+COORD_EXT = rdflib.Namespace(
+    "https://secorolab.github.io/metamodels/geometry/coordinates#"
+)
 
 # simulator metamodel
 GZB = rdflib.Namespace("https://secorolab.github.io/metamodels/gazebo#")
