@@ -33,6 +33,8 @@ def save_file(output_path, file_name, contents):
     if ext in [".yaml"]:
         with open(output_file, "w") as f:
             yaml.dump(contents, f, default_flow_style=None)
+    elif ext in [".pgm"]:
+        contents.save(output_file, quality=95)
     else:
         with open(output_file, "w") as f:
             f.write(contents)
