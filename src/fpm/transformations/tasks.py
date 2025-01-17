@@ -9,7 +9,8 @@ from matplotlib.patches import Polygon as Pol
 from fpm.graph import (
     get_space_points,
     get_coordinates_map,
-    get_floorplan_model_name, get_waypoint_coord,
+    get_floorplan_model_name,
+    get_waypoint_coord,
 )
 
 
