@@ -6,7 +6,7 @@ from fpm.transformations.blender import (
     create_mesh,
     create_collection,
 )
-from fpm.graph import get_floorplan_model_name
+from fpm.graph import get_floorplan_model_name, get_3d_structure
 from fpm.utils import save_file
 
 
@@ -19,31 +19,41 @@ def generate_3d_mesh(g, output_path, **custom_args):
     # clear the blender scene
     clear_scene()
 
-    spaces = model.spaces
-    # create wall spaces
-    for space in spaces:
-        for i, wall in enumerate(space.walls):
-            vertices, faces = wall.generate_3d_structure()
-            create_mesh(building, wall.name, vertices, faces)
+    print("Getting 3D structures")
+    elements = get_3d_structure(g, "Wall")
+    create_element_mesh(building, elements)
 
-        for feature in space.floor_features:
-            vertices, faces = feature.generate_3d_structure()
-            create_mesh(building, feature.name, vertices, faces)
+    columns = get_3d_structure(g, "Column")
+    create_element_mesh(building, columns)
 
-    wall_openings = model.wall_openings
-    # create wall openings
-    for wall_opening in wall_openings:
+    dividers = get_3d_structure(g, "Divider")
+    create_element_mesh(building, dividers)
 
-        vertices, faces = wall_opening.generate_3d_structure()
-        create_mesh(building, wall_opening.name, vertices, faces)
+    entryways = get_3d_structure(g, "Entryway")
+    create_element_mesh(building, entryways)
+    subtract_opening(entryways)
 
-        # boolean operation for walls and opening
-        boolean_operation_difference(wall_opening.wall_a.name, wall_opening.name)
-        if not wall_opening.wall_b is None:
-            boolean_operation_difference(wall_opening.wall_b.name, wall_opening.name)
-
-        bpy.data.objects[wall_opening.name].select_set(True)
-        bpy.ops.object.delete()
+    windows = get_3d_structure(g, "Window")
+    create_element_mesh(building, windows)
+    subtract_opening(windows)
 
     file_name = "{name}.{ext}".format(name=model_name, ext=file_format)
     save_file(output_path, file_name, None)
+
+
+def create_element_mesh(building, elements):
+    for e in elements:
+        name = e.get("name")
+        vertices = e.get("vertices")
+        faces = e.get("faces")
+        create_mesh(building, name, vertices, faces)
+
+
+def subtract_opening(openings):
+    # boolean operation for walls and opening
+    for opening in openings:
+        name = opening.get("name")
+        for wall in opening.get("voids", list()):
+            boolean_operation_difference(wall, name)
+        bpy.data.objects[name].select_set(True)
+        bpy.ops.object.delete()
