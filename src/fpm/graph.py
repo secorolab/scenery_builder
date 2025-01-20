@@ -227,8 +227,8 @@ def get_3d_structure(g, element="Wall"):
         positions = list()
         for point in vertices:
             p = get_point_position(g, point)
-            x, y = get_waypoint_coord(g, p, coords_m)
-            positions.append((x, y, p["z"]))
+            x, y, z = get_waypoint_coord(g, p, coords_m)
+            positions.append((x, y, z))
 
         faces_ptr = g.value(poly, POLY["faces"])
         faces_nodes = get_list_from_ptr(g, faces_ptr)
@@ -323,5 +323,6 @@ def get_waypoint_coord(g, point, coordinates_map):
 
     x = p[0, 0].item()
     y = p[1, 0].item()
+    z = p[2, 0].item()
 
-    return x, y
+    return x, y, z
