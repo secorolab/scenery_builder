@@ -109,7 +109,7 @@ def transform_insets(g, inset_model_framed, coordinates_map):
             point_name = point["name"][15:22]
             name = "{}-{}".format(name, point_name)
 
-            x, y = get_waypoint_coord(g, point, coordinates_map)
+            x, y, _ = get_waypoint_coord(g, point, coordinates_map)
 
             inset_points.append({"id": name, "x": x, "y": y, "z": 0, "yaw": 0})
 

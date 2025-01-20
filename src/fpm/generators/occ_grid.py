@@ -39,7 +39,7 @@ def generate_occ_grid(g, output_path, **custom_args):
     for s in space_points:
         w_coords = list()
         for p in s.get("points"):
-            x, y = get_waypoint_coord(g, p, coords_m)
+            x, y, _ = get_waypoint_coord(g, p, coords_m)
             w_coords.append([x, y, 0, 1])
 
         w_coords = np.array(w_coords)
@@ -116,7 +116,7 @@ def draw_floorplan_obstacle(
     for s in column_points:
         c_coords = list()
         for p in s.get("points"):
-            x, y = get_waypoint_coord(g, p, coords_map)
+            x, y, _ = get_waypoint_coord(g, p, coords_map)
             c_coords.append([x, y, 0, 1])
 
         c_coords = np.array(c_coords)
@@ -151,7 +151,7 @@ def draw_floorplan_opening(
                     p["y"] = p["y"] - resolution
                 else:
                     p["y"] = p["y"] + resolution
-                x, y = get_waypoint_coord(g, p, coords_map)
+                x, y, _ = get_waypoint_coord(g, p, coords_map)
                 f_coords.append([x, y, 0, 1])
             f_coords = np.array(f_coords)
             all_points.append(f_coords)
