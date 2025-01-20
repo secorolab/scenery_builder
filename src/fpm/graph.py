@@ -323,8 +323,10 @@ def get_waypoint_coord(g, point, coordinates_map):
         T = build_transformation_matrix(
             coordinates["x"], coordinates["y"], coordinates["z"], coordinates["alpha"]
         ).astype(float)
-        if not next_pose == 0 :
-            if next_pose.count("wall") > 1 and ("entryway" not in pose and "window" not in pose):
+        if not next_pose == 0:
+            if next_pose.count("wall") > 1 and (
+                "entryway" not in pose and "window" not in pose
+            ):
                 T = np.linalg.pinv(T)
 
         p = np.dot(T, p)
