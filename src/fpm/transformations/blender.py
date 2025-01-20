@@ -15,8 +15,9 @@ def create_mesh(collection, name, vertices, faces):
 
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 
+    # Finish up, write the bmesh back to the mesh
     bm.to_mesh(me)
-    bm.free()
+    bm.free()  # free and prevent further access
     me.update()
 
     obj = bpy.data.objects.new(name, me)
@@ -40,7 +41,7 @@ def clear_scene():
 
 
 def boolean_operation_difference(obj_name, cutter_name):
-    """Performs a the difference boolean operation"""
+    """Performs the difference boolean operation"""
 
     # select the object
     obj = bpy.data.objects[obj_name]
@@ -48,6 +49,7 @@ def boolean_operation_difference(obj_name, cutter_name):
     boolean = obj.modifiers.new(name="boolean", type="BOOLEAN")
     boolean.object = bpy.data.objects[cutter_name]
     boolean.operation = "DIFFERENCE"
+    boolean.solver = "EXACT"
     # apply modifier
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.modifier_apply(modifier="boolean")

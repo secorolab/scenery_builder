@@ -217,16 +217,25 @@ def get_opening_points(g, element="Entryway"):
     return opening_points
 
 
-def get_3d_structure(g, element="Wall"):
+def get_3d_structure(g, element="Wall", threshold=0.05):
+    print("Getting 3D structure of all {}s...".format(element))
     elements = list()
     coords_m = get_coordinates_map(g)
     for e, _, _ in g.triples((None, RDF.type, FP[element])):
+        name = prefixed(g, e).split(":")[-1]
+
         poly = g.value(e, FP["3d-shape"])
         vertices_ptr = g.value(poly, POLY["points"])
         vertices = get_list_from_ptr(g, vertices_ptr)
         positions = list()
         for point in vertices:
             p = get_point_position(g, point)
+            if element in ["Window", "Entryway"]:
+                if p["y"] == 0.0:
+                    p["y"] = p["y"] - threshold
+                else:
+                    p["y"] = p["y"] + threshold
+
             x, y, z = get_waypoint_coord(g, p, coords_m)
             positions.append((x, y, z))
 
@@ -238,7 +247,6 @@ def get_3d_structure(g, element="Wall"):
             face = [vertices.index(point) for point in face_vertices]
             faces.append(face)
 
-        name = prefixed(g, e).split(":")[-1]
         d = {"name": name, "vertices": positions, "faces": faces}
         if element in ["Entryway", "Window"]:
             voids_ptr = g.value(e, FP["voids"])
