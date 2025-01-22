@@ -81,9 +81,7 @@ def generate_occ_grid(g, output_path, **custom_args):
     draw = ImageDraw.Draw(im)
 
     # Draw free space from floorplan spaces (rooms)
-    draw_floorplan_element(
-        points, draw, free, west=west, south=south, **custom_args
-    )
+    draw_floorplan_element(points, draw, free, west=west, south=south, **custom_args)
 
     # Draw obstacles (walls and columns)
     draw_floorplan_obstacle(
@@ -98,7 +96,7 @@ def generate_occ_grid(g, output_path, **custom_args):
 
     # Clear out wall openings; mark them as free space
     draw_floorplan_opening(
-        g, "Entryway", draw, west, south,  free, coords_m, **custom_args
+        g, "Entryway", draw, west, south, free, coords_m, **custom_args
     )
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
@@ -108,9 +106,7 @@ def generate_occ_grid(g, output_path, **custom_args):
     save_file(output_path, name_image, im)
 
 
-def draw_floorplan_obstacle(
-    g, element, draw, west, south, fill, coords_map, **kwargs
-):
+def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
     column_points = get_wall_points(g, element)
     c_points = list()
     for s in column_points:
@@ -132,9 +128,7 @@ def draw_floorplan_obstacle(
     )
 
 
-def draw_floorplan_opening(
-    g, element, draw, west, south, fill, coords_map, **kwargs
-):
+def draw_floorplan_opening(g, element, draw, west, south, fill, coords_map, **kwargs):
     opening_points = get_opening_points(g, element)
     resolution = kwargs.get("resolution", 0.05)
 
@@ -155,14 +149,7 @@ def draw_floorplan_opening(
             f_coords = np.array(f_coords)
             all_points.append(f_coords)
 
-    draw_floorplan_element(
-        all_points,
-        draw,
-        fill,
-        west=west,
-        south=south,
-        **kwargs
-    )
+    draw_floorplan_element(all_points, draw, fill, west=west, south=south, **kwargs)
 
 
 def draw_floorplan_element(points, draw, fill, **kwargs):
