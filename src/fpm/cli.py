@@ -142,72 +142,59 @@ def get_output_path(base_path, subfolder, model_name=None):
     type=click.Path(exists=True, resolve_path=True),
     required=True,
     multiple=True,
+    help="Path with JSON-LD models to be used as inputs",
 )
 @click.option(
     "--output-path",
     type=click.Path(exists=True, resolve_path=True),
     default=os.path.join("."),
+    help="Output path for generated artefacts",
 )
 @click.option(
     "--templates",
     type=click.Path(exists=True, resolve_path=True),
     default=os.path.join("."),
+    help="Path with Jinja templates",
 )
 @click.option(
     "--ros-version",
     type=click.STRING,
     default="ros2",
+    show_default=True,
+    help="ROS version for launch files",
 )
 @click.option(
     "--waypoint-dist-to-corner",
     type=click.FLOAT,
-    default=0.7
+    default=0.7,
+    show_default=True,
+    help="Tasks: Distance between generated waypoints and a space's corner",
 )
 @click.option(
     "--map-laser-height",
     type=click.FLOAT,
-    default=0.7
+    default=0.7,
+    show_default=True,
+    help="Map: Height of the laser to generate the occupancy grid",
 )
 @click.option(
     "--map-border",
     type=click.INT,
-    default=50
+    default=50,
+    show_default=True,
+    help="Map: Border the occupancy grid",
+)
+@click.option("--map-resolution", type=click.FLOAT, default=0.05, show_default=True, help="Map: Resolution of the pgm file in m/pixel")
+@click.option(
+    "--map-occupied-threshold", type=click.FLOAT, default=0.65, show_default=True, help="Map: Probability of a pixel at which a cell is considered occupied"
 )
 @click.option(
-    "--map-resolution",
-    type=click.FLOAT,
-    default=0.05
+    "--map-free-threshold", type=click.FLOAT, default=0.196, show_default=True, help="Map: Probability of a pixel at which a cell is considered free"
 )
-@click.option(
-    "--map-occupied-threshold",
-    type=click.FLOAT,
-    default=0.65
-)
-@click.option(
-    "--map-free-threshold",
-    type=click.FLOAT,
-    default=0.196
-)
-@click.option(
-    "--map-negate",
-    type=click.FLOAT,
-    default=0.0
-)
-@click.option(
-    "--map-unknown-value",
-    type=click.INT,
-    default=200
-)
-@click.option(
-    "--map-occupied-value",
-    type=click.INT,
-    default=0
-)
-@click.option(
-    "--map-free-value",
-    type=click.INT,
-    default=255
-)
+@click.option("--map-negate", type=click.FLOAT, default=0.0, show_default=True, help="Map: Whether the occupied/free/unknown semantics of the occupancy grid should be reversed")
+@click.option("--map-unknown-value", type=click.INT, default=200, show_default=True, help="Map: Value for cells to be considered unknown in the occupancy grid")
+@click.option("--map-occupied-value", type=click.INT, default=0, show_default=True, help="Map: Value for cells to be considered occupied in the occupancy map")
+@click.option("--map-free-value", type=click.INT, default=255, show_default=True, help="Map: Value for cells to be considered free in the occupancy map")
 def generate(configfile, inputs, output_path, **kwargs):
     print(kwargs)
     config = load_config_file(configfile)
