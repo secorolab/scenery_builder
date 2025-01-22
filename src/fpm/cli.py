@@ -163,6 +163,51 @@ def get_output_path(base_path, subfolder, model_name=None):
     type=click.FLOAT,
     default=0.7
 )
+@click.option(
+    "--map-laser-height",
+    type=click.FLOAT,
+    default=0.7
+)
+@click.option(
+    "--map-border",
+    type=click.INT,
+    default=50
+)
+@click.option(
+    "--map-resolution",
+    type=click.FLOAT,
+    default=0.05
+)
+@click.option(
+    "--map-occupied-threshold",
+    type=click.FLOAT,
+    default=0.65
+)
+@click.option(
+    "--map-free-threshold",
+    type=click.FLOAT,
+    default=0.196
+)
+@click.option(
+    "--map-negate",
+    type=click.FLOAT,
+    default=0.0
+)
+@click.option(
+    "--map-unknown-value",
+    type=click.INT,
+    default=200
+)
+@click.option(
+    "--map-occupied-value",
+    type=click.INT,
+    default=0
+)
+@click.option(
+    "--map-free-value",
+    type=click.INT,
+    default=255
+)
 def generate(configfile, inputs, output_path, **kwargs):
     print(kwargs)
     config = load_config_file(configfile)

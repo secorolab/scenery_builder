@@ -18,13 +18,13 @@ from fpm.constants import FPMODEL
 def generate_occ_grid(g, output_path, **custom_args):
     map_name = get_floorplan_model_name(g)
 
-    resolution = custom_args.get("resolution", 0.05)
+    resolution = custom_args.get("map_resolution", 0.05)
 
-    unknown = custom_args.get("unknown", 200)
-    occupied = custom_args.get("occupied", 0)
-    free = custom_args.get("free", 255)
-    laser_height = custom_args.get("laser_height", 0.7)
-    border = custom_args.get("border", 50)
+    unknown = custom_args.get("map_unknown_value", 200)
+    occupied = custom_args.get("map_occupied_value", 0)
+    free = custom_args.get("map_free_value", 255)
+    laser_height = custom_args.get("map_laser_height", 0.7)
+    border = custom_args.get("map_border", 50)
 
     if "{{model_name}}" in output_path:
         output_path = output_path.replace("{{model_name}}", map_name)
@@ -82,23 +82,23 @@ def generate_occ_grid(g, output_path, **custom_args):
 
     # Draw free space from floorplan spaces (rooms)
     draw_floorplan_element(
-        points, draw, free, west=west, south=south, resolution=resolution, border=border
+        points, draw, free, west=west, south=south, **custom_args
     )
 
     # Draw obstacles (walls and columns)
     draw_floorplan_obstacle(
-        g, "Wall", draw, west, south, resolution, border, occupied, coords_m
+        g, "Wall", draw, west, south, occupied, coords_m, **custom_args
     )
     draw_floorplan_obstacle(
-        g, "Column", draw, west, south, resolution, border, occupied, coords_m
+        g, "Column", draw, west, south, occupied, coords_m, **custom_args
     )
     draw_floorplan_obstacle(
-        g, "Divider", draw, west, south, resolution, border, occupied, coords_m
+        g, "Divider", draw, west, south, occupied, coords_m, **custom_args
     )
 
     # Clear out wall openings; mark them as free space
     draw_floorplan_opening(
-        g, "Entryway", draw, west, south, resolution, border, free, coords_m
+        g, "Entryway", draw, west, south,  free, coords_m, **custom_args
     )
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
@@ -109,7 +109,7 @@ def generate_occ_grid(g, output_path, **custom_args):
 
 
 def draw_floorplan_obstacle(
-    g, element, draw, west, south, resolution, border, fill, coords_map, **kwargs
+    g, element, draw, west, south, fill, coords_map, **kwargs
 ):
     column_points = get_wall_points(g, element)
     c_points = list()
@@ -128,16 +128,15 @@ def draw_floorplan_obstacle(
         fill,
         west=west,
         south=south,
-        resolution=resolution,
-        border=border,
         **kwargs,
     )
 
 
 def draw_floorplan_opening(
-    g, element, draw, west, south, resolution, border, fill, coords_map, **kwargs
+    g, element, draw, west, south, fill, coords_map, **kwargs
 ):
     opening_points = get_opening_points(g, element)
+    resolution = kwargs.get("resolution", 0.05)
 
     all_points = list()
     for opening in opening_points:
@@ -162,16 +161,15 @@ def draw_floorplan_opening(
         fill,
         west=west,
         south=south,
-        resolution=resolution,
-        border=border,
+        **kwargs
     )
 
 
 def draw_floorplan_element(points, draw, fill, **kwargs):
     west = kwargs.get("west")
     south = kwargs.get("south")
-    resolution = kwargs.get("resolution", 0.05)
-    border = kwargs.get("border", 50)
+    resolution = kwargs.get("map_resolution", 0.05)
+    border = kwargs.get("map_border", 50)
 
     for shape in points:
         element_shape = get_2d_shape(west, south, resolution, border, shape=shape)
@@ -197,10 +195,10 @@ def get_2d_shape(west, south, resolution, border, points=None, shape=None):
 
 def save_map_metadata(output_path, map_name, center, **custom_args):
     file_name = "{}.yaml".format(map_name)
-    negate = custom_args.get("negate", 0)
-    resolution = custom_args.get("resolution", 0.05)
-    occupied_thresh = custom_args.get("occupied_thresh", 0.65)
-    free_thresh = custom_args.get("free_thresh", 0.196)
+    negate = custom_args.get("map_negate", 0)
+    resolution = custom_args.get("map_resolution", 0.05)
+    occupied_thresh = custom_args.get("map_occupied_threshold", 0.65)
+    free_thresh = custom_args.get("map_free_threshold", 0.196)
     map_metadata = {
         "resolution": resolution,
         "origin": center,
