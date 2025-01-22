@@ -108,9 +108,9 @@ def gazebo_world(g, model_name, base_path, **kwargs):
     gazebo_world_launch(model_name, base_path, **kwargs)
 
 
-def tasks(g, base_path, config, **kwargs):
+def tasks(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "tasks")
-    inset_width = config["tasks"]["inset_width"]
+    inset_width = kwargs.get("waypoint_dist_to_corner")
 
     tasks = get_all_disinfection_tasks(g, inset_width)
     for task in tasks:
@@ -158,6 +158,11 @@ def get_output_path(base_path, subfolder, model_name=None):
     type=click.STRING,
     default="ros2",
 )
+@click.option(
+    "--waypoint-dist-to-corner",
+    type=click.FLOAT,
+    default=0.7
+)
 def generate(configfile, inputs, output_path, **kwargs):
     print(kwargs)
     config = load_config_file(configfile)
@@ -165,7 +170,7 @@ def generate(configfile, inputs, output_path, **kwargs):
     g = build_graph_from_directory(inputs)
     model_name = get_floorplan_model_name(g)
 
-    tasks(g, output_path, config)
+    tasks(g, output_path, **kwargs)
 
     door_object_models(g, output_path, **kwargs)
     gazebo_world(g, model_name, output_path, **kwargs)
