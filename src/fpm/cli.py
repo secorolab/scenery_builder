@@ -184,17 +184,55 @@ def get_output_path(base_path, subfolder, model_name=None):
     show_default=True,
     help="Map: Border the occupancy grid",
 )
-@click.option("--map-resolution", type=click.FLOAT, default=0.05, show_default=True, help="Map: Resolution of the pgm file in m/pixel")
 @click.option(
-    "--map-occupied-threshold", type=click.FLOAT, default=0.65, show_default=True, help="Map: Probability of a pixel at which a cell is considered occupied"
+    "--map-resolution",
+    type=click.FLOAT,
+    default=0.05,
+    show_default=True,
+    help="Map: Resolution of the pgm file in m/pixel",
 )
 @click.option(
-    "--map-free-threshold", type=click.FLOAT, default=0.196, show_default=True, help="Map: Probability of a pixel at which a cell is considered free"
+    "--map-occupied-threshold",
+    type=click.FLOAT,
+    default=0.65,
+    show_default=True,
+    help="Map: Probability of a pixel at which a cell is considered occupied",
 )
-@click.option("--map-negate", type=click.FLOAT, default=0.0, show_default=True, help="Map: Whether the occupied/free/unknown semantics of the occupancy grid should be reversed")
-@click.option("--map-unknown-value", type=click.INT, default=200, show_default=True, help="Map: Value for cells to be considered unknown in the occupancy grid")
-@click.option("--map-occupied-value", type=click.INT, default=0, show_default=True, help="Map: Value for cells to be considered occupied in the occupancy map")
-@click.option("--map-free-value", type=click.INT, default=255, show_default=True, help="Map: Value for cells to be considered free in the occupancy map")
+@click.option(
+    "--map-free-threshold",
+    type=click.FLOAT,
+    default=0.196,
+    show_default=True,
+    help="Map: Probability of a pixel at which a cell is considered free",
+)
+@click.option(
+    "--map-negate",
+    type=click.FLOAT,
+    default=0.0,
+    show_default=True,
+    help="Map: Whether the occupied/free/unknown semantics of the occupancy grid should be reversed",
+)
+@click.option(
+    "--map-unknown-value",
+    type=click.INT,
+    default=200,
+    show_default=True,
+    help="Map: Value for cells to be considered unknown in the occupancy grid",
+)
+@click.option(
+    "--map-occupied-value",
+    type=click.INT,
+    default=0,
+    show_default=True,
+    help="Map: Value for cells to be considered occupied in the occupancy map",
+)
+@click.option(
+    "--map-free-value",
+    type=click.INT,
+    default=255,
+    show_default=True,
+    help="Map: Value for cells to be considered free in the occupancy map",
+)
 def generate(configfile, inputs, output_path, **kwargs):
     print(kwargs)
     config = load_config_file(configfile)
