@@ -257,6 +257,42 @@ def get_3d_structure(g, element="Wall", threshold=0.05):
     return elements
 
 
+def get_internal_walls(g):
+    coords_m = get_coordinates_map(g)
+    print("Getting internal walls...")
+    wall_planes_by_space = dict()
+    for s, r, w in g.triples((None, FP["walls"], None)):
+        wall_ptr = g.value(s, FP["walls"])
+        wall_nodes = get_list_from_ptr(g, wall_ptr)
+        wall_planes = dict()
+        for w_ in wall_nodes:
+            wall_name = prefixed(g, w_).split(":")[-1]
+            poly = g.value(w_, FP["3d-shape"])
+
+            faces_ptr = g.value(poly, POLY["faces"])
+            faces_nodes = get_list_from_ptr(g, faces_ptr)
+            inner_wall = list()
+            for f in faces_nodes:
+                face_vertices = get_list_from_ptr(g, f)
+                positions = list()
+                for point in face_vertices:
+                    p = get_point_position(g, point)
+                    if p["y"] == 0.0:
+                        x, y, z = get_waypoint_coord(g, p, coords_m)
+                        positions.append((x, y, z))
+
+                # Only one face (the inner face) will have 4 points aligned with the wall frame
+                if len(positions) == 4:
+                    positions.append(positions[0])  # Close the polygon
+                    inner_wall.append(positions)
+            wall_planes[wall_name] = inner_wall
+
+        space_name = prefixed(g, s).split(":")[-1]
+        wall_planes_by_space[space_name] = wall_planes
+
+    return wall_planes_by_space
+
+
 def get_point_positions_in_space(g, space):
     polygon = g.value(space, FP["shape"])
 

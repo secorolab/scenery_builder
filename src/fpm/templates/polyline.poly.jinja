@@ -1,0 +1,11 @@
+{% for s, wp in model.items() -%}
+{{ s }}
+{%- for w, plane in wp.items() %}
+{{ w }} {% for points in plane -%}
+{{ points |length }}
+{% for p in points -%}
+{{ p[0] }} {{ p[1] }} {{ p[2] }}
+{% endfor -%}
+{% endfor -%}
+{% endfor %}
+{% endfor +%}
