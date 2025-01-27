@@ -6,6 +6,7 @@ from fpm.generators.gazebo import gazebo_world, door_object_models
 from fpm.generators.tasks import tasks
 from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
+from fpm.generators.polyline import get_polyline_floorplan
 
 
 @click.group()
@@ -124,6 +125,8 @@ def generate(inputs, output_path, **kwargs):
 
     get_occ_grid(g, output_path, **kwargs)
     get_3d_mesh(g, output_path, **kwargs)
+
+    get_polyline_floorplan(g, output_path, **kwargs)
 
 
 if __name__ == "__main__":
