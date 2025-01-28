@@ -11,7 +11,7 @@ from fpm.graph import (
     get_opening_points,
     get_waypoint_coord,
 )
-from fpm.utils import load_template, save_file
+from fpm.utils import load_template, save_file, get_output_path
 from fpm.constants import FPMODEL
 
 
@@ -196,3 +196,8 @@ def save_map_metadata(output_path, map_name, center, **custom_args):
     }
 
     save_file(output_path, file_name, map_metadata)
+
+
+def get_occ_grid(g, base_path, **kwargs):
+    output_path = get_output_path(base_path, "maps")
+    generate_occ_grid(g, output_path, **kwargs)
