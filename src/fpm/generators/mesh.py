@@ -7,7 +7,7 @@ from fpm.transformations.blender import (
     create_collection,
 )
 from fpm.graph import get_floorplan_model_name, get_3d_structure
-from fpm.utils import save_file
+from fpm.utils import save_file, get_output_path
 
 
 def generate_3d_mesh(g, output_path, **custom_args):
@@ -57,3 +57,8 @@ def subtract_opening(openings):
             boolean_operation_difference(wall, name)
         bpy.data.objects[name].select_set(True)
         bpy.ops.object.delete()
+
+
+def get_3d_mesh(g, base_path, **kwargs):
+    output_path = get_output_path(base_path, "3d-mesh")
+    generate_3d_mesh(g, output_path, **kwargs)
