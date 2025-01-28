@@ -1,12 +1,10 @@
 import os
 import click
 
-from fpm.utils import load_config_file, get_output_path
+from fpm.utils import load_config_file
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
-from fpm.generators.ros import generate_launch_file
-from fpm.generators.gazebo import generate_sdf_file
+from fpm.generators.gazebo import gazebo_world, door_object_models
 from fpm.generators.tasks import tasks
-from fpm.transformations.objects import get_all_object_models, get_all_object_instances
 from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 
@@ -14,97 +12,6 @@ from fpm.generators.mesh import get_3d_mesh
 @click.group()
 def floorplan():
     pass
-
-
-def door_object_models(g, base_path, **kwargs):
-    template_path = kwargs.get("template_path")
-
-    object_models = get_all_object_models(g)
-
-    for model in object_models:
-        model_name = model["name"][5:]
-        output_path = get_output_path(base_path, "gazebo/models", model_name)
-        generate_sdf_file(
-            model,
-            output_path,
-            "model.sdf",
-            "gazebo/door.sdf.jinja",
-            template_path=template_path,
-        )
-        generate_sdf_file(
-            model,
-            output_path,
-            "model.config",
-            "gazebo/model.config.jinja",
-            template_path=template_path,
-        )
-
-
-def gazebo_floorplan_model(model_name, base_path, **kwargs):
-    template_path = kwargs.get("template_path")
-    model = {"name": model_name}
-    output_path = get_output_path(base_path, "gazebo/models", model_name)
-    generate_sdf_file(
-        model,
-        output_path,
-        "model.config",
-        "gazebo/model.config.jinja",
-        template_path=template_path,
-    )
-    generate_sdf_file(
-        model,
-        output_path,
-        "model.sdf",
-        "gazebo/floorplan.sdf.jinja",
-        template_path=template_path,
-    )
-
-
-def gazebo_world_model(g, model_name, base_path, **kwargs):
-    template_path = kwargs.get("template_path")
-    instances = get_all_object_instances(g)
-    model = {"instances": instances, "name": model_name}
-
-    output_path = get_output_path(base_path, "gazebo/worlds")
-    if kwargs.get("ros_version", "ros2") == "ros2":
-        file_name = "{name}.sdf".format(name=model_name)
-    else:
-        file_name = "{name}.world".format(name=model_name)
-
-    generate_sdf_file(
-        model,
-        output_path,
-        file_name,
-        template_name="gazebo/world.sdf.jinja",
-        template_path=template_path,
-    )
-
-
-def gazebo_world_launch(model_name, base_path, **kwargs):
-    template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "ros/launch")
-
-    if kwargs.get("ros_version", "ros2") == "ros2":
-        file_name = "{name}.ros2.launch".format(name=model_name)
-        template_name = "ros/world.ros2.launch.jinja"
-    else:
-        file_name = "{name}.ros1.launch".format(name=model_name)
-        template_name = "ros/world.ros1.launch.jinja"
-
-    generate_launch_file(
-        model_name,
-        output_path,
-        file_name,
-        template_name=template_name,
-        template_path=template_path,
-    )
-
-
-def gazebo_world(g, model_name, base_path, **kwargs):
-
-    gazebo_floorplan_model(model_name, base_path, **kwargs)
-    gazebo_world_model(g, model_name, base_path, **kwargs)
-    gazebo_world_launch(model_name, base_path, **kwargs)
 
 
 @floorplan.command()
