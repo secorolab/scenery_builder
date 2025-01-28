@@ -10,9 +10,10 @@ dependencies = [
     "Jinja2>=3.0.3",
     "matplotlib>=3.7.2",
     "numpy>=1.24.4,<2.0.0",
-    "PyLD==2.0.3",
+    "PyLD>=2.0.3",
     "rdflib>=7.1.0",
     "click>=8.1.7",
+    "pyyaml",
 ]
 requires-python = ">= 3.11"
 readme = "README.md"
@@ -25,6 +26,9 @@ dev = ["black>=24.4.2"]
 
 [project.scripts]
 floorplan = "fpm.cli:floorplan"
+
+[tool.setuptools.packages.find]
+where = ["src"]  # list of folders that contain the packages (["."] by default)
 
 [tool.setuptools.package-data]
 "*" = ["*.jinja"]
