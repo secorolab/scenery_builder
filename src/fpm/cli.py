@@ -5,8 +5,7 @@ from fpm.utils import load_config_file, get_output_path
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.ros import generate_launch_file
 from fpm.generators.gazebo import generate_sdf_file
-from fpm.generators.tasks import generate_task_specification
-from fpm.transformations.tasks import get_all_disinfection_tasks
+from fpm.generators.tasks import tasks
 from fpm.transformations.objects import get_all_object_models, get_all_object_instances
 from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
@@ -106,15 +105,6 @@ def gazebo_world(g, model_name, base_path, **kwargs):
     gazebo_floorplan_model(model_name, base_path, **kwargs)
     gazebo_world_model(g, model_name, base_path, **kwargs)
     gazebo_world_launch(model_name, base_path, **kwargs)
-
-
-def tasks(g, base_path, **kwargs):
-    output_path = get_output_path(base_path, "tasks")
-    inset_width = kwargs.get("waypoint_dist_to_corner")
-
-    tasks = get_all_disinfection_tasks(g, inset_width)
-    for task in tasks:
-        generate_task_specification(task, output_path)
 
 
 @floorplan.command()
