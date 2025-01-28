@@ -1,7 +1,7 @@
 import os
 import click
 
-from fpm.utils import load_config_file
+from fpm.utils import load_config_file, get_output_path
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.ros import generate_launch_file
 from fpm.generators.gazebo import generate_sdf_file
@@ -125,13 +125,6 @@ def get_occ_grid(g, base_path, **kwargs):
 def get_3d_mesh(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "3d-mesh")
     generate_3d_mesh(g, output_path, **kwargs)
-
-
-def get_output_path(base_path, subfolder, model_name=None):
-    if model_name is None:
-        return os.path.join(base_path, subfolder)
-    else:
-        return os.path.join(base_path, subfolder, model_name)
 
 
 @floorplan.command()
