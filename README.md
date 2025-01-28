@@ -39,68 +39,82 @@ Where the input folder must contain:
 - the composable models generated from the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL)
     - `coordinate.json`
     - `floorplan.json`
+    - `polyhedron.json`
     - `shape.json`
     - `skeleton.json`
     - `spatial_relations.json`
-- the door object models
+- the door object models (optional)
     - `object-door.json`
     - `object-door-states.json`
-- any object instance models, e.g. `object-door-instance-X.json` where `X` is a unique numeric ID.
+- any object instance models (optional), e.g. `object-door-instance-X.json` where `X` is a unique numeric ID.
 
-### Generating 3D meshes and occupancy grid maps
+For more information on the parameters that can be used to customize the generation simply call 
 
-> [!WARNING]
-> The generation of 3D meshes and occupancy grid maps is currently being moved from the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) repository. The instructions below may not work and/or may be outdated.
-
-This tool is currently in active development. To use the tool you can execute the following command: 
-
-```sh
-blender --python src/floorplan_dsl/generators/floorplan.py --background
---python-use-system-env -- <path to model>
+```bash
+floorplan generate --help
 ```
 
-Optionally, you can remove the `--background` flag to see directly the result opened in Blender.
+The command above currently generates the following artefacts: 
+- 3D mesh in `.stl` format
+- Gazebo models and worlds (`.sdf`, `.config`)
+- Launch files for ROS1 and/or ROS2 (`.launch`)
+- Occupancy grid map for the ROS map_server (`.pgm` and `.yaml`)
+- Tasks with a list of waypoints in `.yaml`
 
-***Note**: The `--` before `<model_path>` is intentional and important.*
+### Docker
 
-#### Example
+To use the scenery_builder via Docker, simply mount the input and output paths as volumes and pass any arguments to the container:
 
-![3D asset generated from the environment description](images/hospital_no_brackground.png)
+```bash
+docker run -v <local input path>:/usr/src/app/models -v <local output path>:/usr/src/app/output  -it scenery_builder:latest <optional arguments>
+```
 
-An example model for a building is available [here](../models/examples/hospital.floorplan). To generate the 3D mesh and occupancy grid:
+## Example
+
+![3D asset generated from the environment description](docs/images/hospital_no_brackground.png)
+
+An example model for a building is available [here](https://github.com/secorolab/FloorPlan-DSL/blob/devel/models/examples/hospital.fpm2). After transforming the floorplan model into its composable representation, generate the artefacts by passing the folder with the JSON-LD models as inputs:
 
 
 ```sh
-blender --background --python src/exsce_floorplan/exsce_floorplan.py --python-use-system-env -- models/examples/hospital.floorplan
+floorplan generate -i hospital/json-ld --output-path hospital/gen
 ```
-
-The `--` after the variable paths are important to distinguish the blender parameters and the parameters for the tooling. You will obtain an occupancy grid map and a `.stl` file with the 3D mesh of the environment.
 
 That should generate the following files:
 
 ```bash
 .
-├── map
+├── 3d-mesh
+│   └── hospital.stl
+├── gazebo
+│   ├── models
+│   │   └── hospital
+│   │       ├── model.config
+│   │       └── model.sdf
+│   └── worlds
+│       └── hospital.sdf
+├── maps
 │   ├── hospital.pgm
 │   └── hospital.yaml
-└── mesh
-    └── hospital.stl
+├── ros
+│   └── launch
+│       └── hospital.ros2.launch
+└── tasks
+    ├── hallway_task.yaml
+    ├── reception_task.yaml
+    ├── room_A_task.yaml
+    └── room_B_task.yaml
 ```
-
-The output path for the generated models in configurable (see [confg/setup.cfg](../config/setup.cfg) and note they are relative paths from where you're calling the command).
-
-The `.stl` mesh can now be used to specify the Gazebo models and included in a Gazebo world. See, for example, [this tutorial](https://classic.gazebosim.org/tutorials?tut=import_mesh&cat=build_robot).
-
 
 
 ## Task generator
 
-It uses the FloorPlan insets to generate a task specification.
-The inset width -- a float value representing the distance between the sides of the inset and original shapes -- can be configured in the [config](config/config.toml)
+It uses the FloorPlan corners to generate a task specification to visit all corners in a space.
+The option `--waypoint-dist-to-corner` is a float value representing the distance between the corner of a space and its center.
 
 ## Object placing
 
-This tool places objects in indoor environments. 
+This tool places objects (e.g. doors) in indoor environments. 
 By using the composable modelling approach, a scenery can compose the static FloorPlan models with objects such as doors.
 
 ![](docs/images/gazebo-screenshot.png)
