@@ -127,4 +127,11 @@ def generate(inputs, output_path, **kwargs):
 
 
 if __name__ == "__main__":
-    floorplan()
+    import sys
+
+    if sys.argv[0] == "blender":
+        args = sys.argv[sys.argv.index("--") + 1 :]
+    else:
+        args = sys.argv[1:]
+
+    floorplan.main(args=args)
