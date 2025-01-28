@@ -64,3 +64,10 @@ def build_transformation_matrix(x, y, z, alpha):
     # fmt: on
 
     return np.hstack((R, t))
+
+
+def get_output_path(base_path, subfolder, model_name=None):
+    if model_name is None:
+        return os.path.join(base_path, subfolder)
+    else:
+        return os.path.join(base_path, subfolder, model_name)
