@@ -1,7 +1,6 @@
 import os
 import click
 
-from fpm.utils import load_config_file
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.gazebo import gazebo_world, door_object_models
 from fpm.generators.tasks import tasks
@@ -15,7 +14,6 @@ def floorplan():
 
 
 @floorplan.command()
-@click.argument("configfile", type=click.Path(exists=True, resolve_path=True))
 @click.option(
     "--inputs",
     "-i",
@@ -113,9 +111,8 @@ def floorplan():
     show_default=True,
     help="Map: Value for cells to be considered free in the occupancy map",
 )
-def generate(configfile, inputs, output_path, **kwargs):
+def generate(inputs, output_path, **kwargs):
     print(kwargs)
-    config = load_config_file(configfile)
 
     g = build_graph_from_directory(inputs)
     model_name = get_floorplan_model_name(g)
