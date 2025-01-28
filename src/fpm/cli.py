@@ -8,7 +8,7 @@ from fpm.generators.gazebo import generate_sdf_file
 from fpm.generators.tasks import generate_task_specification
 from fpm.transformations.tasks import get_all_disinfection_tasks
 from fpm.transformations.objects import get_all_object_models, get_all_object_instances
-from fpm.generators.occ_grid import generate_occ_grid
+from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 
 
@@ -115,11 +115,6 @@ def tasks(g, base_path, **kwargs):
     tasks = get_all_disinfection_tasks(g, inset_width)
     for task in tasks:
         generate_task_specification(task, output_path)
-
-
-def get_occ_grid(g, base_path, **kwargs):
-    output_path = get_output_path(base_path, "maps")
-    generate_occ_grid(g, output_path, **kwargs)
 
 
 @floorplan.command()
