@@ -9,7 +9,7 @@ from fpm.generators.tasks import generate_task_specification
 from fpm.transformations.tasks import get_all_disinfection_tasks
 from fpm.transformations.objects import get_all_object_models, get_all_object_instances
 from fpm.generators.occ_grid import generate_occ_grid
-from fpm.generators.mesh import generate_3d_mesh
+from fpm.generators.mesh import get_3d_mesh
 
 
 @click.group()
@@ -120,11 +120,6 @@ def tasks(g, base_path, **kwargs):
 def get_occ_grid(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "maps")
     generate_occ_grid(g, output_path, **kwargs)
-
-
-def get_3d_mesh(g, base_path, **kwargs):
-    output_path = get_output_path(base_path, "3d-mesh")
-    generate_3d_mesh(g, output_path, **kwargs)
 
 
 @floorplan.command()
