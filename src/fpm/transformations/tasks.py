@@ -9,7 +9,6 @@ from matplotlib.patches import Polygon as Pol
 from fpm.graph import (
     get_space_points,
     get_coordinates_map,
-    get_floorplan_model_name,
     get_waypoint_coord,
 )
 
@@ -55,7 +54,7 @@ def inset_shape(points, width=0.3):
     return np.array(inset)
 
 
-def create_inset_json_ld(g, model, width):
+def create_inset_json_ld(model, width):
 
     tree_structure = []
 
@@ -133,12 +132,10 @@ def transform_insets(g, inset_model_framed, coordinates_map):
 
 def get_all_disinfection_tasks(g, inset_width):
 
-    model_name = get_floorplan_model_name(g)
-
     space_points = get_space_points(g)
 
     print("Creating the insets...")
-    inset_model_framed = create_inset_json_ld(g, space_points, inset_width)
+    inset_model_framed = create_inset_json_ld(space_points, inset_width)
 
     print("Calculating transformation path...")
     # This just gets the coordinates of all poses in the graph, it doesn't calculate anything
