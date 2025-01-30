@@ -72,7 +72,7 @@ docker run -v <local input path>:/usr/src/app/models -v <local output path>:/usr
 
 ## Example
 
-![3D asset generated from the environment description](docs/images/hospital_no_brackground.png)
+![3D asset generated from the environment description](images/hospital_no_brackground.png)
 
 An example model for a building is available [here](https://github.com/secorolab/FloorPlan-DSL/blob/devel/models/examples/hospital.fpm2). After transforming the floorplan model into its composable representation, generate the artefacts by passing the folder with the JSON-LD models as inputs:
 
@@ -134,7 +134,7 @@ The [initial state plugin](https://github.com/secorolab/floorplan-gazebo-plugins
 
 ## Tutorials
 
-Tutorials on how to model objects with movement constraints, and how to place them in floor plan models is available [here](docs/tutorial.md).
+Tutorials on how to model objects with movement constraints, and how to place them in floor plan models is available [here](tutorial.md).
 
 ## Acknowledgments
 
