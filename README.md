@@ -60,6 +60,7 @@ The command above currently generates the following artefacts:
 - Launch files for ROS1 and/or ROS2 (`.launch`)
 - Occupancy grid map for the ROS map_server (`.pgm` and `.yaml`)
 - Tasks with a list of waypoints in `.yaml`
+- A 3D polyline representation for the SOPRANO project (`.poly`)
 
 ### Docker
 
@@ -96,6 +97,8 @@ That should generate the following files:
 ├── maps
 │   ├── hospital.pgm
 │   └── hospital.yaml
+├── polyline
+│   └── hospital.poly
 ├── ros
 │   └── launch
 │       └── hospital.ros2.launch
