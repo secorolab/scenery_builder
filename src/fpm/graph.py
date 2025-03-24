@@ -12,7 +12,6 @@ from fpm.constants import (
     GEO,
     GEOM,
     COORD,
-    COORD_EXT,
     QUDT,
     QUDT_VOCAB,
     FP,
@@ -150,7 +149,7 @@ def get_transformation_matrix_wrt_frame(g, root, target):
         z = 0 if z_value is None else z_value.toPython()
 
         # Read the theta value, if the values is in degrees, transform to radians
-        t = g.value(current_frame_coordinates, COORD_EXT["alpha"]).toPython()
+        t = g.value(current_frame_coordinates, COORD["alpha"]).toPython()
         if QUDT_VOCAB["degrees"] in g.objects(current_frame_coordinates, QUDT["unit"]):
             t = np.deg2rad(t)
 
@@ -316,8 +315,8 @@ def get_coordinates_map(g):
             "x": get_coord_value(g.value(coord, COORD["x"], default=0.0)),
             "y": get_coord_value(g.value(coord, COORD["y"], default=0.0)),
             "z": get_coord_value(g.value(coord, COORD["z"], default=0.0)),
-            "alpha": get_coord_value(g.value(coord, COORD_EXT["alpha"], default=0.0)),
-            "beta": get_coord_value(g.value(coord, COORD_EXT["beta"], default=0.0)),
+            "alpha": get_coord_value(g.value(coord, COORD["alpha"], default=0.0)),
+            "beta": get_coord_value(g.value(coord, COORD["beta"], default=0.0)),
         }
 
     return coordinates_map
