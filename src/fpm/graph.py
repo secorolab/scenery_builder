@@ -190,6 +190,7 @@ def get_wall_points(g, element="Wall"):
     wall_points = list()
     for wall, _, _ in g.triples((None, RDF.type, FP[element])):
         wall_points_json = get_point_positions_in_space(g, wall)
+        wall_points_json["height"] = g.value(wall, FP["height"]).toPython()
         wall_points.append(wall_points_json)
 
     return wall_points
