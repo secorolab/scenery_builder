@@ -137,9 +137,12 @@ def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **k
 def draw_floorplan_opening(g, element, draw, west, south, fill, coords_map, **kwargs):
     opening_points = get_opening_points(g, element)
     resolution = kwargs.get("resolution", 0.05)
+    laser_height = kwargs.get("map_laser_height", 0.7)
 
     all_points = list()
     for opening in opening_points:
+        opening_height_max = 0.0
+        opening_height_min = float("inf")
         for face in opening:
             y_vals = [p.get("y") for p in face]
             if np.all(np.array(y_vals) == y_vals[0]):
@@ -150,10 +153,15 @@ def draw_floorplan_opening(g, element, draw, west, south, fill, coords_map, **kw
                     p["y"] = p["y"] - resolution
                 else:
                     p["y"] = p["y"] + resolution
-                x, y, _ = get_waypoint_coord(g, p, coords_map)
+                x, y, z = get_waypoint_coord(g, p, coords_map)
                 f_coords.append([x, y, 0, 1])
-            f_coords = np.array(f_coords)
-            all_points.append(f_coords)
+                if z > opening_height_max:
+                    opening_height_max = z
+                elif z < opening_height_min:
+                    opening_height_min = z
+            if opening_height_min <= laser_height <= opening_height_max:
+                f_coords = np.array(f_coords)
+                all_points.append(f_coords)
 
     draw_floorplan_element(all_points, draw, fill, west=west, south=south, **kwargs)
 
