@@ -7,7 +7,7 @@ from fpm.graph import (
     get_space_points,
     get_coordinates_map,
     get_floorplan_model_name,
-    get_wall_points,
+    get_element_points,
     get_opening_points,
     get_waypoint_coord,
 )
@@ -106,7 +106,7 @@ def generate_occ_grid(g, output_path, **custom_args):
 
 
 def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
-    column_points = get_wall_points(g, element)
+    column_points = get_element_points(g, element)
     c_points = list()
 
     laser_height = kwargs.get("map_laser_height", 0.7)

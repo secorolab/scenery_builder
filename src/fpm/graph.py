@@ -185,15 +185,15 @@ def get_space_points(g):
     return space_points
 
 
-def get_wall_points(g, element="Wall"):
-    print("Querying all {}s...".format(element))
-    wall_points = list()
-    for wall, _, _ in g.triples((None, RDF.type, FP[element])):
-        wall_points_json = get_point_positions_in_space(g, wall)
-        wall_points_json["height"] = g.value(wall, FP["height"]).toPython()
-        wall_points.append(wall_points_json)
+def get_element_points(g, element_type="Wall"):
+    print("Querying all {}s...".format(element_type))
+    element_points = list()
+    for element, _, _ in g.triples((None, RDF.type, FP[element_type])):
+        element_points_json = get_point_positions_in_space(g, element)
+        element_points_json["height"] = g.value(element, FP["height"]).toPython()
+        element_points.append(element_points_json)
 
-    return wall_points
+    return element_points
 
 
 def get_opening_points(g, element="Entryway"):
