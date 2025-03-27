@@ -144,8 +144,9 @@ def draw_floorplan_opening(g, element, draw, west, south, fill, coords_map, **kw
         opening_height_max = 0.0
         opening_height_min = float("inf")
         for face in opening:
-            y_vals = [p.get("y") for p in face]
-            if np.all(np.array(y_vals) == y_vals[0]):
+            z_vals = [p.get("z") for p in face]
+            if not np.all(np.array(z_vals) == z_vals[0]):
+                # Only process faces that are parallel to the floor (where the z is the same)
                 continue
             f_coords = list()
             for p in face:
