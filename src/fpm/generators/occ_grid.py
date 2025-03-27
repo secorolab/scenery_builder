@@ -23,7 +23,6 @@ def generate_occ_grid(g, output_path, **custom_args):
     unknown = custom_args.get("map_unknown_value", 200)
     occupied = custom_args.get("map_occupied_value", 0)
     free = custom_args.get("map_free_value", 255)
-    laser_height = custom_args.get("map_laser_height", 0.7)
     border = custom_args.get("map_border", 50)
 
     if "{{model_name}}" in output_path:
@@ -109,10 +108,17 @@ def generate_occ_grid(g, output_path, **custom_args):
 def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
     column_points = get_wall_points(g, element)
     c_points = list()
+
+    laser_height = kwargs.get("map_laser_height", 0.7)
     for s in column_points:
+        height = s.get("height")
+        if laser_height > height:
+            # Don't process elements that are below the laser height
+            continue
+
         c_coords = list()
         for p in s.get("points"):
-            x, y, _ = get_waypoint_coord(g, p, coords_map)
+            x, y, z = get_waypoint_coord(g, p, coords_map)
             c_coords.append([x, y, 0, 1])
 
         c_coords = np.array(c_coords)
