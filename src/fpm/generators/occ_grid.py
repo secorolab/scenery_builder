@@ -10,6 +10,7 @@ from fpm.graph import (
     get_element_points,
     get_opening_points,
     get_waypoint_coord,
+    get_waypoint_coord_list,
 )
 from fpm.utils import load_template, save_file, get_output_path
 from fpm.constants import FPMODEL
@@ -36,10 +37,7 @@ def generate_occ_grid(g, output_path, **custom_args):
     coords_m = get_coordinates_map(g)
     space_points = get_space_points(g)
     for s in space_points:
-        w_coords = list()
-        for p in s.get("points"):
-            x, y, _ = get_waypoint_coord(g, p, coords_m)
-            w_coords.append([x, y, 0, 1])
+        w_coords = get_waypoint_coord_list(g, s.get("points"), coords_m)
 
         w_coords = np.array(w_coords)
         points.append(w_coords)
@@ -116,10 +114,7 @@ def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **k
             # Don't process elements that are below the laser height
             continue
 
-        c_coords = list()
-        for p in s.get("points"):
-            x, y, z = get_waypoint_coord(g, p, coords_map)
-            c_coords.append([x, y, 0, 1])
+        c_coords = get_waypoint_coord_list(g, s.get("points"), coords_map)
 
         c_coords = np.array(c_coords)
         c_points.append(c_coords)

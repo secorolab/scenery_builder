@@ -372,3 +372,12 @@ def get_waypoint_coord(g, point, coordinates_map):
     z = p[2, 0].item()
 
     return x, y, z
+
+
+def get_waypoint_coord_list(g, points, coordinates_map):
+    w_coords = list()
+    for p in points:
+        x, y, _ = get_waypoint_coord(g, p, coordinates_map)
+        w_coords.append([x, y, 0, 1])
+
+    return w_coords
