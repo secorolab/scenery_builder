@@ -200,6 +200,7 @@ def save_map_metadata(output_path, map_name, center, **custom_args):
     resolution = custom_args.get("map_resolution", 0.05)
     occupied_thresh = custom_args.get("map_occupied_threshold", 0.65)
     free_thresh = custom_args.get("map_free_threshold", 0.196)
+    laser_height = custom_args.get("map_laser_height", 0.7)
     map_metadata = {
         "resolution": resolution,
         "origin": center,
@@ -207,6 +208,7 @@ def save_map_metadata(output_path, map_name, center, **custom_args):
         "free_thresh": free_thresh,
         "negate": negate,
         "image": "{}.pgm".format(map_name),
+        "laser_height": laser_height,
     }
 
     save_file(output_path, file_name, map_metadata)
