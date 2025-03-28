@@ -112,6 +112,7 @@ def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **k
         height = s.get("height")
         if laser_height > height:
             # Don't process elements that are below the laser height
+            # This assumes that walls, columns, and dividers start at z=0 (from the floor)
             continue
 
         c_coords = get_waypoint_coord_list(g, s.get("points"), coords_map)
