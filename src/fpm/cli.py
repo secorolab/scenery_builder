@@ -17,6 +17,7 @@ def floorplan():
 @floorplan.command()
 @click.option(
     "--inputs",
+    "--input-path",
     "-i",
     type=click.Path(exists=True, resolve_path=True),
     required=True,
@@ -25,6 +26,8 @@ def floorplan():
 )
 @click.option(
     "--output-path",
+    "-o",
+    "--outputs",
     type=click.Path(exists=True, resolve_path=True),
     default=os.path.join("."),
     help="Output path for generated artefacts",
