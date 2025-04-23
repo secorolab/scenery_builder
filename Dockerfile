@@ -4,7 +4,7 @@ FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt update
-RUN apt install -y software-properties-common
+RUN apt install -y software-properties-common git
 RUN apt install -y python3 python3-pip
 RUN apt install -y blender
 
