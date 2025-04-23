@@ -12,6 +12,7 @@ dependencies = [
     "numpy>=1.24.4,<2.0.0",
     "PyLD>=2.0.3",
     "rdflib>=7.1.0",
+    "rdflib@git+https://github.com/secorolab/rdflib@fix/multi-type-scoped-context"
     "click>=8.1.7",
     "pyyaml",
 ]
