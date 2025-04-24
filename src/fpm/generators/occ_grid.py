@@ -99,8 +99,9 @@ def generate_occ_grid(g, output_path, **custom_args):
 
     im = ImageOps.flip(im)
 
-    name_image = "{}.pgm".format(map_name)
-    save_file(output_path, name_image, im)
+    for ext in ["pgm", "jpg"]:
+        name_image = "{}.{}".format(map_name, ext)
+        save_file(output_path, name_image, im)
 
 
 def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):

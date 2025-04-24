@@ -34,7 +34,7 @@ def save_file(output_path, file_name, contents):
     if ext in [".yaml"]:
         with open(output_file, "w") as f:
             yaml.dump(contents, f, default_flow_style=None)
-    elif ext in [".pgm"]:
+    elif ext in [".pgm", ".jpg"]:
         contents.save(output_file, quality=95)
     elif ext in [".stl"]:
         bpy.ops.export_mesh.stl(filepath=output_file)
