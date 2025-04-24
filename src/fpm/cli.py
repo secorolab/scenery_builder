@@ -46,6 +46,13 @@ def floorplan():
     help="ROS version for launch files",
 )
 @click.option(
+    "--ros-pkg",
+    type=click.STRING,
+    default="floorplan_models",
+    show_default=True,
+    help="Name of the ROS package where gazebo models",
+)
+@click.option(
     "--waypoint-dist-to-corner",
     type=click.FLOAT,
     default=0.7,
