@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: Ortega
+  given-names: Argentina
+  orcid: "https://orcid.org/0000-0002-3873-4435"
+- family-names: Parra
+  given-names: Samuel
+title: "Scenery builder: A composition tool to generate execution artefacts for composable representations of FloorPlan models"
+version: 0.1.0
+date-released: 2024-06-01
+url: "https://github.com/secorolab/scenery_builder"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: Ortega
+    given-names: Argentina
+    orcid: "https://orcid.org/0000-0002-3873-4435"
+  - family-names: Parra
+    given-names: Samuel
+  - family-names: Schneider
+    given-names: Sven
+    orcid: "https://orcid.org/0000-0002-1916-5222"
+  - family-names: "Hochgeschwender"
+    given-names: Nico
+    orcid: "https://orcid.org/0000-0003-1306-7880"
+  doi: "10.3389/frobt.2024.1363281"
+  journal: "Frontiers in Robotics and AI"
+  month: 8
+  title: "Composable and executable scenarios for simulation-based testing of mobile robots"
+  volume: 11
+  year: 2024
