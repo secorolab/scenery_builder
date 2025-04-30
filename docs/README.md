@@ -1,5 +1,11 @@
 # scenery_builder
 
+The `scenery_builder` is a tool that generates execution artefacts from the composable representation of the [FloorPlan DSL]() models.
+
+
+![scenery builder pipeline](images/pipeline-simplified-v2.png)
+
+
 ## Installation
 
 Install all the requirements:
@@ -135,6 +141,24 @@ The [initial state plugin](https://github.com/secorolab/floorplan-gazebo-plugins
 ## Tutorials
 
 Tutorials on how to model objects with movement constraints, and how to place them in floor plan models is available [here](tutorial.md).
+
+## Publications
+
+1. A. Ortega Sainz, S. Parra, S. Schneider, and N. Hochgeschwender, ‘Composable and executable scenarios for simulation-based testing of mobile robots’, Frontiers in Robotics and AI, vol. 11, 2024, doi: 10.3389/frobt.2024.1363281.
+    <details open><summary>bib</summary>
+  ```bib
+  @ARTICLE{ortega2024frontiers,
+  AUTHOR={Ortega, Argentina  and Parra, Samuel  and Schneider, Sven  and Hochgeschwender, Nico },
+  TITLE={Composable and executable scenarios for simulation-based testing of mobile robots},
+  JOURNAL={Frontiers in Robotics and AI},
+  VOLUME={Volume 11 - 2024},
+  YEAR={2024},
+  URL={https://www.frontiersin.org/journals/robotics-and-ai/articles/10.3389/frobt.2024.1363281},
+  DOI={10.3389/frobt.2024.1363281},
+  ISSN={2296-9144},
+  }
+  ```
+  </details>
 
 ## Acknowledgments
 
