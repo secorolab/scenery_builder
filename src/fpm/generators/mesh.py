@@ -68,3 +68,4 @@ def subtract_opening(openings):
 def get_3d_mesh(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "3d-mesh")
     generate_3d_mesh(g, output_path, **kwargs)
+    generate_3d_mesh(g, output_path, format="gltf")

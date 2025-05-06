@@ -60,6 +60,8 @@ def save_file(output_path, file_name, contents):
             bpy.ops.export_mesh.stl(filepath=output_file)
     elif ext in [".dae"]:
         bpy.ops.wm.collada_export(filepath=output_file)
+    elif ext == ".gltf":
+        bpy.ops.export_scene.gltf(filepath=output_file)
     else:
         with open(output_file, "w") as f:
             f.write(contents)
