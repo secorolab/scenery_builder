@@ -7,6 +7,7 @@ from fpm.generators.tasks import tasks
 from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
+from fpm.generators.door_keyframes import get_keyframes
 
 
 @click.group()
@@ -122,6 +123,41 @@ def floorplan():
     show_default=True,
     help="Map: Value for cells to be considered free in the occupancy map",
 )
+@click.option(
+    "--keyframe-start",
+    type=click.INT,
+    default=0,
+    show_default=True,
+    help="Timestamp of the first keyframe",
+)
+@click.option(
+    "--keyframe-end",
+    type=click.INT,
+    default=180,
+    show_default=True,
+    help="Timestamp of the last keyframe",
+)
+@click.option(
+    "--keyframe-start-state",
+    type=click.FLOAT,
+    default=0.0,
+    show_default=True,
+    help="Start joint angle of the doors",
+)
+@click.option(
+    "--keyframe-sampling-interval",
+    type=click.INT,
+    default=30,
+    show_default=True,
+    help="Sampling interval",
+)
+@click.option(
+    "--keyframe-state-change-probability",
+    type=click.FLOAT,
+    default=0.5,
+    show_default=True,
+    help="Probability of a door changing states at the next interval",
+)
 def generate(inputs, output_path, **kwargs):
     print(kwargs)
 
@@ -137,6 +173,7 @@ def generate(inputs, output_path, **kwargs):
     get_3d_mesh(g, output_path, **kwargs)
 
     get_polyline_floorplan(g, output_path, **kwargs)
+    get_keyframes(output_path, **kwargs)
 
 
 if __name__ == "__main__":

@@ -1,33 +1,51 @@
 import random
-import json
+
+from fpm.utils import get_output_path, save_file
 
 
-def get_keyframes(i):
+def generate_door_keyframes(keyframe_start, keyframe_end, **kwargs):
 
-    min_time = 90
-    max_time = 730
-    current_state = 0
-    p_change = 0.5
-    interval = 30
+    current_state = kwargs.get("keyframe_start_state")
+    interval = kwargs.get("keyframe_sampling_interval")
+    p_change = kwargs.get("keyframe_state_change_probability")
 
     keyframes = [{"pose": current_state, "time": 0.0}]
 
-    for t in range(min_time, max_time, interval):
-
-        # sample the distribution to determine if we change the current state
-        value = random.random()
-
-        if value <= p_change:
-            current_state = 1.7 if current_state == 0 else 0
-            keyframes.append(
-                {"pose": current_state, "time": t + int(random.random() * 10)}
-            )
+    for t in range(keyframe_start, keyframe_end, interval):
+        # TODO Simplify the sampling of states and timestamps
+        current_state = sample_door_state_open_close(p_change, current_state)
+        time_delta = sample_time_delta()
+        keyframes.append({"pose": current_state, "time": t + time_delta})
 
     return keyframes
 
 
-if __name__ == "__main__":
+def sample_time_delta():
+    # TODO Why are timestamps integers?
+    return int(random.random() * 10)
 
-    for i in range(11):
-        with open("output/keyframes_door_{i}.json".format(i=i), "w") as output:
-            output.write(json.dumps({"keyframes": get_keyframes(i)}, indent=4))
+
+def sample_door_state_open_close(
+    p_change, current_state, open_angle=1.7, closed_angle=0.0
+):
+    # sample the distribution to determine if we change the current state
+    value = random.random()
+    if value <= p_change:
+        if current_state == closed_angle:
+            state = open_angle
+        else:
+            state = closed_angle
+    else:
+        state = current_state
+
+    return state
+
+
+def get_keyframes(base_path, **kwargs):
+    output_path = get_output_path(base_path, "doors/behaviours/keyframes")
+    num_doors = kwargs.get("keyframes_num_doors", 11)
+    for i in range(num_doors):
+        keyframes = generate_door_keyframes(**kwargs)
+        file_name = "keyframes_door_{}.json".format(i)
+        contents = {"keyframes": keyframes}
+        save_file(output_path, file_name, contents)
