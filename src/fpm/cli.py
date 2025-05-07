@@ -15,7 +15,8 @@ def floorplan():
     pass
 
 
-@floorplan.command()
+@floorplan.group()
+@click.pass_context
 @click.option(
     "--inputs",
     "--input-path",
@@ -39,6 +40,45 @@ def floorplan():
     default=os.path.join("."),
     help="Path with Jinja templates",
 )
+def generate(ctx, inputs, output_path, **kwargs):
+    print(kwargs)
+
+    g = build_graph_from_directory(inputs)
+    model_name = get_floorplan_model_name(g)
+
+    ctx.ensure_object(dict)
+    ctx.obj[model_name] = model_name
+    ctx.obj["graph"] = g
+
+    print("End of generate command")
+
+
+@generate.command()
+@click.pass_context
+def mesh(ctx, **kwargs):
+    print("test")
+    print(ctx.obj)
+    print(kwargs)
+    g = ctx.obj["graph"]
+    # get_3d_mesh(g, output_path, **kwargs)
+
+
+@generate.command()
+@click.pass_context
+@click.option(
+    "--waypoint-dist-to-corner",
+    type=click.FLOAT,
+    default=0.7,
+    show_default=True,
+    help="Distance between generated waypoints and a space's corner",
+)
+def tasks(ctx, **kwargs):
+    g = ctx.obj["graph"]
+    # get_tasks(g, output_path, **kwargs)
+
+
+@generate.command()
+@click.pass_context
 @click.option(
     "--ros-version",
     type=click.STRING,
@@ -53,13 +93,14 @@ def floorplan():
     show_default=True,
     help="Name of the ROS package where gazebo models",
 )
-@click.option(
-    "--waypoint-dist-to-corner",
-    type=click.FLOAT,
-    default=0.7,
-    show_default=True,
-    help="Tasks: Distance between generated waypoints and a space's corner",
-)
+def gazebo(ctx, **kwargs):
+    g = ctx.obj["graph"]
+    # door_object_models(g, output_path, **kwargs)
+    # gazebo_world(g, model_name, output_path, **kwargs)
+
+
+@generate.command()
+@click.pass_context
 @click.option(
     "--map-laser-height",
     type=click.FLOAT,
@@ -123,6 +164,20 @@ def floorplan():
     show_default=True,
     help="Map: Value for cells to be considered free in the occupancy map",
 )
+def occ_grid(ctx, **kwargs):
+    g = ctx.obj["graph"]
+    # get_occ_grid(g, output_path, **kwargs)
+
+
+@generate.command()
+@click.pass_context
+def polyline(ctx, **kwargs):
+    g = ctx.obj["graph"]
+    # get_polyline_floorplan(g, output_path, **kwargs)
+
+
+@generate.command()
+@click.pass_context
 @click.option(
     "--keyframe-start",
     type=click.INT,
@@ -158,22 +213,9 @@ def floorplan():
     show_default=True,
     help="Probability of a door changing states at the next interval",
 )
-def generate(inputs, output_path, **kwargs):
-    print(kwargs)
-
-    g = build_graph_from_directory(inputs)
-    model_name = get_floorplan_model_name(g)
-
-    get_tasks(g, output_path, **kwargs)
-
-    door_object_models(g, output_path, **kwargs)
-    gazebo_world(g, model_name, output_path, **kwargs)
-
-    get_occ_grid(g, output_path, **kwargs)
-    get_3d_mesh(g, output_path, **kwargs)
-
-    get_polyline_floorplan(g, output_path, **kwargs)
-    get_keyframes(output_path, **kwargs)
+def door_keyframes(ctx, **kwargs):
+    g = ctx.obj["graph"]
+    # get_keyframes(output_path, **kwargs)
 
 
 if __name__ == "__main__":
