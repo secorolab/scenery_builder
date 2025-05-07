@@ -9,7 +9,7 @@ def generate_task_specification(model, output_path, **custom_args):
     save_file(output_path, file_name, model)
 
 
-def tasks(g, base_path, **kwargs):
+def get_tasks(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "tasks")
     inset_width = kwargs.get("waypoint_dist_to_corner")
 

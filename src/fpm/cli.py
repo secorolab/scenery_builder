@@ -3,7 +3,7 @@ import click
 
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.gazebo import gazebo_world, door_object_models
-from fpm.generators.tasks import tasks
+from fpm.generators.tasks import get_tasks
 from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
@@ -164,7 +164,7 @@ def generate(inputs, output_path, **kwargs):
     g = build_graph_from_directory(inputs)
     model_name = get_floorplan_model_name(g)
 
-    tasks(g, output_path, **kwargs)
+    get_tasks(g, output_path, **kwargs)
 
     door_object_models(g, output_path, **kwargs)
     gazebo_world(g, model_name, output_path, **kwargs)
