@@ -18,18 +18,19 @@ def floorplan():
 @floorplan.group()
 @click.pass_context
 @click.option(
+    "-i",
     "--inputs",
     "--input-path",
-    "-i",
     type=click.Path(exists=True, resolve_path=True),
     required=True,
     multiple=True,
     help="Path with JSON-LD models to be used as inputs",
 )
 @click.option(
-    "--output-path",
     "-o",
     "--outputs",
+    "--output-path",
+    "base_path",
     type=click.Path(exists=True, resolve_path=True),
     default=os.path.join("."),
     help="Output path for generated artefacts",
@@ -40,27 +41,23 @@ def floorplan():
     default=os.path.join("."),
     help="Path with Jinja templates",
 )
-def generate(ctx, inputs, output_path, **kwargs):
+def generate(ctx, inputs, **kwargs):
+
     print(kwargs)
 
     g = build_graph_from_directory(inputs)
     model_name = get_floorplan_model_name(g)
 
     ctx.ensure_object(dict)
-    ctx.obj[model_name] = model_name
-    ctx.obj["graph"] = g
-
-    print("End of generate command")
+    ctx.obj["model_name"] = model_name
+    ctx.obj["g"] = g
 
 
 @generate.command()
 @click.pass_context
 def mesh(ctx, **kwargs):
-    print("test")
-    print(ctx.obj)
-    print(kwargs)
-    g = ctx.obj["graph"]
-    # get_3d_mesh(g, output_path, **kwargs)
+    """Generate a 3D-mesh in STL or gltF 2.0 format"""
+    get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command()
@@ -73,8 +70,8 @@ def mesh(ctx, **kwargs):
     help="Distance between generated waypoints and a space's corner",
 )
 def tasks(ctx, **kwargs):
-    g = ctx.obj["graph"]
-    # get_tasks(g, output_path, **kwargs)
+    """Generate disinfection tasks for each room in the floorplan"""
+    get_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command()
@@ -94,9 +91,9 @@ def tasks(ctx, **kwargs):
     help="Name of the ROS package where gazebo models",
 )
 def gazebo(ctx, **kwargs):
-    g = ctx.obj["graph"]
-    # door_object_models(g, output_path, **kwargs)
-    # gazebo_world(g, model_name, output_path, **kwargs)
+    """Generate Gazebo world, models and launch files"""
+    door_object_models(**ctx.obj, **ctx.parent.params, **kwargs)
+    gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command()
@@ -165,15 +162,15 @@ def gazebo(ctx, **kwargs):
     help="Map: Value for cells to be considered free in the occupancy map",
 )
 def occ_grid(ctx, **kwargs):
-    g = ctx.obj["graph"]
-    # get_occ_grid(g, output_path, **kwargs)
+    """Generate the occupancy grid map of the floorplan"""
+    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command()
 @click.pass_context
 def polyline(ctx, **kwargs):
-    g = ctx.obj["graph"]
-    # get_polyline_floorplan(g, output_path, **kwargs)
+    """Generate a 3D polyline representation of the floorplan"""
+    get_polyline_floorplan(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command()
@@ -214,8 +211,8 @@ def polyline(ctx, **kwargs):
     help="Probability of a door changing states at the next interval",
 )
 def door_keyframes(ctx, **kwargs):
-    g = ctx.obj["graph"]
-    # get_keyframes(output_path, **kwargs)
+    """Generate the sampled keyframes for doors with time-based behaviours"""
+    get_keyframes(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 if __name__ == "__main__":
