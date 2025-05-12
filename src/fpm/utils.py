@@ -37,7 +37,8 @@ def save_file(output_path, file_name, contents):
     elif ext in [".pgm", ".jpg"]:
         contents.save(output_file, quality=95)
     elif ext in [".stl"]:
-        bpy.ops.wm.stl_export(filepath=output_file)
+        bpy.ops.export_mesh.stl(filepath=output_file)
+        # bpy.ops.wm.stl_export(filepath=output_file)
     elif ext in [".dae"]:
         bpy.ops.wm.collada_export(filepath=output_file)
     else:
