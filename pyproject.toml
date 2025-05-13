@@ -14,6 +14,7 @@ dependencies = [
     "rdflib@git+https://github.com/secorolab/rdflib@fix/multi-type-scoped-context",
     "click>=8.1.7",
     "pyyaml",
+    "bpy==4.1.0"
 ]
 requires-python = ">= 3.11"
 readme = "README.md"
