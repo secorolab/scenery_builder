@@ -10,6 +10,19 @@ from fpm.generators.polyline import get_polyline_floorplan
 from fpm.generators.door_keyframes import get_keyframes
 
 
+def configure(ctx, param, filename):
+    if not filename:
+        return
+    import tomllib
+
+    ctx.default_map = dict()
+    with open(filename, "rb") as f:
+        data = tomllib.load(f)
+
+    cmd_defaults = data.get("generate", {})
+    ctx.default_map.update(cmd_defaults)
+
+
 @click.group()
 def floorplan():
     pass
@@ -40,6 +53,16 @@ def floorplan():
     type=click.Path(exists=True, resolve_path=True),
     default=os.path.join("."),
     help="Path with Jinja templates",
+)
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(dir_okay=False),
+    is_eager=True,
+    expose_value=False,
+    help="Read values from TOML config file",
+    show_default=True,
+    callback=configure,
 )
 def generate(ctx, inputs, **kwargs):
 
