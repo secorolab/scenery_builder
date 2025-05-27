@@ -101,8 +101,8 @@ def tasks(ctx, **kwargs):
 @click.pass_context
 @click.option(
     "--ros-version",
-    type=click.STRING,
-    default="ros2",
+    type=click.Choice(["ROS2", "ROS1"], case_sensitive=False),
+    default="ROS2",
     show_default=True,
     help="ROS version for launch files",
 )
