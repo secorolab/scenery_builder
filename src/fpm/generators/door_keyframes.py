@@ -3,15 +3,15 @@ import random
 from fpm.utils import get_output_path, save_file
 
 
-def generate_door_keyframes(keyframe_start, keyframe_end, **kwargs):
+def generate_door_keyframes(start_frame, end_frame, **kwargs):
 
-    current_state = kwargs.get("keyframe_start_state")
-    interval = kwargs.get("keyframe_sampling_interval")
-    p_change = kwargs.get("keyframe_state_change_probability")
+    current_state = kwargs.get("start_state")
+    interval = kwargs.get("sampling_interval")
+    p_change = kwargs.get("state_change_probability")
 
     keyframes = [{"pose": current_state, "time": 0.0}]
 
-    for t in range(keyframe_start, keyframe_end, interval):
+    for t in range(start_frame, end_frame, interval):
         # TODO Simplify the sampling of states and timestamps
         current_state = sample_door_state_open_close(p_change, current_state)
         time_delta = sample_time_delta()
@@ -43,7 +43,7 @@ def sample_door_state_open_close(
 
 def get_keyframes(base_path, **kwargs):
     output_path = get_output_path(base_path, "doors/behaviours/keyframes")
-    num_doors = kwargs.get("keyframes_num_doors", 11)
+    num_doors = kwargs.get("num_doors", 11)
     for i in range(num_doors):
         keyframes = generate_door_keyframes(**kwargs)
         file_name = "keyframes_door_{}.json".format(i)

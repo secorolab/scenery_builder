@@ -11,8 +11,8 @@ def generate_task_specification(model, output_path, **custom_args):
 
 def get_tasks(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "tasks")
-    inset_width = kwargs.get("waypoint_dist_to_corner")
+    dist_to_corner = kwargs.get("dist_to_corner")
 
-    tasks = get_all_disinfection_tasks(g, inset_width)
+    tasks = get_all_disinfection_tasks(g, dist_to_corner)
     for task in tasks:
         generate_task_specification(task, output_path)

@@ -86,7 +86,7 @@ def mesh(ctx, **kwargs):
 @generate.command()
 @click.pass_context
 @click.option(
-    "--waypoint-dist-to-corner",
+    "--dist-to-corner",
     type=click.FLOAT,
     default=0.7,
     show_default=True,
@@ -122,67 +122,67 @@ def gazebo(ctx, **kwargs):
 @generate.command()
 @click.pass_context
 @click.option(
-    "--map-laser-height",
+    "--laser-height",
     type=click.FLOAT,
     default=0.7,
     show_default=True,
-    help="Map: Height of the laser to generate the occupancy grid",
+    help="Height of the laser to generate the occupancy grid",
 )
 @click.option(
-    "--map-border",
+    "--border",
     type=click.INT,
     default=50,
     show_default=True,
-    help="Map: Border the occupancy grid",
+    help="Border the occupancy grid image file",
 )
 @click.option(
-    "--map-resolution",
+    "--resolution",
     type=click.FLOAT,
     default=0.05,
     show_default=True,
-    help="Map: Resolution of the pgm file in m/pixel",
+    help="Resolution of the pgm file in m/pixel",
 )
 @click.option(
-    "--map-occupied-threshold",
+    "--occupied-threshold",
     type=click.FLOAT,
     default=0.65,
     show_default=True,
-    help="Map: Probability of a pixel at which a cell is considered occupied",
+    help="Probability of a pixel at which a cell is considered occupied",
 )
 @click.option(
-    "--map-free-threshold",
+    "--free-threshold",
     type=click.FLOAT,
     default=0.196,
     show_default=True,
-    help="Map: Probability of a pixel at which a cell is considered free",
+    help="Probability of a pixel at which a cell is considered free",
 )
 @click.option(
-    "--map-negate",
-    type=click.FLOAT,
-    default=0.0,
-    show_default=True,
-    help="Map: Whether the occupied/free/unknown semantics of the occupancy grid should be reversed",
-)
-@click.option(
-    "--map-unknown-value",
-    type=click.INT,
-    default=200,
-    show_default=True,
-    help="Map: Value for cells to be considered unknown in the occupancy grid",
-)
-@click.option(
-    "--map-occupied-value",
+    "--negate",
     type=click.INT,
     default=0,
     show_default=True,
-    help="Map: Value for cells to be considered occupied in the occupancy map",
+    help="Whether the occupied/free/unknown semantics of the occupancy grid should be reversed",
 )
 @click.option(
-    "--map-free-value",
+    "--unknown-value",
+    type=click.INT,
+    default=200,
+    show_default=True,
+    help="Value for cells to be considered unknown in the occupancy grid",
+)
+@click.option(
+    "--occupied-value",
+    type=click.INT,
+    default=0,
+    show_default=True,
+    help="Value for cells to be considered occupied in the occupancy map",
+)
+@click.option(
+    "--free-value",
     type=click.INT,
     default=255,
     show_default=True,
-    help="Map: Value for cells to be considered free in the occupancy map",
+    help="Value for cells to be considered free in the occupancy map",
 )
 def occ_grid(ctx, **kwargs):
     """Generate the occupancy grid map of the floorplan"""
@@ -199,35 +199,36 @@ def polyline(ctx, **kwargs):
 @generate.command()
 @click.pass_context
 @click.option(
-    "--keyframe-start",
+    "--start-frame",
     type=click.INT,
     default=0,
     show_default=True,
     help="Timestamp of the first keyframe",
 )
 @click.option(
-    "--keyframe-end",
+    "--end-frame",
     type=click.INT,
     default=180,
     show_default=True,
     help="Timestamp of the last keyframe",
 )
 @click.option(
-    "--keyframe-start-state",
+    "--start-state",
     type=click.FLOAT,
     default=0.0,
     show_default=True,
     help="Start joint angle of the doors",
 )
 @click.option(
-    "--keyframe-sampling-interval",
+    "--sampling-interval",
     type=click.INT,
     default=30,
     show_default=True,
     help="Sampling interval",
 )
 @click.option(
-    "--keyframe-state-change-probability",
+    "--state-change-probability",
+    "--state-change-prob",
     type=click.FLOAT,
     default=0.5,
     show_default=True,
