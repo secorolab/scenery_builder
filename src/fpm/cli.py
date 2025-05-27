@@ -3,7 +3,7 @@ import click
 
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.gazebo import gazebo_world, door_object_models
-from fpm.generators.tasks import get_tasks
+from fpm.generators.tasks import get_disinfection_tasks
 from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
@@ -94,7 +94,7 @@ def mesh(ctx, **kwargs):
 )
 def tasks(ctx, **kwargs):
     """Generate disinfection tasks for each room in the floorplan"""
-    get_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
+    get_disinfection_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command()
