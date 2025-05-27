@@ -28,7 +28,7 @@ def floorplan():
     pass
 
 
-@floorplan.group()
+@floorplan.group(chain=True)
 @click.pass_context
 @click.option(
     "-i",
