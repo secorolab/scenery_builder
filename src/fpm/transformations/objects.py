@@ -19,6 +19,7 @@ from fpm.graph import (
 
 
 def get_link_information(g, my_object, object_frame):
+    links = list()
     for _, _, link in g.triples((my_object, OBJ["object-links"], None)):
 
         gazebo_representation = g.value(predicate=GZB["gz-link"], object=link)
@@ -45,7 +46,7 @@ def get_link_information(g, my_object, object_frame):
         T = get_transformation_matrix_wrt_frame(g, link_frame, object_frame)
         pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
 
-        return {
+        link_info = {
             "pose": pose_coordinates,
             "inertial": sdf_inertia,
             "collision": sdf_physics_geometry,
@@ -53,6 +54,9 @@ def get_link_information(g, my_object, object_frame):
             "name": prefixed(g, simplices_link),
             "material": material.toPython(),
         }
+
+        links.append(link_info)
+    return links
 
 
 def get_joint_information(g, joint, object_frame):
@@ -110,13 +114,11 @@ def get_joint_information(g, joint, object_frame):
 
 def get_object_model(g, my_object):
     joint_list = []
-    link_list = []
 
     object_frame = g.value(my_object, OBJ["object-frame"])
 
     # Collect the link information
-    link_info = get_link_information(g, my_object, object_frame)
-    link_list.append(link_info)
+    link_list = get_link_information(g, my_object, object_frame)
 
     # If the object is a kinematic chain, collect the joint information
     if OBJ["ObjectWithKinematicChain"] in g.objects(my_object, RDF.type):
