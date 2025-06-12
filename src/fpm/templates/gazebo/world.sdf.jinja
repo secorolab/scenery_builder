@@ -49,7 +49,7 @@
       <static>{{instance.static}}</static>
       <pose>{{instance.pose}}</pose>
       {% for start_joint_state in instance.start_joint_states %}
-        <plugin name="initial_plugin" filename="libinitial_plugin.so">
+        <plugin name="gz::InitialStatePlugin" filename="libinitial_plugin.so">
           <joint>{{start_joint_state.joint}}</joint>
           <position>{{start_joint_state.position}}</position>
         </plugin>
