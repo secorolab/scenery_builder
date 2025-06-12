@@ -150,7 +150,7 @@ def get_transformation_matrix_wrt_frame(g, root, target):
 
         # Read the theta value, if the values is in degrees, transform to radians
         t = g.value(current_frame_coordinates, COORD["alpha"]).toPython()
-        if QUDT_VOCAB["degrees"] in g.objects(current_frame_coordinates, QUDT["unit"]):
+        if QUDT_VOCAB["DEG"] in g.objects(current_frame_coordinates, QUDT["unit"]):
             t = np.deg2rad(t)
 
         # Build the transformation matrix
