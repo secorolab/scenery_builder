@@ -43,9 +43,9 @@ def sample_door_state_open_close(
 
 def get_keyframes(base_path, **kwargs):
     output_path = get_output_path(base_path, "doors/behaviours/keyframes")
-    num_doors = kwargs.get("num_doors", 11)
-    for i in range(num_doors):
+    num_doors = kwargs.get("num_doors", 17)
+    for i in range(1, num_doors + 1):
         keyframes = generate_door_keyframes(**kwargs)
-        file_name = "keyframes_door_{}.json".format(i)
+        file_name = "door-instance-{}.json".format(i)
         contents = {"keyframes": keyframes}
         save_file(output_path, file_name, contents)
