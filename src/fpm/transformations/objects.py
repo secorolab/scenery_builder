@@ -136,7 +136,7 @@ def get_object_model(g, my_object):
     }
 
 
-def get_object_instance(g, instance):
+def get_object_instance(g, instance, **kwargs):
     #  Name of the object
     of_obj = g.value(instance, OBJ["of-object"])
 
@@ -169,17 +169,25 @@ def get_object_instance(g, instance):
 
             start_joint_states.append({"joint": joint_name, "position": value})
 
+    door_id = prefixed(g, instance)[5:]
+    behaviors = kwargs.get("behaviors", {}).get(door_id, [])
+
     # Build a dictionary for the instance for the jinja template
     return {
         "pose": pose_coordinates,
         "static": "false",
         "name": prefixed(g, of_obj)[5:],
-        "instance_name": prefixed(g, instance)[5:],
+        "instance_name": door_id,
         "start_joint_states": start_joint_states,
+        "behaviours": behaviors,
     }
 
 
 def get_all_object_models(g):
+    """Get objects to create SDF and config files for Gazebo.
+
+    These models will be instantiated in the world with the <include> tag.
+    """
     objects = list()
     for my_object, _, _ in g.triples((None, RDF.type, OBJ["Object"])):
         my_object_tree = get_object_model(g, my_object)
@@ -187,9 +195,10 @@ def get_all_object_models(g):
     return objects
 
 
-def get_all_object_instances(g):
+def get_all_object_instances(g, **kwargs):
+    """Get object instances to be added to the gazebo world"""
     instances = list()
     for instance, _, _ in g.triples((None, RDF.type, OBJ["ObjectInstance"])):
-        obj_instance = get_object_instance(g, instance)
+        obj_instance = get_object_instance(g, instance, **kwargs)
         instances.append(obj_instance)
     return instances

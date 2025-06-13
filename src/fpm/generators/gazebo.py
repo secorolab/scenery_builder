@@ -67,7 +67,7 @@ def gazebo_floorplan_model(model_name, base_path, **kwargs):
 
 def gazebo_world_model(g, model_name, base_path, **kwargs):
     template_path = kwargs.get("template_path")
-    instances = get_all_object_instances(g)
+    instances = get_all_object_instances(g, **kwargs)
     model = {"instances": instances, "name": model_name}
 
     output_path = get_output_path(base_path, "gazebo/worlds")
