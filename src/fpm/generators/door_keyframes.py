@@ -9,13 +9,13 @@ def generate_door_keyframes(start_frame, end_frame, **kwargs):
     interval = kwargs.get("sampling_interval")
     p_change = kwargs.get("state_change_probability")
 
-    keyframes = [{"pose": current_state, "time": 0.0}]
+    keyframes = [{"position": current_state, "time": 0.0}]
 
     for t in range(start_frame, end_frame, interval):
         # TODO Simplify the sampling of states and timestamps
         current_state = sample_door_state_open_close(p_change, current_state)
         time_delta = sample_time_delta()
-        keyframes.append({"pose": current_state, "time": t + time_delta})
+        keyframes.append({"position": current_state, "time": t + time_delta})
 
     return keyframes
 
