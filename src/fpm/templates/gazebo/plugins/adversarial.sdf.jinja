@@ -1,6 +1,6 @@
       <plugin name="gz::AdversarialJointModelPlugin" filename="libadversarial_joint_plugin.so">
         <joint>{{ plugin.joint_name }}</joint>
-        <x>{{ plugin.start_joint_angle }}</x>
-        <near>{{ plugin.trigger_dist }}</near>
-        <y>{{ plugin.target_joint_angle }}</y>
+        <start_joint_angle>{{ plugin.start_joint_angle }}</start_joint_angle>
+        <trigger_dist>{{ plugin.trigger_dist }}</trigger_dist>
+        <end_joint_angle>{{ plugin.target_joint_angle }}</end_joint_angle>
       </plugin>
