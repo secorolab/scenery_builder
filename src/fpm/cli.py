@@ -132,6 +132,12 @@ def tasks(ctx, **kwargs):
     show_default=True,
     callback=config_behaviors,
 )
+@click.option(
+    "--world-frame",
+    default="world-frame",
+    show_default=True,
+    help="ID of the world frame in the input models",
+)
 def gazebo(ctx, **kwargs):
     """Generate Gazebo world, models and launch files"""
     door_object_models(**ctx.obj, **ctx.parent.params, **kwargs)

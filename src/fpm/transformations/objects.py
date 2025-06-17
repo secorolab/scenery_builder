@@ -144,8 +144,9 @@ def get_object_instance(g, instance, **kwargs):
     frame = g.value(instance, OBJ["frame"])
 
     # Query for the pose path from the object instance to the world frame
-    world_frame_tag = g.value(predicate=RDF.type, object=OBJ["WorldFrame"])
-    world_frame = g.value(world_frame_tag, OBJ["frame"])
+    world_frame = g.namespace_manager.expand_curie(
+        "fpm:{}".format(kwargs.get("world_frame"))
+    )
 
     # Get the transfomation from the instance pose frame and the world frame
     T = get_transformation_matrix_wrt_frame(g, frame, world_frame)
