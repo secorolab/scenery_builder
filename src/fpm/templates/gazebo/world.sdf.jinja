@@ -49,17 +49,17 @@
       <static>{{instance.static}}</static>
       <pose>{{instance.pose}}</pose>
       {% for start_joint_state in instance.start_joint_states %}
-      <plugin name="gz::InitialStatePlugin" filename="libinitial_plugin.so">
+      <plugin name="gz::InitialJointStatePlugin" filename="libinitial_joint_state_plugin.so">
         <joint>{{start_joint_state.joint}}</joint>
         <position>{{start_joint_state.position}}</position>
       </plugin>
       {%- endfor %}
       {% for plugin in instance.behaviours -%}
-        {%- if plugin.type == "keyframes" -%}
-              {% include "./gazebo/plugins/keyframes.sdf.jinja" with context %}
+        {%- if plugin.type == "timed-state-change" -%}
+              {% include "./gazebo/plugins/tsc-plugin.sdf.jinja" with context %}
         {%- endif %}
-        {% if plugin.type == "adversarial" -%}
-              {% include "./gazebo/plugins/adversarial.sdf.jinja" with context %}
+        {% if plugin.type == "distance-triggered-state-change" -%}
+              {% include "./gazebo/plugins/dsc-plugin.sdf.jinja" with context %}
         {%- endif %}
       {%- endfor %}
     </include>
