@@ -19,6 +19,7 @@ from fpm.graph import (
 
 
 def get_link_information(g, my_object, object_frame):
+    links = list()
     for _, _, link in g.triples((my_object, OBJ["object-links"], None)):
 
         gazebo_representation = g.value(predicate=GZB["gz-link"], object=link)
@@ -45,7 +46,7 @@ def get_link_information(g, my_object, object_frame):
         T = get_transformation_matrix_wrt_frame(g, link_frame, object_frame)
         pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
 
-        return {
+        link_info = {
             "pose": pose_coordinates,
             "inertial": sdf_inertia,
             "collision": sdf_physics_geometry,
@@ -53,6 +54,9 @@ def get_link_information(g, my_object, object_frame):
             "name": prefixed(g, simplices_link),
             "material": material.toPython(),
         }
+
+        links.append(link_info)
+    return links
 
 
 def get_joint_information(g, joint, object_frame):
@@ -110,13 +114,11 @@ def get_joint_information(g, joint, object_frame):
 
 def get_object_model(g, my_object):
     joint_list = []
-    link_list = []
 
     object_frame = g.value(my_object, OBJ["object-frame"])
 
     # Collect the link information
-    link_info = get_link_information(g, my_object, object_frame)
-    link_list.append(link_info)
+    link_list = get_link_information(g, my_object, object_frame)
 
     # If the object is a kinematic chain, collect the joint information
     if OBJ["ObjectWithKinematicChain"] in g.objects(my_object, RDF.type):
@@ -134,7 +136,7 @@ def get_object_model(g, my_object):
     }
 
 
-def get_object_instance(g, instance):
+def get_object_instance(g, instance, **kwargs):
     #  Name of the object
     of_obj = g.value(instance, OBJ["of-object"])
 
@@ -142,8 +144,9 @@ def get_object_instance(g, instance):
     frame = g.value(instance, OBJ["frame"])
 
     # Query for the pose path from the object instance to the world frame
-    world_frame_tag = g.value(predicate=RDF.type, object=OBJ["WorldFrame"])
-    world_frame = g.value(world_frame_tag, OBJ["frame"])
+    world_frame = g.namespace_manager.expand_curie(
+        "fpm:{}".format(kwargs.get("world_frame"))
+    )
 
     # Get the transfomation from the instance pose frame and the world frame
     T = get_transformation_matrix_wrt_frame(g, frame, world_frame)
@@ -167,17 +170,25 @@ def get_object_instance(g, instance):
 
             start_joint_states.append({"joint": joint_name, "position": value})
 
+    door_id = prefixed(g, instance)[5:]
+    behaviors = kwargs.get("behaviors", {}).get(door_id, [])
+
     # Build a dictionary for the instance for the jinja template
     return {
         "pose": pose_coordinates,
         "static": "false",
         "name": prefixed(g, of_obj)[5:],
-        "instance_name": prefixed(g, instance)[5:],
+        "instance_name": door_id,
         "start_joint_states": start_joint_states,
+        "behaviours": behaviors,
     }
 
 
 def get_all_object_models(g):
+    """Get objects to create SDF and config files for Gazebo.
+
+    These models will be instantiated in the world with the <include> tag.
+    """
     objects = list()
     for my_object, _, _ in g.triples((None, RDF.type, OBJ["Object"])):
         my_object_tree = get_object_model(g, my_object)
@@ -185,9 +196,10 @@ def get_all_object_models(g):
     return objects
 
 
-def get_all_object_instances(g):
+def get_all_object_instances(g, **kwargs):
+    """Get object instances to be added to the gazebo world"""
     instances = list()
     for instance, _, _ in g.triples((None, RDF.type, OBJ["ObjectInstance"])):
-        obj_instance = get_object_instance(g, instance)
+        obj_instance = get_object_instance(g, instance, **kwargs)
         instances.append(obj_instance)
     return instances

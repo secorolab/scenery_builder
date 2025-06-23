@@ -23,6 +23,17 @@ def configure(ctx, param, filename):
     ctx.default_map.update(cmd_defaults)
 
 
+def config_behaviors(ctx, param, filename):
+    if not filename:
+        return
+    import yaml
+
+    with open(filename, "rb") as f:
+        config = yaml.safe_load(f)
+
+    ctx.obj["behaviors"] = config
+
+
 @click.group()
 def floorplan():
     pass
@@ -112,6 +123,20 @@ def tasks(ctx, **kwargs):
     default="floorplan_models",
     show_default=True,
     help="Name of the ROS package where gazebo models",
+)
+@click.option(
+    "--behaviors",
+    "behavior_config_file",
+    type=click.Path(dir_okay=False, exists=True, resolve_path=True),
+    help="Path to YAML file with door behavior parameters",
+    show_default=True,
+    callback=config_behaviors,
+)
+@click.option(
+    "--world-frame",
+    default="world-frame",
+    show_default=True,
+    help="ID of the world frame in the input models",
 )
 def gazebo(ctx, **kwargs):
     """Generate Gazebo world, models and launch files"""

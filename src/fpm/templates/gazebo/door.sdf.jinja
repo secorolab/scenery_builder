@@ -9,34 +9,39 @@
 {{geometry_box_macro(model)}}
 {%- endif -%}
 {% endmacro %}
-{% macro link_macro(model) %}
-<link name="{{model.name}}">
-<pose>{{model.pose}}</pose>
-<inertial>
-<mass>{{model.inertial.mass}}</mass>
-<inertia> 
-<ixx>{{model.inertial.inertia.ixx}}</ixx>
-<ixy>0.0</ixy>
-<ixz>0.0</ixz>
-<iyy>{{model.inertial.inertia.iyy}}</iyy> 
-<iyz>0.0</iyz>
-<izz>{{model.inertial.inertia.izz}}</izz>
-</inertia>
-</inertial>
-<collision name="collision">
-<geometry>
-{{geometry_macro(model.collision)}}
-</geometry>
-</collision>
-<visual name="visual">
-<geometry>
-{{geometry_macro(model.visual)}}
-</geometry>
-{%- if model.material != None -%}
-<material><script><name>Gazebo/{{model.material}}</name></script></material>
-{%- endif -%}
-</visual>
-</link>
+{%- macro link_macro(model) %}
+        <link name="{{model.name}}">
+            <pose>{{model.pose}}</pose>
+            <inertial>
+                <mass>{{model.inertial.mass}}</mass>
+                <inertia>
+                    <ixx>{{model.inertial.inertia.ixx}}</ixx>
+                    <ixy>0.0</ixy>
+                    <ixz>0.0</ixz>
+                    <iyy>{{model.inertial.inertia.iyy}}</iyy>
+                    <iyz>0.0</iyz>
+                    <izz>{{model.inertial.inertia.izz}}</izz>
+                </inertia>
+            </inertial>
+            <collision name="collision">
+                <geometry>
+                    {{geometry_macro(model.collision)}}
+                </geometry>
+            </collision>
+            <visual name="visual">
+                <geometry>
+                    {{geometry_macro(model.visual)}}
+                </geometry>
+                {% if model.material != None -%}
+                <material>
+                    <script>
+                        <uri>file://media/materials/scripts/gazebo.material</uri>
+                        <name>Gazebo/{{model.material}}</name>
+                    </script>
+                </material>
+                {%- endif %}
+            </visual>
+        </link>
 {%- endmacro -%}
 {%- macro joint_macro(model) -%}
 <joint type="{{model.type}}" name="{{model.name}}">
