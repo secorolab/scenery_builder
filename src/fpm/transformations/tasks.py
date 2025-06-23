@@ -75,7 +75,7 @@ def create_inset_json_ld(model, width):
         tree_points = []
         for i, point in enumerate(inset):
             point = {
-                "name": "position-inset-point-{i}-to-{name}-frame".format(
+                "name": "position-inset-point-{i:04d}-to-{name}-frame".format(
                     i=i, name=space_name
                 ),
                 "as-seen-by": "{name}-frame".format(name=space_name),
@@ -102,11 +102,11 @@ def transform_insets(g, inset_model_framed, coordinates_map):
         inset_points = []
 
         for point in inset["points"]:
-            # Get the space name from the inset ID
-            name = point["name"][26:-6]
-            # Get the point id (e.g. point-1) from the inset ID
-            point_name = point["name"][15:22]
-            name = "{}-{}".format(name, point_name)
+
+            # Get the space name and point ID from the inset ID
+            # TODO Fix this so we don't rely on human-readable IDs with semantic meaning
+            id_sem = point["name"].split("-")
+            name = "{}-point-{}".format(id_sem[5], id_sem[3])
 
             x, y, _ = get_waypoint_coord(g, point, coordinates_map)
 
