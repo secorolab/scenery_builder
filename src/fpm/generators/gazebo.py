@@ -71,7 +71,7 @@ def gazebo_world_model(g, model_name, base_path, **kwargs):
     model = {"instances": instances, "name": model_name}
 
     output_path = get_output_path(base_path, "gazebo/worlds")
-    if kwargs.get("ros_version", "ros2") == "ros2":
+    if kwargs.get("ros_version", "ROS2") == "ROS2":
         file_name = "{name}.sdf".format(name=model_name)
     else:
         file_name = "{name}.world".format(name=model_name)

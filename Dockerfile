@@ -20,4 +20,4 @@ WORKDIR /usr/src/app/
 
 ENTRYPOINT ["blender", "-b", "--python", "modules/fpm/cli.py", "--", "generate"]
 
-CMD ["-i", "/usr/src/app/models/", "--output-path", "/usr/src/app/output/"]
+CMD ["-i", "/usr/src/app/models/", "--output-path", "/usr/src/app/output/", "mesh", "tasks", "gazebo", "occ-grid", "polyline", "door-keyframes"]

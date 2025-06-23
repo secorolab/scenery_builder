@@ -38,10 +38,10 @@ pip install -e .
 This module adds `floorplan` as a command line interface. You can use the `generate` command as shown below:
 
 ```shell
-floorplan generate <path to config file> -i <path to input folder>
+floorplan generate -i <path to input folder>
 ```
 
-Where the input folder must contain:
+Where the input folder(s) must contain:
 - the composable models generated from the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL)
     - `coordinate.json`
     - `floorplan.json`
@@ -70,10 +70,16 @@ The command above currently generates the following artefacts:
 
 ### Docker
 
-To use the scenery_builder via Docker, simply mount the input and output paths as volumes and pass any arguments to the container:
+To use the scenery_builder via Docker, simply mount the input and output paths as volumes and run the container. This will run the `floorplan generate` command with the default values defined in the entrypoint.
 
 ```bash
-docker run -v <local input path>:/usr/src/app/models -v <local output path>:/usr/src/app/output  -it scenery_builder:latest <optional arguments>
+docker run -v <local input path>:/usr/src/app/models -v <local output path>:/usr/src/app/output scenery_builder:latest
+```
+
+If you want to change the path of the volumes inside the Docker container (i.e., `/usr/src/app/models` or `/usr/src/app/output`) or want to customize the arguments, use the following:
+
+```bash
+docker run -v <local input path>:/usr/src/app/models -v <local output path>:/usr/src/app/output scenery_builder:latest -i /usr/src/app/models -o /usr/src/app/output <optional arguments>
 ```
 
 ## Example
@@ -84,7 +90,7 @@ An example model for a building is available [here](https://github.com/secorolab
 
 
 ```sh
-floorplan generate -i hospital/json-ld --output-path hospital/gen
+floorplan generate -i hospital/json-ld -o hospital/gen
 ```
 
 That should generate the following files:
@@ -119,7 +125,7 @@ That should generate the following files:
 ## Task generator
 
 It uses the FloorPlan corners to generate a task specification to visit all corners in a space.
-The option `--waypoint-dist-to-corner` is a float value representing the distance between the corner of a space and its center.
+The option `--dist-to-corner` is a float value representing the distance between the corner of a space and its center.
 
 ## Object placing
 

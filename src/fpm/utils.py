@@ -2,6 +2,7 @@ import os
 import tomllib
 
 import yaml
+import json
 import bpy
 
 import numpy as np
@@ -34,6 +35,9 @@ def save_file(output_path, file_name, contents):
     if ext in [".yaml"]:
         with open(output_file, "w") as f:
             yaml.dump(contents, f, default_flow_style=None)
+    elif ext == ".json":
+        with open(output_file, "w") as f:
+            json.dump(contents, f, indent=4)
     elif ext in [".pgm", ".jpg"]:
         contents.save(output_file, quality=95)
     elif ext in [".stl"]:

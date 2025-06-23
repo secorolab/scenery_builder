@@ -17,7 +17,7 @@ def gazebo_world_launch(model_name, base_path, **kwargs):
     template_path = kwargs.get("template_path")
     output_path = get_output_path(base_path, "ros/launch")
 
-    if kwargs.get("ros_version", "ros2") == "ros2":
+    if kwargs.get("ros_version", "ROS2") == "ROS2":
         file_name = "{name}.ros2.launch".format(name=model_name)
         template_name = "ros/world.ros2.launch.jinja"
     else:
