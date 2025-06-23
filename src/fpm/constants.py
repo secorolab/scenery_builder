@@ -29,8 +29,8 @@ GEO = rdflib.Namespace(
     "https://comp-rob2b.github.io/metamodels/geometry/structural-entities#"
 )
 POLY = rdflib.Namespace("https://secorolab.github.io/metamodels/geometry/polytope#")
-QUDT = rdflib.Namespace("https://qudt.org/schema/qudt/")
-QUDT_VOCAB = rdflib.Namespace("https://qudt.org/vocab/unit/")
+QUDT = rdflib.Namespace("http://qudt.org/schema/qudt/")
+QUDT_VOCAB = rdflib.Namespace("http://qudt.org/vocab/unit/")
 COORD = rdflib.Namespace(
     "https://comp-rob2b.github.io/metamodels/geometry/coordinates#"
 )
