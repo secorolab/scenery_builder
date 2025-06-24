@@ -14,7 +14,6 @@ from fpm.constants import *
 from fpm.graph import (
     prefixed,
     get_transformation_matrix_wrt_frame,
-    get_floorplan_model_name,
 )
 
 
@@ -74,6 +73,10 @@ def get_joint_information(g, joint, object_frame):
         for _, _, c in g.triples((joint_with_tree, OBJ["children"], None))
     ]
 
+    # Get parent frame
+    # Getting the value of a list returns the first element
+    parent_frame = g.value(parent, GEO["simplices"])
+
     # Determine the joint frame for the pose
     common_axis = g.value(joint, KIN["common-axis"])
     joint_frame = None
@@ -88,8 +91,8 @@ def get_joint_information(g, joint, object_frame):
             for _, _, _ in g.triples((subject, RDF.type, GEO["Frame"])):
                 joint_frame = subject
 
-    # Determine frame of reference and pose wrt object frame
-    T = get_transformation_matrix_wrt_frame(g, joint_frame, object_frame)
+    # Determine frame of reference and pose wrt parent frame
+    T = get_transformation_matrix_wrt_frame(g, joint_frame, parent_frame)
     pose_coordinates = get_sdf_pose_from_transformation_matrix(T)
 
     limits = {"upper": None, "lower": None}
