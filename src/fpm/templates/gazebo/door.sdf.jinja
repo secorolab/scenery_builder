@@ -47,12 +47,12 @@
             <parent>{{model.parent}}</parent>
             <axis>
                 <xyz>{{model.axis}}</xyz>
-            {% if model.limits.lower != None and model.limits.upper != None -%}
+                {% if model.limits.lower != None and model.limits.upper != None -%}
                 <limit>
                     <lower>{{model.limits.lower}}</lower>
                     <upper>{{model.limits.upper}}</upper>
                 </limit>
-            {%- endif -%}
+                {%- endif %}
             </axis>
         </joint>
 {%- endmacro -%}
