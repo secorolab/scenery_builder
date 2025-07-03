@@ -179,13 +179,13 @@ Tutorials on how to model objects with movement constraints, and how to place th
 This work has been partly supported by the European Union's Horizon 2020 projects SESAME (Grant No. 101017258) and SOPRANO (Grant No. 101120990).
 
 <div class="row">
- <div class="column" style="float:left; padding: 15px">
-    <img src="images/EU.jpg" alt="drawing" height="80"/>
- </div>
- <div class="column" style="float:left; padding: 15px">
-    <img src="images/SESAME.png" alt="drawing" height="80"/>
- </div>
- <div class="column" style="float:left; padding: 15px">
-    <img src="images/SOPRANO.png" alt="drawing" height="80"/>
- </div>
+    <div class="column">
+        <img src="images/SESAME.png" alt="drawing" class="center"/>
+    </div>
+    <div class="column">
+        <img src="images/SOPRANO.png" alt="drawing" class="center"/>
+    </div>
+    <div class="column">
+        <img src="images/EU.jpg" alt="drawing" class="center"/>
+    </div>
 </div>
