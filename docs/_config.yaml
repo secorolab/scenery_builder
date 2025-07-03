@@ -81,6 +81,9 @@ nav_external_links:
   - title: Scenery Builder on GitHub
     url: https://github.com/secorolab/scenery_builder
     opens_in_new_tab: true
+  - title: FloorPlan Gazebo plugins
+    url: https://github.com/secorolab/floorplan-gazebo-plugins
+    opens_in_new_tab: true
   - title: FloorPlan DSL
     url: https://secorolab.github.io/FloorPlan-DSL
     opens_in_new_tab: true
