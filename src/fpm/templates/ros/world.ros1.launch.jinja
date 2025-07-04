@@ -11,7 +11,7 @@
     <arg name="paused" default="false"/>
     <arg name="world_name" default="worlds/{{model_name}}.world"/>
 
-    <env name="GAZEBO_MODEL_PATH" value="$(find {{ ros_pkg }})/models:$(find {{ ros_pkg }})/worlds:$(optenv GAZEBO_MODEL_PATH)"/>
+    <env name="GAZEBO_MODEL_PATH" value="$(find {{ ros_pkg }})/gazebo/models:$(find {{ ros_pkg }})gazebo//worlds:$(find {{ ros_pkg }})/3d-mesh:$(optenv GAZEBO_MODEL_PATH)"/>
 
     <!-- launch gazebo with empty world -->
     <include file="$(find {{ ros_pkg }})/launch/gazebo_world.launch">
