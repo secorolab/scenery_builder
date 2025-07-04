@@ -8,6 +8,7 @@ from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
 from fpm.generators.door_keyframes import get_keyframes
+from textx import generator_for_language_target, metamodel_for_language
 
 
 def configure(ctx, param, filename):
@@ -86,6 +87,41 @@ def config_behaviors(ctx, param, filename):
 def floorplan(docs):
     """CLI for the scenery builder artefact generation"""
     pass
+
+
+@floorplan.command()
+@click.pass_context
+@click.option(
+    "-m",
+    "--model",
+    "model_path",
+    type=click.Path(exists=True, resolve_path=True, file_okay=True, dir_okay=False),
+    required=True,
+    help="Path to the fpm model to transform into JSON-LD",
+)
+@click.option(
+    "-o",
+    "--output-path",
+    type=click.Path(exists=True, resolve_path=True),
+    default=os.path.join("."),
+    help="Output path for generated artefacts",
+)
+def transform(ctx, model_path, output_path, **kwargs):
+    """Transform an FPM model into JSON-LD
+
+    This command is equivalent to using TextX's CLI to transform the fpm model:
+
+    ```
+    textx generate --target json-ld --overwrite <model.fpm> -o <output path>
+    ```
+
+    This requires that the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) is installed.
+    """
+    print(model_path, output_path)
+    generator = generator_for_language_target("fpm", "json-ld")
+    mm = metamodel_for_language("fpm")
+    model = mm.model_from_file(model_path)
+    generator(mm, model, output_path, overwrite=True)
 
 
 @floorplan.group(chain=True)
