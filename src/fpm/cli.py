@@ -23,6 +23,47 @@ def configure(ctx, param, filename):
     ctx.default_map.update(cmd_defaults)
 
 
+def _gen_docs(ctx, param, gen):
+    if not gen:
+        return
+    from fpm.utils import load_template
+
+    def _save_file(cmd_name, cmd_info):
+        content = template.render(cmd=cmd_info, lstrip_blocks=True, trim_blocks=True)
+        with open("docs/cli/{}.md".format(cmd_name), "w+") as f:
+            f.write(content)
+
+    template = load_template(template_name="cli/command.md.jinja")
+
+    info = ctx.to_info_dict()
+    # TODO This is a workaround to include the usage from click
+    # See https://github.com/pallets/click/issues/2992
+    info["command"]["usage"] = ctx.get_usage()
+    info["command"]["parent"] = "CLI"
+    fp_cmd = info.get("command")
+    for cmd_n1 in ctx.command.list_commands(ctx):
+        cmd2 = ctx.command.get_command(ctx, cmd_n1)
+        sub_ctx = ctx._make_sub_context(cmd2)
+        usage = cmd2.get_usage(sub_ctx).replace("Usage: ", "")
+        info["command"]["commands"][cmd_n1]["usage"] = usage
+        if isinstance(cmd2, click.Group):
+            # Groups
+            for cmd_n2 in cmd2.list_commands(ctx):
+                cmd3 = cmd2.get_command(ctx, cmd_n2)
+                sub_ctx3 = sub_ctx._make_sub_context(cmd3)
+                usage = cmd3.get_usage(sub_ctx3).replace("Usage: ", "")
+                info["command"]["commands"][cmd_n1]["commands"][cmd_n2]["usage"] = usage
+
+    _save_file("floorplan", info.get("command"))
+    commands = fp_cmd.get("commands")
+    for cmd_n1, cmd_info in commands.items():
+        cmd_info["parent"] = info.get("info_name")
+        _save_file(cmd_n1, cmd_info)
+        for cmd_n2, cmd_info2 in cmd_info.get("commands", dict()).items():
+            cmd_info2["parent"] = cmd_n1
+            _save_file(cmd_n2, cmd_info2)
+
+
 def config_behaviors(ctx, param, filename):
     if not filename:
         return
@@ -35,7 +76,15 @@ def config_behaviors(ctx, param, filename):
 
 
 @click.group()
-def floorplan():
+@click.option(
+    "--docs",
+    is_flag=True,
+    is_eager=True,
+    callback=_gen_docs,
+    help="Generate the documentation for this CLI",
+)
+def floorplan(docs):
+    """CLI for the scenery builder artefact generation"""
     pass
 
 
@@ -76,6 +125,7 @@ def floorplan():
     callback=configure,
 )
 def generate(ctx, inputs, **kwargs):
+    """Generate execution artefacts from JSON-LD models"""
 
     print(kwargs)
 
