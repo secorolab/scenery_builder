@@ -37,6 +37,6 @@ Usage:
 ## Commands
 
 {% for k, v in cmd.commands.items() -%}
-- [`{{ k }}`]({{ k }}) - {{ v.help }}
+- [`{{ k }}`]({{ k }}) - {{ v.short_help }}
 {% endfor -%}
 {%- endif -%}

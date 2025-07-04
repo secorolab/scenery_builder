@@ -35,9 +35,9 @@ floorplan generate [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]...
 
 ## Commands
 
-- [`door-keyframes`](door-keyframes) - Generate the sampled keyframes for doors with time-based behaviours
-- [`gazebo`](gazebo) - Generate Gazebo world, models and launch files
-- [`mesh`](mesh) - Generate a 3D-mesh in STL or gltF 2.0 format
+- [`door-keyframes`](door-keyframes) - Generate the timed-behaviour spec for the floorplan doors
+- [`gazebo`](gazebo) - Generate artefacts for the Gazebo simulation
+- [`mesh`](mesh) - Generate a 3D-mesh of the floorplan
 - [`occ-grid`](occ-grid) - Generate the occupancy grid map of the floorplan
 - [`polyline`](polyline) - Generate a 3D polyline representation of the floorplan
-- [`tasks`](tasks) - Generate disinfection tasks for each room in the floorplan
+- [`tasks`](tasks) - Generate navigation waypoints for all rooms

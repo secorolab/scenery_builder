@@ -89,7 +89,7 @@ def floorplan(docs):
     pass
 
 
-@floorplan.command()
+@floorplan.command(short_help="Transform an FPM model into JSON-LD")
 @click.pass_context
 @click.option(
     "-m",
@@ -124,7 +124,10 @@ def transform(ctx, model_path, output_path, **kwargs):
     generator(mm, model, output_path, overwrite=True)
 
 
-@floorplan.group(chain=True)
+@floorplan.group(
+    chain=True,
+    short_help="Generate execution artefacts from JSON-LD models",
+)
 @click.pass_context
 @click.option(
     "-i",
@@ -173,14 +176,14 @@ def generate(ctx, inputs, **kwargs):
     ctx.obj["g"] = g
 
 
-@generate.command()
+@generate.command(short_help="Generate a 3D-mesh of the floorplan")
 @click.pass_context
 def mesh(ctx, **kwargs):
     """Generate a 3D-mesh in STL or gltF 2.0 format"""
     get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
-@generate.command()
+@generate.command(short_help="Generate navigation waypoints for all rooms")
 @click.pass_context
 @click.option(
     "--dist-to-corner",
@@ -194,7 +197,7 @@ def tasks(ctx, **kwargs):
     get_disinfection_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
-@generate.command()
+@generate.command(short_help="Generate artefacts for the Gazebo simulation")
 @click.pass_context
 @click.option(
     "--ros-version",
@@ -230,7 +233,7 @@ def gazebo(ctx, **kwargs):
     gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
-@generate.command()
+@generate.command(short_help="Generate the occupancy grid map of the floorplan")
 @click.pass_context
 @click.option(
     "--laser-height",
@@ -300,14 +303,16 @@ def occ_grid(ctx, **kwargs):
     get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
-@generate.command()
+@generate.command(short_help="Generate a 3D polyline representation of the floorplan")
 @click.pass_context
 def polyline(ctx, **kwargs):
     """Generate a 3D polyline representation of the floorplan"""
     get_polyline_floorplan(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
-@generate.command()
+@generate.command(
+    short_help="Generate the timed-behaviour spec for the floorplan doors"
+)
 @click.pass_context
 @click.option(
     "--start-frame",
