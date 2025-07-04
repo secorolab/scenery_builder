@@ -6,7 +6,7 @@ title: {{ cmd.name }}
 
 # {{ cmd.name }}
 
-{{ cmd.help | replace("    ", "") }}
+{{ cmd.help | replace("\n    ", "\n") }}
 
 Usage:
 

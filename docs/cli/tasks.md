@@ -6,7 +6,23 @@ parent: generate
 
 # tasks
 
-Generate disinfection tasks for each room in the floorplan
+Generate navigation waypoints for each room in the floorplan
+
+The current version creates a YAML file for each room with the waypoints for a disinfection task (one waypoint per corner).
+The files currently have the following structure:
+
+```yaml
+id: <space name>
+task:
+  - name: <space name>
+    type: waypoint_following
+    waypoints:
+    - {id: <space name>-point-0000, x: <float>, y: <float>, yaw: <float>, z: <float>}
+    - {id: <space name>-point-0001, x: <float>, y: <float>, yaw: <float>, z: <float>}
+    - {id: <space name>-point-0002, x: <float>, y: <float>, yaw: <float>, z: <float>}
+    - {id: <space name>-point-0003, x: <float>, y: <float>, yaw: <float>, z: <float>}
+```
+
 
 Usage:
 
