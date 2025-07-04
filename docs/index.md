@@ -96,23 +96,33 @@ An example model for a building is available [here](https://github.com/secorolab
 
 
 ```sh
-floorplan generate -i hospital/json-ld -o hospital/gen
+floorplan generate -i hospital/json-ld -o gen/hospital mesh gazebo occ-grid door-keyframes polyline tasks
 ```
 
 That should generate the following files:
 
-```bash
-.
+```
+gen/hospital
 ├── 3d-mesh
 │   └── hospital.stl
+├── doors
+│   └── behaviours
+│       └── keyframes
+│           ├── door-instance-1.json
+│           ├── ...
+│           └── door-instance-n.json
 ├── gazebo
 │   ├── models
-│   │   └── hospital
+│   │   ├── hospital
+│   │   │   ├── model.config
+│   │   │   └── model.sdf
+│   │   └── door
 │   │       ├── model.config
 │   │       └── model.sdf
 │   └── worlds
 │       └── hospital.sdf
 ├── maps
+│   ├── hospital.jpg
 │   ├── hospital.pgm
 │   └── hospital.yaml
 ├── polyline
@@ -121,12 +131,11 @@ That should generate the following files:
 │   └── launch
 │       └── hospital.ros2.launch
 └── tasks
-    ├── hallway_task.yaml
-    ├── reception_task.yaml
-    ├── room_A_task.yaml
-    └── room_B_task.yaml
+    └── disinfection
+        ├── hallway_route.yaml
+        ├── ...
+        └── room_B_route.yaml
 ```
-
 
 ## Task generator
 

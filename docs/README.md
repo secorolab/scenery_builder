@@ -86,27 +86,38 @@ docker run -v <local input path>:/usr/src/app/models -v <local output path>:/usr
 
 ![3D asset generated from the environment description](images/hospital_no_brackground.png)
 
-An example model for a building is available [here](https://github.com/secorolab/FloorPlan-DSL/blob/devel/models/examples/hospital.fpm2). After transforming the floorplan model into its composable representation, generate the artefacts by passing the folder with the JSON-LD models as inputs:
+An example model for a building is available [here](https://github.com/secorolab/FloorPlan-DSL/blob/devel/models/examples/hospital.fpm2). 
+After transforming the floorplan model into its composable representation, generate the artefacts by passing the folder with the JSON-LD models as inputs:
 
 
 ```sh
-floorplan generate -i hospital/json-ld -o hospital/gen
+floorplan generate -i hospital/json-ld -o gen/hospital mesh gazebo occ-grid door-keyframes polyline tasks
 ```
 
 That should generate the following files:
 
-```bash
-.
+```
+gen/hospital
 ├── 3d-mesh
 │   └── hospital.stl
+├── doors
+│   └── behaviours
+│       └── keyframes
+│           ├── door-instance-1.json
+│           ├── ...
+│           └── door-instance-n.json
 ├── gazebo
 │   ├── models
-│   │   └── hospital
+│   │   ├── hospital
+│   │   │   ├── model.config
+│   │   │   └── model.sdf
+│   │   └── door
 │   │       ├── model.config
 │   │       └── model.sdf
 │   └── worlds
 │       └── hospital.sdf
 ├── maps
+│   ├── hospital.jpg
 │   ├── hospital.pgm
 │   └── hospital.yaml
 ├── polyline
@@ -115,10 +126,10 @@ That should generate the following files:
 │   └── launch
 │       └── hospital.ros2.launch
 └── tasks
-    ├── hallway_task.yaml
-    ├── reception_task.yaml
-    ├── room_A_task.yaml
-    └── room_B_task.yaml
+    └── disinfection
+        ├── hallway_route.yaml
+        ├── ...
+        └── room_B_route.yaml
 ```
 
 
