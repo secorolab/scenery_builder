@@ -6,7 +6,7 @@ title: {{ cmd.name }}
 
 # {{ cmd.name }}
 
-{{ cmd.help }}
+{{ cmd.help | replace("    ", "") }}
 
 Usage:
 
