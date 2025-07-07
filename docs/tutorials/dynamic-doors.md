@@ -81,7 +81,7 @@ The behaviours specification is stored in a file called `behaviours.yaml`.
 Use the scenery builder to generate the Gazebo world:
 
 ```bash
-floorplan generate -i models/json-ld -i doors/json-ld -o gen/dynamic-floorplan gazebo 
+floorplan generate -i models/json-ld -i doors/json-ld -o gen/dynamic-floorplan gazebo --behaviors behaviours.yaml
 ```
 
 ## Loading the Gazebo world
