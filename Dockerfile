@@ -3,10 +3,10 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt update
-RUN apt install -y software-properties-common git
-RUN apt install -y python3 python3-pip
-RUN apt install -y blender
+RUN apt update && \
+    apt install -y software-properties-common git \
+    python3 python3-pip \
+    blender
 
 
 WORKDIR /usr/src/app/modules
@@ -18,6 +18,6 @@ ENV BLENDER_USER_SCRIPTS=/usr/src/app
 
 WORKDIR /usr/src/app/
 
-ENTRYPOINT ["blender", "-b", "--python", "modules/fpm/cli.py", "--", "generate"]
+ENTRYPOINT ["blender", "-b", "--python", "modules/fpm/cli.py", "--"]
 
-CMD ["-i", "/usr/src/app/models/", "--output-path", "/usr/src/app/output/", "mesh", "tasks", "gazebo", "occ-grid", "polyline", "door-keyframes"]
+CMD ["generate", "-i", "/usr/src/app/models/", "--output-path", "/usr/src/app/output/", "mesh", "tasks", "gazebo", "occ-grid", "polyline", "door-keyframes"]
