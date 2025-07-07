@@ -2,8 +2,9 @@ title: Scenery Builder
 description: Model-to-model transformation of floorplan models to execution artefacts (including ROS simulation)
 theme: just-the-docs
 
-url: https://secorolab.github.io/scenery_builder
-
+baseurl: "/scenery_builder" # the subpath of your site, e.g. /blog
+url: https://secorolab.github.io
+repository: secorolab/scenery_builder # for github-metadata
 
 permalink: pretty
 defaults:
