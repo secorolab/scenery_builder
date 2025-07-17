@@ -62,9 +62,9 @@ def get_point_position(g, point):
     position = g.value(predicate=GEOM["of"], object=point)
     coordinates = g.value(predicate=COORD["of-position"], object=position)
 
-    x = get_coord_value(g.value(coordinates, COORD["x"], default=0.0))
-    y = get_coord_value(g.value(coordinates, COORD["y"], default=0.0))
-    z = get_coord_value(g.value(coordinates, COORD["z"], default=0.0))
+    x = get_coord_value(g, coordinates, "x", default=0.0)
+    y = get_coord_value(g, coordinates, "y", default=0.0)
+    z = get_coord_value(g, coordinates, "z", default=0.0)
     asb = g.value(coordinates, COORD["as-seen-by"])
     name = prefixed(g, coordinates)
 
@@ -318,18 +318,21 @@ def get_coordinates_map(g):
     coordinates_map = {}
 
     for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
-        coordinates_map[prefixed(g, g.value(coord, COORD["of-pose"]))] = {
-            "x": get_coord_value(g.value(coord, COORD["x"], default=0.0)),
-            "y": get_coord_value(g.value(coord, COORD["y"], default=0.0)),
-            "z": get_coord_value(g.value(coord, COORD["z"], default=0.0)),
-            "alpha": get_coord_value(g.value(coord, COORD["alpha"], default=0.0)),
-            "beta": get_coord_value(g.value(coord, COORD["beta"], default=0.0)),
+        pose = prefixed(g, g.value(coord, COORD["of-pose"]))
+
+        coordinates_map[pose] = {
+            "x": get_coord_value(g, coord, "x", default=0.0),
+            "y": get_coord_value(g, coord, "y", default=0.0),
+            "z": get_coord_value(g, coord, "z", default=0.0),
+            "alpha": get_coord_value(g, coord, "alpha", default=0.0),
+            "beta": get_coord_value(g, coord, "beta", default=0.0),
         }
 
     return coordinates_map
 
 
-def get_coord_value(v):
+def get_coord_value(g: Graph, coord, key, default=0.0):
+    v = g.value(coord, COORD[key], default=default)
     if v is not None and isinstance(v, float):
         return v
     else:
