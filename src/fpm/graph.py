@@ -68,9 +68,17 @@ def get_point_position(g, point):
     position = g.value(predicate=GEOM["of"], object=point)
     coordinates = g.value(predicate=COORD["of-position"], object=position)
 
-    x = get_coord_value(g, coordinates, "x", default=0.0)
-    y = get_coord_value(g, coordinates, "y", default=0.0)
-    z = get_coord_value(g, coordinates, "z", default=0.0)
+    if g.value(coordinates, COORD["coordinates"]):
+        coord_values = get_list_values(g, coordinates, COORD["coordinates"])
+        if len(coord_values) == 2:
+            z = 0.0
+            x, y = coord_values
+        else:
+            x, y, z = coord_values
+    else:
+        x = get_coord_value(g, coordinates, "x", default=0.0)
+        y = get_coord_value(g, coordinates, "y", default=0.0)
+        z = get_coord_value(g, coordinates, "z", default=0.0)
     asb = g.value(coordinates, COORD["as-seen-by"])
     name = prefixed(g, coordinates)
 
@@ -316,14 +324,24 @@ def get_coordinates_map(g):
 
     for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
         pose = prefixed(g, g.value(coord, COORD["of-pose"]))
+        coordinates = dict()
+        if g.value(coord, COORD["coordinates"]):
+            coord_values = get_list_values(g, coord, COORD["coordinates"])
+            for k, v in zip(["x", "y", "z"], coord_values):
+                print(k, v)
+                coordinates[k] = v
+            coordinates["alpha"] = 0.0
+            coordinates["beta"] = 0.0
+        else:
+            coordinates = {
+                "x": get_coord_value(g, coord, "x", default=0.0),
+                "y": get_coord_value(g, coord, "y", default=0.0),
+                "z": get_coord_value(g, coord, "z", default=0.0),
+                "alpha": get_coord_value(g, coord, "alpha", default=0.0),
+                "beta": get_coord_value(g, coord, "beta", default=0.0),
+            }
 
-        coordinates_map[pose] = {
-            "x": get_coord_value(g, coord, "x", default=0.0),
-            "y": get_coord_value(g, coord, "y", default=0.0),
-            "z": get_coord_value(g, coord, "z", default=0.0),
-            "alpha": get_coord_value(g, coord, "alpha", default=0.0),
-            "beta": get_coord_value(g, coord, "beta", default=0.0),
-        }
+        coordinates_map[pose] = coordinates
 
     return coordinates_map
 
