@@ -47,6 +47,12 @@ def prefixed(g, node):
     return node.n3(g.namespace_manager)
 
 
+def get_list_values(g: Graph, subject, predicate):
+    ptr = g.value(subject, predicate)
+    values = get_list_from_ptr(g, ptr)
+    return values
+
+
 def get_list_from_ptr(g, ptr):
     result_list = []
     while True:
@@ -178,8 +184,7 @@ def get_space_points(g):
 
     # Get the list of spaces
     print("Querying all spaces...")
-    space_ptr = g.value(floorplan, FP["spaces"])
-    spaces = get_list_from_ptr(g, space_ptr)
+    spaces = get_list_values(g, floorplan, FP["spaces"])
 
     # for each space, find the polygon
     print("Get all points of a space...")
@@ -207,8 +212,7 @@ def get_opening_points(g, element="Entryway"):
     opening_points = list()
     for opening, _, _ in g.triples((None, RDF.type, FP[element])):
         poly = g.value(opening, FP["3d-shape"])
-        faces_ptr = g.value(poly, POLY["faces"])
-        faces_nodes = get_list_from_ptr(g, faces_ptr)
+        faces_nodes = get_list_values(g, poly, POLY["faces"])
         face_positions = list()
         for f in faces_nodes:
             face_vertices = get_list_from_ptr(g, f)
@@ -231,8 +235,7 @@ def get_3d_structure(g, element="Wall", threshold=0.05):
         name = prefixed(g, e).split(":")[-1]
 
         poly = g.value(e, FP["3d-shape"])
-        vertices_ptr = g.value(poly, POLY["points"])
-        vertices = get_list_from_ptr(g, vertices_ptr)
+        vertices = get_list_values(g, poly, POLY["points"])
         positions = list()
         for point in vertices:
             p = get_point_position(g, point)
@@ -245,8 +248,7 @@ def get_3d_structure(g, element="Wall", threshold=0.05):
             x, y, z = get_waypoint_coord(g, p, coords_m)
             positions.append((x, y, z))
 
-        faces_ptr = g.value(poly, POLY["faces"])
-        faces_nodes = get_list_from_ptr(g, faces_ptr)
+        faces_nodes = get_list_values(g, poly, POLY["faces"])
         faces = list()
         for f in faces_nodes:
             face_vertices = get_list_from_ptr(g, f)
@@ -255,8 +257,7 @@ def get_3d_structure(g, element="Wall", threshold=0.05):
 
         d = {"name": name, "vertices": positions, "faces": faces}
         if element in ["Entryway", "Window"]:
-            voids_ptr = g.value(e, FP["voids"])
-            voids = get_list_from_ptr(g, voids_ptr)
+            voids = get_list_values(g, e, FP["voids"])
             d["voids"] = [prefixed(g, v).split(":")[-1] for v in voids]
         elements.append(d)
 
@@ -268,15 +269,13 @@ def get_internal_walls(g):
     print("Getting internal walls...")
     wall_planes_by_space = dict()
     for s, r, w in g.triples((None, FP["walls"], None)):
-        wall_ptr = g.value(s, FP["walls"])
-        wall_nodes = get_list_from_ptr(g, wall_ptr)
+        wall_nodes = get_list_values(g, s, FP["walls"])
         wall_planes = dict()
         for w_ in wall_nodes:
             wall_name = prefixed(g, w_).split(":")[-1]
             poly = g.value(w_, FP["3d-shape"])
 
-            faces_ptr = g.value(poly, POLY["faces"])
-            faces_nodes = get_list_from_ptr(g, faces_ptr)
+            faces_nodes = get_list_values(g, poly, POLY["faces"])
             inner_wall = list()
             for f in faces_nodes:
                 face_vertices = get_list_from_ptr(g, f)
@@ -302,9 +301,7 @@ def get_internal_walls(g):
 def get_point_positions_in_space(g, space):
     polygon = g.value(space, FP["shape"])
 
-    point_ptr = g.value(polygon, POLY["points"])
-
-    point_nodes = get_list_from_ptr(g, point_ptr)
+    point_nodes = get_list_values(g, polygon, POLY["points"])
 
     positions = []
     for point in point_nodes:
