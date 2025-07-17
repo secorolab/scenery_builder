@@ -254,7 +254,7 @@ def get_3d_structure(g, element="Wall", threshold=0.05):
                 else:
                     p["y"] = p["y"] + threshold
 
-            x, y, z = get_waypoint_coord(g, p, coords_m)
+            x, y, z = get_waypoint_coord_wrt_world(g, p, coords_m)
             positions.append((x, y, z))
 
         faces_nodes = get_list_values(g, poly, POLY["faces"])
@@ -292,7 +292,7 @@ def get_internal_walls(g):
                 for point in face_vertices:
                     p = get_point_position(g, point)
                     if p["y"] == 0.0:
-                        x, y, z = get_waypoint_coord(g, p, coords_m)
+                        x, y, z = get_waypoint_coord_wrt_world(g, p, coords_m)
                         positions.append((x, y, z))
 
                 # Only one face (the inner face) will have 4 points aligned with the wall frame
@@ -368,7 +368,7 @@ def get_path_positions(g, path):
     return positions
 
 
-def get_waypoint_coord(g, point, coordinates_map):
+def get_waypoint_coord_wrt_world(g, point, coordinates_map):
     """Gets the coordinates of a point wrt world frame"""
 
     frame = point["as-seen-by"]
@@ -404,7 +404,7 @@ def get_waypoint_coord(g, point, coordinates_map):
 def get_waypoint_coord_list(g, points, coordinates_map):
     w_coords = list()
     for p in points:
-        x, y, _ = get_waypoint_coord(g, p, coordinates_map)
+        x, y, _ = get_waypoint_coord_wrt_world(g, p, coordinates_map)
         w_coords.append([x, y, 0, 1])
 
     return w_coords

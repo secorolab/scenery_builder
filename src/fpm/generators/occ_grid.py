@@ -9,7 +9,7 @@ from fpm.graph import (
     get_floorplan_model_name,
     get_element_points,
     get_opening_points,
-    get_waypoint_coord,
+    get_waypoint_coord_wrt_world,
     get_waypoint_coord_list,
 )
 from fpm.utils import load_template, save_file, get_output_path
@@ -151,7 +151,7 @@ def draw_floorplan_opening(g, element, draw, west, south, fill, coords_map, **kw
                     p["y"] = p["y"] - resolution
                 else:
                     p["y"] = p["y"] + resolution
-                x, y, z = get_waypoint_coord(g, p, coords_map)
+                x, y, z = get_waypoint_coord_wrt_world(g, p, coords_map)
                 f_coords.append([x, y, 0, 1])
                 if z > opening_height_max:
                     opening_height_max = z

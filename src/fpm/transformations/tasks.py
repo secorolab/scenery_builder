@@ -9,7 +9,7 @@ from matplotlib.patches import Polygon as Pol
 from fpm.graph import (
     get_space_points,
     get_coordinates_map,
-    get_waypoint_coord,
+    get_waypoint_coord_wrt_world,
 )
 
 
@@ -108,7 +108,7 @@ def transform_insets(g, inset_model_framed, coordinates_map):
             id_sem = point["name"].split("-")
             name = "{}-point-{}".format(id_sem[5], id_sem[3])
 
-            x, y, _ = get_waypoint_coord(g, point, coordinates_map)
+            x, y, _ = get_waypoint_coord_wrt_world(g, point, coordinates_map)
 
             inset_points.append({"id": name, "x": x, "y": y, "z": 0, "yaw": 0})
 
