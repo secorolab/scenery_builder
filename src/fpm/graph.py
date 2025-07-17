@@ -324,26 +324,28 @@ def get_coordinates_map(g):
 
     for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
         pose = prefixed(g, g.value(coord, COORD["of-pose"]))
-        coordinates = dict()
-        if g.value(coord, COORD["coordinates"]):
-            coord_values = get_list_values(g, coord, COORD["coordinates"])
-            for k, v in zip(["x", "y", "z"], coord_values):
-                print(k, v)
-                coordinates[k] = v
-            coordinates["alpha"] = 0.0
-            coordinates["beta"] = 0.0
-        else:
-            coordinates = {
-                "x": get_coord_value(g, coord, "x", default=0.0),
-                "y": get_coord_value(g, coord, "y", default=0.0),
-                "z": get_coord_value(g, coord, "z", default=0.0),
-                "alpha": get_coord_value(g, coord, "alpha", default=0.0),
-                "beta": get_coord_value(g, coord, "beta", default=0.0),
-            }
-
-        coordinates_map[pose] = coordinates
+        coordinates_map[pose] = get_coordinates(g, coord)
 
     return coordinates_map
+
+
+def get_coordinates(g, coord):
+    if g.value(coord, COORD["coordinates"]):
+        coordinates = dict()
+        coord_values = get_list_values(g, coord, COORD["coordinates"])
+        for k, v in zip(["x", "y", "z"], coord_values):
+            coordinates[k] = v
+        coordinates["alpha"] = 0.0
+        coordinates["beta"] = 0.0
+    else:
+        coordinates = {
+            "x": get_coord_value(g, coord, "x", default=0.0),
+            "y": get_coord_value(g, coord, "y", default=0.0),
+            "z": get_coord_value(g, coord, "z", default=0.0),
+            "alpha": get_coord_value(g, coord, "alpha", default=0.0),
+            "beta": get_coord_value(g, coord, "beta", default=0.0),
+        }
+    return coordinates
 
 
 def get_coord_value(g: Graph, coord, key, default=0.0):
