@@ -55,19 +55,23 @@ def save_file(output_path, file_name, contents):
     print("Generated {path}".format(path=output_file))
 
 
-def build_transformation_matrix(x, y, z, alpha):
-
-    c = np.cos
-    s = np.sin
+def build_transformation_matrix(x, y, z, alpha=None, beta=0.0, gamma=0.0, **kwargs):
 
     t = np.array([[x], [y], [z], [1]])
     # fmt: off
-    R = np.array([
-        [c(alpha), -s(alpha), 0],
-        [s(alpha), c(alpha), 0],
+    if alpha is not None:
+        R = np.array([
+        [np.cos(alpha), -np.sin(alpha), 0],
+        [np.sin(alpha), np.cos(alpha), 0],
         [0, 0, 1],
         [0, 0, 0]]
-    )
+        )
+    else:
+        cosx = kwargs.get("direction-cosine-x", [1.0, 0.0, 0.0])
+        cosz = kwargs.get("direction-cosine-z", [0.0, 0.0, 1.0])
+        cosy = kwargs.get("direction-cosine-y", np.cross(cosz, cosx))
+        R = np.vstack((np.array([cosx, cosy, cosz]).T, [0.0] *3))
+
     # fmt: on
 
     return np.hstack((R, t))

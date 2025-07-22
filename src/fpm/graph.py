@@ -342,8 +342,17 @@ def get_coordinates(g, coord):
         coord_values = get_list_values(g, coord, COORD["coordinates"])
         for k, v in zip(["x", "y", "z"], coord_values):
             coordinates[k] = v
-        coordinates["alpha"] = 0.0
-        coordinates["beta"] = 0.0
+        cosx = get_list_values(g, coord, COORD["direction-cosine-x"])
+        cosx = [v.toPython() for v in cosx if isinstance(v, Literal)]
+        coordinates["direction-cosine-x"] = cosx
+
+        cosz = get_list_values(g, coord, COORD["direction-cosine-z"])
+        cosz = [v.toPython() for v in cosz if isinstance(v, Literal)]
+        coordinates["direction-cosine-z"] = cosz
+
+        coordinates["direction-cosine-y"] = np.cross(
+            coordinates["direction-cosine-z"], coordinates["direction-cosine-x"]
+        ).tolist()
     else:
         coordinates = {
             "x": get_coord_value(g, coord, "x", default=0.0),
@@ -389,9 +398,7 @@ def get_waypoint_coord_wrt_world(g, point, coordinates_map):
     for pose, next_pose in zip(path_positions[:-1], path_positions[1:]):
 
         coordinates = coordinates_map[pose]
-        T = build_transformation_matrix(
-            coordinates["x"], coordinates["y"], coordinates["z"], coordinates["alpha"]
-        ).astype(float)
+        T = build_transformation_matrix(**coordinates).astype(float)
         if not next_pose == 0:
             if next_pose.count("wall") > 1 and (
                 "entryway" not in pose and "window" not in pose
