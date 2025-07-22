@@ -82,7 +82,13 @@ def get_point_position(g, point):
     asb = g.value(coordinates, COORD["as-seen-by"])
     name = prefixed(g, coordinates)
 
-    return {"name": name, "x": x, "y": y, "z": z, "as-seen-by": prefixed(g, asb)}
+    return {
+        "name": name,
+        "x": float(x),
+        "y": float(y),
+        "z": float(z),
+        "as-seen-by": prefixed(g, asb),
+    }
 
 
 def get_floorplan_model_name(g):
