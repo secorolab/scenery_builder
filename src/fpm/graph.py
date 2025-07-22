@@ -107,11 +107,9 @@ def traverse_to_world_origin(g, frame):
     open_set = traversal.BreadthFirst
 
     # Set beginning and end point
-    if "fpm:" in frame:
-        root = g.namespace_manager.expand_curie(frame)
-    else:
-        root = g.namespace_manager.expand_curie("fpm:{}".format(frame))
-    goal = g.namespace_manager.expand_curie("fpm:world-frame")
+    pref, f = frame.split(":")
+    root = g.namespace_manager.expand_curie(frame)
+    goal = g.namespace_manager.expand_curie("{}:world-frame".format(pref))
 
     # Set map of visited nodes for path building
     parent_map = {}
