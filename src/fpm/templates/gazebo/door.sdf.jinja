@@ -6,7 +6,7 @@
                     </box>
     {%- endif %}
 {%- endmacro -%}
-{%- macro link_macro(model) %}
+{%- macro link_macro(model, contact_sensors) %}
         <link name="{{model.name}}">
             <pose>{{model.pose}}</pose>
             <inertial>
@@ -38,6 +38,16 @@
                 </material>
                 {%- endif %}
             </visual>
+            {% if contact_sensors -%}
+            <sensor name='sensor_contact' type='contact'>
+                <contact>
+                    <collision>collision</collision> <!-- Name of the collision link -->
+                    <topic>/{{ model.name | replace(":", "/")| replace("-", "_")}}_contact</topic>
+                </contact>
+                <always_on>1</always_on>
+                <update_rate>100</update_rate>
+            </sensor>
+            {%- endif %}
         </link>
 {%- endmacro -%}
 {%- macro joint_macro(model) -%}
@@ -61,8 +71,17 @@
         <pose>0 0 0 0 0 0</pose>
         <static>{{model.static}}</static>
         {% for link in model.links -%}
-        {{link_macro(link)}}
+        {{link_macro(link, model.contact_sensors)}}
         {%- endfor %}
+        {% if model.contact_sensors -%}
+        <plugin filename="gz-sim-touchplugin-system"
+                name="gz::sim::systems::TouchPlugin">
+            <target>turtlebot4</target>
+            <namespace>door</namespace>
+            <time>0.001</time>
+            <enabled>true</enabled>
+        </plugin>
+        {%- endif %}
         {% for joint in model.joints -%}
         {{joint_macro(joint)}}
         {%- endfor %}

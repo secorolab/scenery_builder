@@ -25,10 +25,12 @@ def door_object_models(g, base_path, **kwargs):
     template_path = kwargs.get("template_path")
 
     object_models = get_all_object_models(g)
+    contact_sensors = kwargs.get("contact_sensors", False)
 
     for model in object_models:
         model_name = model["name"][5:]
         output_path = get_output_path(base_path, "gazebo/models", model_name)
+        model["contact_sensors"] = contact_sensors
         generate_sdf_file(
             model,
             output_path,
@@ -47,7 +49,10 @@ def door_object_models(g, base_path, **kwargs):
 
 def gazebo_floorplan_model(model_name, base_path, **kwargs):
     template_path = kwargs.get("template_path")
-    model = {"name": model_name}
+    model = {
+        "name": model_name,
+        "contact_sensors": kwargs.get("contact_sensors", False),
+    }
     output_path = get_output_path(base_path, "gazebo/models", model_name)
     generate_sdf_file(
         model,
