@@ -61,7 +61,11 @@
                 <limit>
                     <lower>{{model.limits.lower}}</lower>
                     <upper>{{model.limits.upper}}</upper>
+                    <velocity>0.25</velocity>
                 </limit>
+                <dynamics>
+                    <damping>0.20</damping>
+                </dynamics>
                 {%- endif %}
             </axis>
         </joint>
