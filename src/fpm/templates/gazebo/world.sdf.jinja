@@ -121,6 +121,23 @@
         <joint>{{start_joint_state.joint}}</joint>
         <position>{{start_joint_state.position}}</position>
       </plugin>
+      <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+          <joint_name>{{ start_joint_state.joint }}</joint_name>
+          <topic>{{ instance.instance_name }}_controller</topic>
+          <p_gain>0.05</p_gain>
+          <i_gain>0.0</i_gain>
+          <d_gain>0.0</d_gain>
+          <i_max>1</i_max>
+          <i_min>-1</i_min>
+          <cmd_max>0.2</cmd_max>
+          <cmd_min>1.2</cmd_min>
+          <use_actuator_msg>true</use_actuator_msg>
+          <actuator_number>0</actuator_number>
+          <initial_position>{{start_joint_state.position}}</initial_position>
+      </plugin>
+      <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+          <joint_name>{{ model.name }}</joint_name>
+      </plugin>
       {%- endfor %}
       {% for plugin in instance.behaviours -%}
         {%- if plugin.type == "timed-state-change" -%}
