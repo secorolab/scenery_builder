@@ -136,7 +136,7 @@
           <initial_position>{{start_joint_state.position}}</initial_position>
       </plugin>
       <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
-          <joint_name>{{ model.name }}</joint_name>
+          <joint_name>{{ start_joint_state.joint }}</joint_name>
       </plugin>
       {%- endfor %}
       {% for plugin in instance.behaviours -%}
