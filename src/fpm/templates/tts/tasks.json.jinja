@@ -1,0 +1,49 @@
+[
+  {
+    "entity_name": "KukaPlatform1",
+    "tasks": [
+      {
+        "task_id": "3",
+        "type": "mill",
+        "socket_group": {
+          "number": "3",
+          "direction": "true",
+          "starting_x": "300",
+          "starting_z": "2000"
+        }
+      },
+      {
+        "task_id": "1",
+        "type": "mill",
+        "socket_group": {
+          "number": "2",
+          "direction": "false",
+          "starting_x": "3000",
+          "starting_z": "500"
+        }
+      }
+    ]
+  },
+  {
+    "entity_name": "Human1",
+    "tasks": [
+      {
+        "task_id": "2",
+        "wait_for_task": "3",
+        "type": "move",
+        "destination_x": "500",
+        "destination_y": "-500"
+      },
+      {
+        "task_id": "4",
+        "type": "wait",
+        "time": "2000"
+      },
+      {
+        "task_id": "5",
+        "type": "work",
+        "time": "6000"
+      }
+    ]
+  }
+]

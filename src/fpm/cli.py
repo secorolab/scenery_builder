@@ -8,6 +8,7 @@ from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
 from fpm.generators.door_keyframes import get_keyframes
+from fpm.generators.tts import gen_tts_wall_description, gen_tts_task_description
 from textx import generator_for_language_target, metamodel_for_language
 
 
@@ -467,6 +468,25 @@ def polyline(ctx, **kwargs):
 def door_keyframes(ctx, **kwargs):
     """Generate the sampled keyframes for doors with time-based behaviours"""
     get_keyframes(**ctx.obj, **ctx.parent.params, **kwargs)
+
+
+@generate.command()
+@click.pass_context
+@click.option(
+    "--walls",
+    is_flag=True,
+    help="Generate the wall description",
+)
+@click.option(
+    "--tasks",
+    is_flag=True,
+    help="Generate the task descriptions",
+)
+def tts(ctx, **kwargs):
+    """Generate the artefacts for the TTS simulator"""
+    gen_tts_wall_description(**ctx.obj, **ctx.parent.params, **kwargs)
+    gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
+    pass
 
 
 if __name__ == "__main__":

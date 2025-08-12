@@ -1,0 +1,34 @@
+[
+  {% for wall in model %}
+    {
+        "wallID":"{{ wall.id }}",
+        "center": {
+            "x": {{ wall.center[0] }},
+            "y": {{ wall.center[1] }},
+            "z": {{ wall.center[2] }}
+        },
+        "dimensions":{
+            "x": {{ wall.dimensions[0] }},
+            "y": {{ wall.dimensions[1] }},
+            "z": {{ wall.dimensions[2] }}
+        },
+        "angleZ": 0,
+        "cutouts":[
+          {% if wall.cutouts %}
+          {% for opening in wall.cutouts %}
+            {
+                "center":{
+                    "x": {{ opening.center[0] }},
+                    "z": {{ opening.center[2] }}
+                },
+                "dimensions":{
+                    "x": {{ opening.dimensions[0] }},
+                    "z": {{ opening.dimensions[1] }}
+                }
+            }{% if not loop.last %},{% endif %}
+          {% endfor %}
+          {% endif %}
+        ]
+    }{% if not loop.last %},{% endif %}
+  {% endfor %}
+]

@@ -16,6 +16,18 @@ def load_config_file(file_path):
     return data
 
 
+def render_model_template(
+    model, output_folder, file_name, template_name, template_path=None
+):
+    template = load_template(template_name, template_path)
+
+    output = template.render(model=model, trim_blocks=True, lstrip_blocks=True)
+    if file_name.endswith(".json"):
+        output = json.loads(output)
+
+    save_file(output_folder, file_name, output)
+
+
 def load_template(template_name, template_folder=None):
     if template_folder is None:
         loader = PackageLoader("fpm")
