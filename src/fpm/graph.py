@@ -4,7 +4,8 @@ import glob
 import numpy as np
 
 import rdflib
-from rdflib import RDF
+from rdflib import RDF, Graph, Literal
+from rdflib.tools.rdf2dot import rdf2dot
 
 from fpm import traversal
 from fpm.constants import (
@@ -20,7 +21,7 @@ from fpm.constants import (
 from fpm.utils import build_transformation_matrix
 
 
-def build_graph_from_directory(inputs: tuple, debug=False):
+def build_graph_from_directory(inputs: tuple):
     # Build the graph by reading all composable models in the input folder
     g = rdflib.Graph()
     for input_folder in inputs:
@@ -31,13 +32,8 @@ def build_graph_from_directory(inputs: tuple, debug=False):
             print("\t{}".format(file_path))
             g.parse(file_path, format="json-ld")
 
-    if debug:
-        from rdflib.tools.rdf2dot import rdf2dot
-
-        with open("floorplan.dot", "w+") as dotfile:
-            rdf2dot(g, dotfile)
-
-        g.serialize("floorplan.json", format="json-ld", auto_compact=True)
+    with open("floorplan.dot", "w+") as dotfile:
+        rdf2dot(g, dotfile)
 
     return g
 
@@ -53,7 +49,7 @@ def get_list_values(g: Graph, subject, predicate):
     return values
 
 
-def get_list_from_ptr(g, ptr):
+def get_list_from_ptr(g: Graph, ptr):
     result_list = []
     while True:
         result_list.append(g.value(ptr, RDF.first))
@@ -64,7 +60,7 @@ def get_list_from_ptr(g, ptr):
     return result_list
 
 
-def get_point_position(g, point):
+def get_point_position(g: Graph, point):
     position = g.value(predicate=GEOM["of"], object=point)
     coordinates = g.value(predicate=COORD["of-position"], object=position)
 
@@ -91,7 +87,7 @@ def get_point_position(g, point):
     }
 
 
-def get_floorplan_model_name(g):
+def get_floorplan_model_name(g: Graph):
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
     if floorplan is None:
         raise ValueError("No FloorPlan found.")
@@ -100,7 +96,7 @@ def get_floorplan_model_name(g):
     return model_name
 
 
-def traverse_to_world_origin(g, frame):
+def traverse_to_world_origin(g: Graph, frame):
     # Go through the geometric relation predicates
     pred_filter = traversal.filter_by_predicates([GEOM["with-respect-to"], GEOM["of"]])
     # Algorithm to traverse the graph
@@ -132,7 +128,10 @@ def traverse_to_world_origin(g, frame):
     return path
 
 
-def get_transformation_matrix_wrt_frame(g, root, target):
+def get_transformation_matrix_wrt_frame(g: Graph, root, target):
+    # TODO Refactor this since it's duplicated with utils.py
+    # Only used for the object instances (doors)
+
     # Configure the traversal algorithm
     f = [GEOM["with-respect-to"], GEOM["of"]]
     pred_filter = traversal.filter_by_predicates(f)
@@ -192,7 +191,7 @@ def get_transformation_matrix_wrt_frame(g, root, target):
     return T
 
 
-def get_space_points(g):
+def get_space_points(g: Graph):
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
 
     # Get the list of spaces
@@ -209,7 +208,7 @@ def get_space_points(g):
     return space_points
 
 
-def get_element_points(g, element_type="Wall"):
+def get_element_points(g: Graph, element_type="Wall"):
     print("Querying all {}s...".format(element_type))
     element_points = list()
     for element, _, _ in g.triples((None, RDF.type, FP[element_type])):
@@ -220,7 +219,7 @@ def get_element_points(g, element_type="Wall"):
     return element_points
 
 
-def get_opening_points(g, element="Entryway"):
+def get_opening_points(g: Graph, element="Entryway"):
     print("Querying all {}s...".format(element))
     opening_points = list()
     for opening, _, _ in g.triples((None, RDF.type, FP[element])):
@@ -240,7 +239,7 @@ def get_opening_points(g, element="Entryway"):
     return opening_points
 
 
-def get_3d_structure(g, element="Wall", threshold=0.05):
+def get_3d_structure(g: Graph, element="Wall", threshold=0.05):
     print("Getting 3D structure of all {}s...".format(element))
     elements = list()
     coords_m = get_coordinates_map(g)
@@ -277,7 +276,7 @@ def get_3d_structure(g, element="Wall", threshold=0.05):
     return elements
 
 
-def get_internal_walls(g):
+def get_internal_walls(g: Graph):
     coords_m = get_coordinates_map(g)
     print("Getting internal walls...")
     wall_planes_by_space = dict()
@@ -311,7 +310,7 @@ def get_internal_walls(g):
     return wall_planes_by_space
 
 
-def get_point_positions_in_space(g, space):
+def get_point_positions_in_space(g: Graph, space):
     polygon = g.value(space, FP["shape"])
 
     point_nodes = get_list_values(g, polygon, POLY["points"])
@@ -324,7 +323,7 @@ def get_point_positions_in_space(g, space):
     return {"name": prefixed(g, space), "points": positions}
 
 
-def get_coordinates_map(g):
+def get_coordinates_map(g: Graph):
     coordinates_map = {}
 
     for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
@@ -334,7 +333,7 @@ def get_coordinates_map(g):
     return coordinates_map
 
 
-def get_coordinates(g, coord):
+def get_coordinates(g: Graph, coord):
     if g.value(coord, COORD["coordinates"]):
         coordinates = dict()
         coord_values = get_list_values(g, coord, COORD["coordinates"])
@@ -370,7 +369,7 @@ def get_coord_value(g: Graph, coord, key, default=0.0):
         return v.toPython()
 
 
-def get_path_positions(g, path):
+def get_path_positions(g: Graph, path):
     positions = list()
 
     for p in path:
@@ -381,7 +380,7 @@ def get_path_positions(g, path):
     return positions
 
 
-def get_waypoint_coord_wrt_world(g, point, coordinates_map):
+def get_waypoint_coord_wrt_world(g: Graph, point, coordinates_map):
     """Gets the coordinates of a point wrt world frame"""
 
     frame = point["as-seen-by"]
@@ -412,7 +411,7 @@ def get_waypoint_coord_wrt_world(g, point, coordinates_map):
     return x, y, z
 
 
-def get_waypoint_coord_list(g, points, coordinates_map):
+def get_waypoint_coord_list(g: Graph, points, coordinates_map):
     w_coords = list()
     for p in points:
         x, y, _ = get_waypoint_coord_wrt_world(g, p, coordinates_map)
