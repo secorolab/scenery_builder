@@ -253,6 +253,17 @@ def gazebo(ctx, **kwargs):
     door_object_models(**ctx.obj, **ctx.parent.params, **kwargs)
     gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
 
+    base_path = ctx.parent.params.get("base_path")
+    subfolders = ["gazebo/models", "gazebo/worlds/", "3d-mesh", "behaviors"]
+    subpaths = [
+        os.path.join(base_path, subfolder).replace(" ", "\ ")
+        for subfolder in subfolders
+    ]
+    click.echo(
+        "For Gazebo to find these models, make sure to add them to the GZ_SIM_RESOURCE_PATH:"
+        "\nexport GZ_SIM_RESOURCE_PATH={}\n".format(":".join(subpaths))
+    )
+
 
 @generate.command(short_help="Generate the occupancy grid map of the floorplan")
 @click.pass_context
