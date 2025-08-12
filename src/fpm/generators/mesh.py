@@ -29,6 +29,12 @@ def generate_3d_mesh(g, output_path, **custom_args):
     dividers = get_3d_structure(g, "Divider")
     create_element_mesh(building, dividers)
 
+    doors = get_3d_structure(g, "Door")
+    create_element_mesh(building, doors)
+
+    door_linings = get_3d_structure(g, "DoorLining")
+    create_element_mesh(building, door_linings)
+
     entryways = get_3d_structure(g, "Entryway")
     create_element_mesh(building, entryways)
     subtract_opening(entryways)
