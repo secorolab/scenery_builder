@@ -5,7 +5,6 @@ import numpy as np
 
 import rdflib
 from rdflib import RDF
-from rdflib.tools.rdf2dot import rdf2dot
 
 from fpm import traversal
 from fpm.constants import (
@@ -21,7 +20,7 @@ from fpm.constants import (
 from fpm.utils import build_transformation_matrix
 
 
-def build_graph_from_directory(inputs: tuple):
+def build_graph_from_directory(inputs: tuple, debug=False):
     # Build the graph by reading all composable models in the input folder
     g = rdflib.Graph()
     for input_folder in inputs:
@@ -32,8 +31,13 @@ def build_graph_from_directory(inputs: tuple):
             print("\t{}".format(file_path))
             g.parse(file_path, format="json-ld")
 
-    with open("floorplan.dot", "w+") as dotfile:
-        rdf2dot(g, dotfile)
+    if debug:
+        from rdflib.tools.rdf2dot import rdf2dot
+
+        with open("floorplan.dot", "w+") as dotfile:
+            rdf2dot(g, dotfile)
+
+        g.serialize("floorplan.json", format="json-ld", auto_compact=True)
 
     return g
 
