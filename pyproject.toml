@@ -24,6 +24,7 @@ maintainers = [
 
 [project.optional-dependencies]
 dev = ["black>=24.4.2"]
+blender = ["bpy==4.4.0"]
 
 [project.scripts]
 floorplan = "fpm.cli:floorplan"
