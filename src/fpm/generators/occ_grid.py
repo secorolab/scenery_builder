@@ -18,13 +18,14 @@ from fpm.constants import FPMODEL
 
 def generate_occ_grid(g, output_path, **custom_args):
     map_name = get_floorplan_model_name(g)
+    print("Map name: {}".format(map_name))
 
-    resolution = custom_args.get("map_resolution", 0.05)
+    resolution = custom_args.get("resolution", 0.05)
 
-    unknown = custom_args.get("map_unknown_value", 200)
-    occupied = custom_args.get("map_occupied_value", 0)
-    free = custom_args.get("map_free_value", 255)
-    border = custom_args.get("map_border", 50)
+    unknown = custom_args.get("unknown_value", 200)
+    occupied = custom_args.get("occupied_value", 0)
+    free = custom_args.get("free_value", 255)
+    border = custom_args.get("border", 50)
 
     if "{{model_name}}" in output_path:
         output_path = output_path.replace("{{model_name}}", map_name)
@@ -108,7 +109,7 @@ def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **k
     column_points = get_element_points(g, element)
     c_points = list()
 
-    laser_height = kwargs.get("map_laser_height", 0.7)
+    laser_height = kwargs.get("laser_height", 0.7)
     for s in column_points:
         height = s.get("height")
         if laser_height > height:
@@ -134,7 +135,7 @@ def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **k
 def draw_floorplan_opening(g, element, draw, west, south, fill, coords_map, **kwargs):
     opening_points = get_opening_points(g, element)
     resolution = kwargs.get("resolution", 0.05)
-    laser_height = kwargs.get("map_laser_height", 0.7)
+    laser_height = kwargs.get("laser_height", 0.7)
 
     all_points = list()
     for opening in opening_points:
@@ -167,8 +168,8 @@ def draw_floorplan_opening(g, element, draw, west, south, fill, coords_map, **kw
 def draw_floorplan_element(points, draw, fill, **kwargs):
     west = kwargs.get("west")
     south = kwargs.get("south")
-    resolution = kwargs.get("map_resolution", 0.05)
-    border = kwargs.get("map_border", 50)
+    resolution = kwargs.get("resolution", 0.05)
+    border = kwargs.get("border", 50)
 
     for shape in points:
         element_shape = get_2d_shape(west, south, resolution, border, shape=shape)
