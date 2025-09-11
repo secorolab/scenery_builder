@@ -413,8 +413,16 @@ def gazebo(ctx, **kwargs):
     show_default=True,
     help="Value for cells to be considered free in the occupancy map",
 )
+@click.option(
+    "--source",
+    type=click.Choice(["fpm", "bim"], case_sensitive=False),
+    default="fpm",
+    show_default=True,
+    help="ROS version for launch files",
+)
 def occ_grid(ctx, **kwargs):
     """Generate the occupancy grid map of the floorplan"""
+    print("Generating occupancy grid...")
     get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
 
 

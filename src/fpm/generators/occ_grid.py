@@ -137,32 +137,79 @@ def draw_floorplan_opening(g, element, draw, west, south, fill, coords_map, **kw
     resolution = kwargs.get("resolution", 0.05)
     laser_height = kwargs.get("laser_height", 0.7)
 
+    source = kwargs.get("source", "fpm")
+
     all_points = list()
     for opening in opening_points:
         opening_height_max = 0.0
         opening_height_min = float("inf")
         for face in opening:
-            z_vals = [p.get("z") for p in face]
+            points = [get_waypoint_coord_wrt_world(g, p, coords_map) for p in face]
+            if source == "fpm":
+                z_vals = [p.get("z") for p in face]
+            else:
+                z_vals = [z for x, y, z in points]
             if not np.all(np.array(z_vals) == z_vals[0]):
                 # Only process faces that are parallel to the floor (where the z is the same)
                 continue
-            f_coords = list()
-            for p in face:
-                if p["y"] == 0.0:
-                    p["y"] = p["y"] - resolution
-                else:
-                    p["y"] = p["y"] + resolution
-                x, y, z = get_waypoint_coord_wrt_world(g, p, coords_map)
-                f_coords.append([x, y, 0, 1])
-                if z > opening_height_max:
-                    opening_height_max = z
-                elif z < opening_height_min:
-                    opening_height_min = z
+
+            # TODO how to make the 3d object slightly larger than the wall when we can't rely on a convention for the axis direction
+            # TODO Check if there is an alternative for floorplan models that do follow a convention
+            if source == "fpm":
+                f_coords, opening_height_max, opening_height_min = (
+                    get_fpm_opening_points(
+                        face,
+                        opening_height_max,
+                        opening_height_min,
+                        resolution,
+                        g,
+                        coords_map,
+                    )
+                )
+            else:
+                f_coords, opening_height_max, opening_height_min = (
+                    get_bim_opening_points(
+                        points, opening_height_max, opening_height_min
+                    )
+                )
             if opening_height_min <= laser_height <= opening_height_max:
                 f_coords = np.array(f_coords)
                 all_points.append(f_coords)
 
     draw_floorplan_element(all_points, draw, fill, west=west, south=south, **kwargs)
+
+
+def get_bim_opening_points(points, opening_height_max, opening_height_min):
+    # BIM: No assumptions for frames
+    coords = list()
+    for x, y, z in points:
+        coords.append([x, y, 0, 1])
+        if z > opening_height_max:
+            opening_height_max = z
+        elif z < opening_height_min:
+            opening_height_min = z
+
+    return coords, opening_height_max, opening_height_min
+
+
+def get_fpm_opening_points(
+    face, opening_height_max, opening_height_min, resolution, graph, coords_map
+):
+    # FPM: Assumptions for direction of XYZ vectors
+    coords = list()
+    for p in face:
+        if p["y"] == 0.0:
+            p["y"] = p["y"] - resolution
+        else:
+            p["y"] = p["y"] + resolution
+        x, y, z = get_waypoint_coord_wrt_world(graph, p, coords_map)
+        coords.append([x, y, 0, 1])
+        if z > opening_height_max:
+            opening_height_max = z
+        elif z < opening_height_min:
+            opening_height_min = z
+
+    return coords, opening_height_max, opening_height_min
 
 
 def draw_floorplan_element(points, draw, fill, **kwargs):
