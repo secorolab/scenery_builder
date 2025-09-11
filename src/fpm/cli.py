@@ -261,6 +261,18 @@ def generate(ctx, inputs, **kwargs):
 
 @generate.command(short_help="Generate a 3D-mesh of the floorplan")
 @click.pass_context
+@click.option(
+    "--include-doors",
+    is_flag=True,
+    help="Flag to indicate that the mesh should include the door meshes",
+)
+@click.option(
+    "--format",
+    type=click.Choice(["stl", "gltf"], case_sensitive=False),
+    default="stl",
+    show_default=True,
+    help="Output format of the 3D mesh",
+)
 def mesh(ctx, **kwargs):
     """Generate a 3D-mesh in STL or gltF 2.0 format"""
     get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)

@@ -10,7 +10,7 @@ from fpm.graph import get_floorplan_model_name, get_3d_structure
 from fpm.utils import save_file, get_output_path
 
 
-def generate_3d_mesh(g, output_path, **custom_args):
+def generate_3d_mesh(g, output_path, include_doors=False, **custom_args):
     file_format = custom_args.get("format", "stl")
 
     model_name = get_floorplan_model_name(g)
@@ -29,11 +29,12 @@ def generate_3d_mesh(g, output_path, **custom_args):
     dividers = get_3d_structure(g, "Divider")
     create_element_mesh(building, dividers)
 
-    doors = get_3d_structure(g, "Door")
-    create_element_mesh(building, doors)
+    if include_doors:
+        doors = get_3d_structure(g, "Door")
+        create_element_mesh(building, doors)
 
-    door_linings = get_3d_structure(g, "DoorLining")
-    create_element_mesh(building, door_linings)
+        door_linings = get_3d_structure(g, "DoorLining")
+        create_element_mesh(building, door_linings)
 
     entryways = get_3d_structure(g, "Entryway")
     create_element_mesh(building, entryways)
@@ -68,4 +69,3 @@ def subtract_opening(openings):
 def get_3d_mesh(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "3d-mesh")
     generate_3d_mesh(g, output_path, **kwargs)
-    generate_3d_mesh(g, output_path, format="gltf")
