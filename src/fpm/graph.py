@@ -78,11 +78,14 @@ def get_point_position(g: Graph, point):
     asb = g.value(coordinates, COORD["as-seen-by"])
     name = prefixed(g, coordinates)
 
+    # Convert units if not in M
+    unit_multiplier = get_unit_multiplier(g, coordinates)
+
     return {
         "name": name,
-        "x": float(x),
-        "y": float(y),
-        "z": float(z),
+        "x": float(x) * unit_multiplier,
+        "y": float(y) * unit_multiplier,
+        "z": float(z) * unit_multiplier,
         "as-seen-by": prefixed(g, asb),
     }
 
@@ -208,12 +211,31 @@ def get_space_points(g: Graph):
     return space_points
 
 
+def get_unit_multiplier(g: Graph, element_id):
+    # Convert units if not in M
+    pose_units = list(g.objects(element_id, QUDT["unit"]))
+    for unit in pose_units:
+        if unit in [QUDT_VOCAB["MiliM"], QUDT_VOCAB["M"]]:
+            break
+    if unit == QUDT_VOCAB["M"]:
+        m = 1
+    elif unit == QUDT_VOCAB["MiliM"]:
+        m = 0.001
+    else:
+        raise ValueError("Unknown unit", unit)
+    return m
+
+
 def get_element_points(g: Graph, element_type="Wall"):
     print("Querying all {}s...".format(element_type))
     element_points = list()
     for element, _, _ in g.triples((None, RDF.type, FP[element_type])):
+        unit_multiplier = get_unit_multiplier(g, element)
         element_points_json = get_point_positions_in_space(g, element)
-        element_points_json["height"] = g.value(element, FP["height"]).toPython()
+
+        height = g.value(element, FP["height"]).toPython() * unit_multiplier
+        element_points_json["height"] = height
+
         element_points.append(element_points_json)
 
     return element_points
@@ -334,11 +356,16 @@ def get_coordinates_map(g: Graph):
 
 
 def get_coordinates(g: Graph, coord):
+    """
+    coord: @id of the PoseCoordinate element
+    """
+    unit_multiplier = get_unit_multiplier(g, coord)
+
     if g.value(coord, COORD["coordinates"]):
         coordinates = dict()
         coord_values = get_list_values(g, coord, COORD["coordinates"])
         for k, v in zip(["x", "y", "z"], coord_values):
-            coordinates[k] = v
+            coordinates[k] = v.toPython() * unit_multiplier
         cosx = get_list_values(g, coord, COORD["direction-cosine-x"])
         cosx = [v.toPython() for v in cosx if isinstance(v, Literal)]
         coordinates["direction-cosine-x"] = cosx
@@ -352,9 +379,9 @@ def get_coordinates(g: Graph, coord):
         ).tolist()
     else:
         coordinates = {
-            "x": get_coord_value(g, coord, "x", default=0.0),
-            "y": get_coord_value(g, coord, "y", default=0.0),
-            "z": get_coord_value(g, coord, "z", default=0.0),
+            "x": get_coord_value(g, coord, "x", default=0.0) * unit_multiplier,
+            "y": get_coord_value(g, coord, "y", default=0.0) * unit_multiplier,
+            "z": get_coord_value(g, coord, "z", default=0.0) * unit_multiplier,
             "alpha": get_coord_value(g, coord, "alpha", default=0.0),
             "beta": get_coord_value(g, coord, "beta", default=0.0),
         }
