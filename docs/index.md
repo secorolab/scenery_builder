@@ -16,7 +16,7 @@ The `scenery_builder` is a tool that generates execution artefacts from the comp
 
 ## Features
 
-The scenery builder uses [rdflib] to compose models into a graph.
+The scenery builder uses [rdflib](https://rdflib.readthedocs.io/en/stable/) to compose models into a graph.
 Using queries, it generates a variety of artefacts for the execution of robotic tasks in simulation and the real-world.
 A non-extensive list includes:
 - Generation of occupancy grid maps (e.g., for the ROS navigation stack) which can be parametrized by the height of a robot's sensors.
@@ -51,10 +51,10 @@ After cloning this repository, at its root run `docker build` and choose a tag f
 
 #### Requirements
 
-> [!NOTE]  
-> Blender and bpy requires Python 3.11, to install this specific version:
-> - On Ubuntu, you will probably need to add the [deadsnakes ppa](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa) in order to be able to install Python 3.11.
-> - For MacOS, you can use [this brew formula](https://formulae.brew.sh/formula/python@3.11).
+{: .note }
+Blender and bpy requires Python 3.11, to install this specific version:
+- On Ubuntu, you will probably need to add the [deadsnakes ppa](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa) in order to be able to install Python 3.11.
+- For MacOS, you can use [this brew formula](https://formulae.brew.sh/formula/python@3.11).
 
 Install all the requirements:
 
@@ -89,9 +89,8 @@ Optionally, instead of blender, you can install [bpy](https://pypi.org/project/b
 pip install -e .[blender]
 ```
 
-> [!NOTE]
-> 
-> bpy has [issues](https://projects.blender.org/blender/blender/issues/140654) when being installed inside Docker. This is only recommended as an alternative for the local installation.
+{: .note }
+bpy has [issues](https://projects.blender.org/blender/blender/issues/140654) when being installed inside Docker. This is only recommended as an alternative for the local installation.
 
 ## Usage
 

@@ -7,7 +7,7 @@ The `scenery_builder` is a tool that generates execution artefacts from the comp
 
 ## Features
 
-The scenery builder uses [rdflib] to compose models into a graph.
+The scenery builder uses [rdflib](https://rdflib.readthedocs.io/en/stable/) to compose models into a graph.
 Using queries, it generates a variety of artefacts for the execution of robotic tasks in simulation and the real-world.
 A non-extensive list includes:
 - Generation of occupancy grid maps (e.g., for the ROS navigation stack) which can be parametrized by the height of a robot's sensors.
