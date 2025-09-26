@@ -52,9 +52,9 @@ After cloning this repository, at its root run `docker build` and choose a tag f
 #### Requirements
 
 {: .note }
-Blender and bpy requires Python 3.11, to install this specific version:
-- On Ubuntu, you will probably need to add the [deadsnakes ppa](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa) in order to be able to install Python 3.11.
-- For MacOS, you can use [this brew formula](https://formulae.brew.sh/formula/python@3.11).
+> Blender and bpy requires Python 3.11, to install this specific version:
+> - On Ubuntu, you will probably need to add the [deadsnakes ppa](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa) in order to be able to install Python 3.11.
+> - For MacOS, you can use [this brew formula](https://formulae.brew.sh/formula/python@3.11).
 
 Install all the requirements:
 
