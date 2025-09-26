@@ -29,5 +29,7 @@ floorplan generate gazebo [OPTIONS]
 - `--world-frame` (STRING)
     ID of the world frame in the input models.
     Default: `world-frame`
+- `--contact-sensors` (BOOL)
+    Flag to add contact sensors to walls and door.
 
 
