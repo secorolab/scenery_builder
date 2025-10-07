@@ -256,7 +256,7 @@ def gazebo(ctx, **kwargs):
     base_path = ctx.parent.params.get("base_path")
     subfolders = ["gazebo/models", "gazebo/worlds/", "3d-mesh", "behaviors"]
     subpaths = [
-        os.path.join(base_path, subfolder).replace(" ", "\ ")
+        os.path.join(base_path, subfolder).replace(" ", "\\ ")
         for subfolder in subfolders
     ]
     click.echo(
