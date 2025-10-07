@@ -169,7 +169,10 @@ def generate(ctx, inputs, **kwargs):
     print(kwargs)
 
     g = build_graph_from_directory(inputs)
-    model_name = get_floorplan_model_name(g)
+    try:
+        model_name = get_floorplan_model_name(g)
+    except ValueError as e:
+        raise click.ClickException(str(e))
 
     ctx.ensure_object(dict)
     ctx.obj["model_name"] = model_name
