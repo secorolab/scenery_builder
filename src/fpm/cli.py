@@ -122,7 +122,10 @@ def transform(ctx, model_path, output_path, **kwargs):
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(model_path)
-    generator(mm, model, output_path, overwrite=True)
+    try:
+        generator(mm, model, output_path, overwrite=True)
+    except Exception as e:
+        print(f"Error transforming model: {e}")
 
 
 @floorplan.command(short_help="Generate FPM variations from a variation model")
@@ -177,7 +180,10 @@ def variation(ctx, model_path, variations, output_path, **kwargs):
     generator = generator_for_language_target("fpm-variation", "fpm")
     mm = metamodel_for_language("fpm-variation")
     model = mm.model_from_file(model_path)
-    generator(mm, model, output_path, overwrite=True, debug=False, variations=variations)
+    try:
+        generator(mm, model, output_path, overwrite=True, debug=False, variations=variations)
+    except Exception as e:
+        print(f"Error generating variations: {e}")
 
 
 @floorplan.command(short_help="Complete pipeline: variations -> transform -> generate")
