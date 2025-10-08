@@ -73,6 +73,10 @@ def get_point_position(g, point):
 
 def get_floorplan_model_name(g):
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
+    if floorplan is None:
+        raise ValueError(
+            "No FloorPlan found."
+        )
     model_name = prefixed(g, floorplan).split(":")[1]
 
     return model_name
