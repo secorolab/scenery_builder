@@ -1,4 +1,5 @@
 import os
+import glob
 import click
 
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
@@ -121,7 +122,70 @@ def transform(ctx, model_path, output_path, **kwargs):
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(model_path)
-    generator(mm, model, output_path, overwrite=True)
+    try:
+        generator(mm, model, output_path, overwrite=True)
+    except Exception as e:
+        print(f"Error transforming model: {e}")
+
+
+@floorplan.command(short_help="Generate FPM variations from a variation model")
+@click.pass_context
+@click.option(
+    "-m",
+    "--model",
+    "model_path",
+    type=click.Path(exists=True, resolve_path=True, file_okay=True, dir_okay=False),
+    required=True,
+    help="Path to the .variation model file",
+)
+@click.option(
+    "-n",
+    "--variations",
+    "--num-variations",
+    type=click.INT,
+    default=1,
+    show_default=True,
+    help="Number of variations to generate",
+)
+@click.option(
+    "-o",
+    "--output-path",
+    type=click.Path(exists=True, resolve_path=True),
+    default=os.path.join("."),
+    help="Output path for generated variations",
+)
+def variation(ctx, model_path, variations, output_path, **kwargs):
+    """Generate FPM model variations from a variation specification
+
+    This command generates multiple FPM model variations by applying probability
+    distributions to spatial attributes as specified in a .variation file.
+
+    Each resulting model follows the format <floorplan_name>_<seed>.fpm and can be
+    further transformed into JSON-LD and other artefacts.
+
+    This command is equivalent to using TextX's CLI:
+
+    ```
+    textx generate <variation model> --target fpm --variations <number> -o <output path>
+    ```
+
+    This requires that the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) is installed.
+
+    See https://github.com/secorolab/FloorPlan-DSL/blob/devel/docs/tutorials/variation.md
+    for more information on creating variation models.
+    """
+    print(f"Generating {variations} variation(s) from {model_path}")
+    print(f"Output path: {output_path}")
+
+    generator = generator_for_language_target("fpm-variation", "fpm")
+    mm = metamodel_for_language("fpm-variation")
+    model = mm.model_from_file(model_path)
+    try:
+        generator(
+            mm, model, output_path, overwrite=True, debug=False, variations=variations
+        )
+    except Exception as e:
+        print(f"Error generating variations: {e}")
 
 
 @floorplan.group(
@@ -169,7 +233,10 @@ def generate(ctx, inputs, **kwargs):
     print(kwargs)
 
     g = build_graph_from_directory(inputs)
-    model_name = get_floorplan_model_name(g)
+    try:
+        model_name = get_floorplan_model_name(g)
+    except ValueError as e:
+        raise click.ClickException(str(e))
 
     ctx.ensure_object(dict)
     ctx.obj["model_name"] = model_name
@@ -256,7 +323,7 @@ def gazebo(ctx, **kwargs):
     base_path = ctx.parent.params.get("base_path")
     subfolders = ["gazebo/models", "gazebo/worlds/", "3d-mesh", "behaviors"]
     subpaths = [
-        os.path.join(base_path, subfolder).replace(" ", "\ ")
+        os.path.join(base_path, subfolder).replace(" ", "\\ ")
         for subfolder in subfolders
     ]
     click.echo(
