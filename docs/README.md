@@ -50,7 +50,7 @@ After cloning this repository, at its root run `docker build` and choose a tag f
 Install all the requirements:
 
 ```shell
-sudo apt-get install software-properties-common git blender python3.11 python3.11-pip python3.11-venv -y
+sudo apt-get install software-properties-common git blender python3.11 python3.11-venv -y
 ```
 
 #### Installing the scenery_builder python package
