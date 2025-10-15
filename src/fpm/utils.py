@@ -41,7 +41,11 @@ def save_file(output_path, file_name, contents):
     elif ext in [".pgm", ".jpg"]:
         contents.save(output_file, quality=95)
     elif ext in [".stl"]:
-        bpy.ops.export_mesh.stl(filepath=output_file)
+        # Use different STL export method depending on Blender version
+        if bpy.app.version >= (4, 1, 0):
+            bpy.ops.wm.stl_export(filepath=output_file)
+        else:
+            bpy.ops.export_mesh.stl(filepath=output_file)
     elif ext in [".dae"]:
         bpy.ops.wm.collada_export(filepath=output_file)
     else:
