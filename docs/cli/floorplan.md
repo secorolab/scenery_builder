@@ -26,3 +26,4 @@ Usage: floorplan [OPTIONS] COMMAND [ARGS]...
 
 - [`generate`](generate) - Generate execution artefacts from JSON-LD models
 - [`transform`](transform) - Transform an FPM model into JSON-LD
+- [`variation`](variation) - Generate FPM variations from a variation model
