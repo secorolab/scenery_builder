@@ -147,13 +147,21 @@ def transform(ctx, model_path, output_path, **kwargs):
     help="Number of variations to generate",
 )
 @click.option(
+    "-s",
+    "--seed",
+    type=click.INT,
+    default=None,
+    show_default=True,
+    help="Random seed for reproducible variation generation",
+)
+@click.option(
     "-o",
     "--output-path",
     type=click.Path(exists=True, resolve_path=True),
     default=os.path.join("."),
     help="Output path for generated variations",
 )
-def variation(ctx, model_path, variations, output_path, **kwargs):
+def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     """Generate FPM model variations from a variation specification
 
     This command generates multiple FPM model variations by applying probability
@@ -175,13 +183,21 @@ def variation(ctx, model_path, variations, output_path, **kwargs):
     """
     print(f"Generating {variations} variation(s) from {model_path}")
     print(f"Output path: {output_path}")
+    if seed is not None:
+        print(f"Using seed: {seed}")
 
     generator = generator_for_language_target("fpm-variation", "fpm")
     mm = metamodel_for_language("fpm-variation")
     model = mm.model_from_file(model_path)
     try:
         generator(
-            mm, model, output_path, overwrite=True, debug=False, variations=variations
+            mm,
+            model,
+            output_path,
+            overwrite=True,
+            debug=False,
+            variations=variations,
+            seed=seed,
         )
     except Exception as e:
         print(f"Error generating variations: {e}")
