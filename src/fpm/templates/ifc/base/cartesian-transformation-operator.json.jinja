@@ -1,0 +1,16 @@
+[
+  {
+    "@id": "pose-coord-{{ placement_id }}",
+    "@type": ["PoseReference", "PoseCoordinate", "DirectionCosineXYZ", "VectorXYZ"],
+    "unit": ["UNITLESS", "MiliM"],
+    {% set ax1 = list(rdflib.collection.Collection(g, g[target : IFC_CONCEPTS["axis1"] / IFC_CONCEPTS["directionratios"]].__next__())) -%}
+    "direction-cosine-x": [{{ ax1[0] }}, {{ ax1[1] }}, {{ ax1[2] }}],
+    {% set ax2 = list(rdflib.collection.Collection(g, g[target : IFC_CONCEPTS["axis2"] / IFC_CONCEPTS["directionratios"]].__next__())) -%}
+    "direction-cosine-y": [{{ ax2[0] }}, {{ ax2[1] }}, {{ ax2[2] }}],
+    {% set ax3 = list(rdflib.collection.Collection(g, g[target : IFC_CONCEPTS["axis3"] / IFC_CONCEPTS["directionratios"]].__next__())) -%}
+    "direction-cosine-z": [{{ ax3[0] }}, {{ ax3[1] }}, {{ ax3[2] }}],
+    {%  set coords = list(rdflib.collection.Collection(g, g[target : IFC_CONCEPTS["localorigin"] / IFC_CONCEPTS["coordinates"]].__next__())) -%}
+    "coordinates":  [{{ coords[0] }}, {{ coords[1] }}, {{ coords[2] }}]
+{#    "scale": {{ g.value(target, IFC_CONCEPTS["scale"]) }}#}
+  }
+]

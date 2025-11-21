@@ -1,0 +1,43 @@
+[
+{#  {#}
+{#    "@id": "{{ model_name }}",#}
+{#    "spaces": [#}
+{#      "{{ space_id }}"#}
+{#    ]#}
+{#  },#}
+  {
+    "@id": "{{ space_id }}",
+    "@type": "Space"
+{#    "walls": [],#}
+{#    "shape": "{{ space_id }}-polygon",#}
+{#    "3d-shape": "{{ space_id }}-polyhedron"#}
+  },
+  {
+    "@id": "{{ space_id }}-origin",
+    "@type": [ "3D", "Euclidean", "Point" ]
+  },
+  {
+    "@id": "{{ space_id }}-frame",
+    "@type": "Frame",
+    "origin": "{{ space_id }}-origin"
+  },
+  {
+    "@id": "pose-{{ space_id }}",
+    "@type": "Pose",
+    "of": "{{ space_id }}-frame",
+    "with-respect-to": "{{ space_ref_frame }}-frame",
+    "quantity-kind": [ "Angle", "Length" ]
+  },
+  {#  Hardcoded frame of space wrt to the element placement, but this may not be true in other cases #}
+  {
+    "@id": "pose-coord-{{ space_id }}",
+    "@type": [ "PoseReference", "PoseCoordinate", "DirectionCosineXYZ", "VectorXYZ" ],
+    "of-pose": "pose-{{ space_id }}",
+    "as-seen-by": "{{ space_ref_frame }}-frame",
+    "unit": [ "UNITLESS", "MiliM" ],
+    "direction-cosine-x":  [1.0, 0.0, 0.0],
+    "direction-cosine-y": [0.0, 1.0, 0.0],
+    "direction-cosine-z": [0.0, 0.0, 1.0],
+    "coordinates": [0.0, 0.0, 0.0]
+  }
+]

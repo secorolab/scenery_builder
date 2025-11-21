@@ -9,6 +9,7 @@ from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
 from fpm.generators.door_keyframes import get_keyframes
 from fpm.generators.tts import gen_tts_wall_description, gen_tts_task_description
+from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
 
 
@@ -202,6 +203,30 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
         )
     except Exception as e:
         print(f"Error generating variations: {e}")
+
+
+@floorplan.command(
+    short_help="Generate FPM JSON-LD models from an IFCLD model",
+)
+@click.pass_context
+@click.option(
+    "-m",
+    "--model",
+    "model_path",
+    type=click.Path(exists=True, resolve_path=True, file_okay=True, dir_okay=False),
+    required=True,
+    help="Path to the fpm model to transform into JSON-LD",
+)
+@click.option(
+    "-o",
+    "--output-path",
+    type=click.Path(exists=True, resolve_path=True),
+    default=os.path.join("."),
+    help="Output path for generated artefacts",
+)
+def ifc(ctx, model_path, output_path, **kwargs):
+
+    generate_fpm_rep_from_rdf(model_path, output_path)
 
 
 @floorplan.group(

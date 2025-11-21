@@ -1,0 +1,38 @@
+[
+  {
+    "@id":  "{{ parent_id }}",
+    "shape": "{{ element_id }}-polygon"
+  },
+{
+  "@id": "{{ element_id }}-polygon",
+  "@type": "Polygon",
+  "points": [
+    {%- for p in coords[:4] -%}
+    {% set point_id = element_id ~ "-point-" ~ loop.index  %}
+    "{{ point_id }}"{% if not loop.last %},{% endif %}
+    {%- endfor %}
+  ]
+},
+{%- for p in coords[:4] -%}
+{% set point_id = element_id ~ "-point-" ~ loop.index  %}
+{
+"@id": "{{ point_id }}",
+"@type": [ "3D", "Euclidean", "Point" ]
+},
+{
+"@id": "position-{{ point_id }}",
+"@type": "Position",
+"of": "{{ point_id }}",
+"with-respect-to": "{{ element_id }}-origin",
+"quantity-kind": "Length"
+},
+{
+"@id": "position-coord-{{ point_id }}-wrt-{{ element_id }}-origin",
+"@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
+"of-position": "position-{{ point_id }}",
+"as-seen-by": "{{ element_id }}-frame",
+"unit": "MiliM",
+"coordinates": {{ p }}
+}{% if not loop.last %},{% endif %}
+{% endfor %}
+]

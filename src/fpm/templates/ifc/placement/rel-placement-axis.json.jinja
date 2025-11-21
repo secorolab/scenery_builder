@@ -1,0 +1,9 @@
+[
+  {
+    "@id": "pose-coord-{{ placement_id }}",
+    "@type": "DirectionCosineXYZ",
+    "unit": "UNITLESS",
+    {%  set axis = list(rdflib.collection.Collection(g, g[relative_placement : IFC_CONCEPTS["axis"] / IFC_CONCEPTS["directionratios"]].__next__())) -%}
+    "direction-cosine-z": [{{ axis[0] }}, {{ axis[1] }}, {{ axis[2] }}]
+  }
+]

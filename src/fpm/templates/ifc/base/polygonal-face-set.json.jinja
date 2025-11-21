@@ -1,0 +1,54 @@
+[
+  {
+    "@id": "{{ parent_id }}",
+{#    "shape": "{{ element_id }}-polygon",#}
+    "3d-shape": "{{ element_id }}-polyhedron"
+  },
+{#  {#}
+{#    "@id": "{{ element_id }}-polygon",#}
+{#    "@type": "Polygon",#}
+{#    "points": [#}
+{#    ]#}
+{#  },#}
+  {
+    "@id": "{{ element_id }}-polyhedron",
+    "@type": "Polyhedron",
+    "points": [
+      {% for p in coords -%}
+      "{{ element_id }}-point-{{ loop.index }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ],
+    "faces": [
+      {% for f in faces %}
+      [
+        {% for idx in rdflib.collection.Collection(g, g[f: IFC_CONCEPTS["coordindex"]].__next__()) %}
+        "{{ element_id }}-point-{{ idx }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  },
+  {%- for p in coords -%}
+  {% set point_id = element_id ~ "-point-" ~ loop.index  %}
+  {
+    "@id": "{{ point_id }}",
+    "@type": [ "3D", "Euclidean", "Point" ]
+  },
+  {
+    "@id": "position-{{ point_id }}",
+    "@type": "Position",
+    "of": "{{ point_id }}",
+    "with-respect-to": "{{ placement_id }}-origin",
+    "quantity-kind": "Length"
+  },
+  {
+    "@id": "position-coord-{{ point_id }}-wrt-{{ element_id }}-origin",
+    "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
+    "of-position": "position-{{ point_id }}",
+    "as-seen-by": "{{ placement_id }}-frame",
+    "unit": "MiliM",
+  {% set point_coords = list(rdflib.collection.Collection(g, p)) -%}
+    "coordinates": [{{ point_coords[0] }}, {{ point_coords[1] }}, {{ point_coords[2] }} ]
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+]

@@ -1,0 +1,49 @@
+[
+  {
+    "@id":  "{{ parent_id }}",
+    "shape": "{{ element_id }}-polygon",
+    "3d-shape": "{{ element_id }}-polyhedron"
+  },
+{
+  "@id": "{{ element_id }}-polygon",
+  "@type": "Polygon",
+  "points": [
+    {% for i in range(1,5) -%}
+    "{{ element_id }}-point-{{ i }}"{% if not loop.last %},{% endif %}
+    {%- endfor %}
+  ]
+},
+{
+"@id": "{{ element_id }}-polyhedron",
+"@type": "Polyhedron",
+"points": [
+{% for i in range(1,9) -%}
+"{{ element_id }}-point-{{ i }}"{% if not loop.last %},{% endif %}
+{%- endfor %}
+],
+"faces": []
+},
+  {% for p in coords %}
+  {% set point_id = element_id ~ "-point-" ~ loop.index  %}
+  {
+    "@id": "{{ point_id }}",
+    "@type": [ "3D", "Euclidean", "Point" ]
+  },
+  {
+    "@id": "position-{{ point_id }}",
+    "@type": "Position",
+    "of": "{{ point_id }}",
+    "with-respect-to": "{{ element_id }}-origin",
+    "quantity-kind": "Length"
+  },
+  {
+    "@id": "position-coord-{{ point_id }}-wrt-{{ element_id }}-origin",
+    "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
+    "of-position": "position-{{ point_id }}",
+    "as-seen-by": "{{ element_id }}-frame",
+    "unit": "MiliM",
+    "coordinates": {{ p }}
+
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+]

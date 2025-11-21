@@ -262,6 +262,9 @@ def get_opening_points(g: Graph, element="Entryway"):
 
 
 def get_3d_structure(g: Graph, element="Wall", threshold=0.05):
+    """
+    Return the 3D structure of non-cylindrical elements
+    """
     print("Getting 3D structure of all {}s...".format(element))
     elements = list()
     coords_m = get_coordinates_map(g)
@@ -269,6 +272,8 @@ def get_3d_structure(g: Graph, element="Wall", threshold=0.05):
         name = prefixed(g, e).split(":")[-1]
 
         poly = g.value(e, FP["3d-shape"])
+        if g.value(poly, RDF.type) != POLY["Polyhedron"]:
+            continue
         vertices = get_list_values(g, poly, POLY["points"])
         positions = list()
         for point in vertices:
