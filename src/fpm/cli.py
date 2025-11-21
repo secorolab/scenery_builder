@@ -505,8 +505,10 @@ def door_keyframes(ctx, **kwargs):
 def tts(ctx, **kwargs):
     """Generate the artefacts for the TTS simulator"""
     gen_tts_wall_description(**ctx.obj, **ctx.parent.params, **kwargs)
-    gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
-    pass
+    outlets = gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
+    get_occ_grid(
+        **ctx.obj, **ctx.parent.params, **kwargs, outlets=outlets, source="bim"
+    )
 
 
 if __name__ == "__main__":

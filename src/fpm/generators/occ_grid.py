@@ -98,6 +98,11 @@ def generate_occ_grid(g, output_path, **custom_args):
     )
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
+    if custom_args.get("outlets"):
+        draw_tasks(
+            g, im, center, map_name=map_name, output_path=output_path, **custom_args
+        )
+
     im = ImageOps.flip(im)
 
     for ext in ["pgm", "jpg"]:
@@ -258,3 +263,71 @@ def save_map_metadata(output_path, map_name, center, **custom_args):
 def get_occ_grid(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "maps")
     generate_occ_grid(g, output_path, **kwargs)
+
+
+def draw_tasks(g, im, center, tasks, **kwargs):
+    # print(kwargs)
+    import matplotlib.pyplot as plt
+
+    resolution = kwargs.get("resolution", 0.05)
+    w, h = im.size
+    # fig = plt.figure(figsize=(6.4, 6.4 * w / h))
+    border = kwargs.get("border", 50)
+    # print(center)
+
+    def get_img_coord(x, y, resolution, border, center):
+        orig_x, orig_y, _ = center
+        new_x = x / resolution - orig_x + border / 2
+        new_y = y / resolution - orig_y + border / 2
+        return new_x, new_y
+
+    imax = plt.imshow(im, cmap="gray")
+    fig = imax.get_figure()
+    ax = fig.get_axes().pop()
+    # print(ax)
+    for task in kwargs.get("outlets"):
+        # print(task)
+        name = task["name"]
+        nav_pose = task.get("nav_pose")
+        nav_x, nav_y = get_img_coord(
+            nav_pose[0], nav_pose[1], resolution, border, center
+        )
+        ax.scatter(
+            nav_x,
+            nav_y,
+            c="blue",
+            marker="+",
+        )
+        milling_task = np.array(task.get("milling_vector"))
+        milling_x, milling_y = get_img_coord(
+            milling_task[:, 0],
+            milling_task[:, 1],
+            resolution,
+            border,
+            center,
+        )
+
+        # plt.plot(milling_x, milling_y, "r", linewidth=1)
+        ax.scatter(
+            milling_x[0],
+            milling_y[0],
+            c="red",
+            marker="x",
+            s=15,
+        )
+        ax.scatter(
+            milling_x[1],
+            milling_y[1],
+            c="c",
+            marker="x",
+            s=15,
+        )
+    map_name = kwargs.get("map_name")
+    output_path = kwargs.get("output_path")
+    name_image = "tasks-{}.{}".format(map_name, "jpg")
+    # save_file(output_path, name_image, im)
+    print(output_path, name_image)
+    fig.set_size_inches(6.4, 6.4 * w / h)
+    ax.yaxis.set_inverted(False)
+
+    fig.savefig(os.path.join(output_path, name_image), dpi=300)
