@@ -354,6 +354,7 @@ def transform_extruded_area_solid(g: Graph, element_id, representation, parent_i
             extruded_dir=ext_dir,
             coords=coords,
         )
+        add_polyhedron_faces(poly)
         graph_contents.extend(poly)
         return depth, position, coords, ext_dir, graph_contents
     else:
