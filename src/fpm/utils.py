@@ -1,5 +1,6 @@
 import os
 import tomllib
+import logging
 
 import yaml
 import json
@@ -8,6 +9,9 @@ import bpy
 import numpy as np
 
 from jinja2 import Environment, FileSystemLoader, PackageLoader
+
+logger = logging.getLogger("floorplan.utils")
+logger.setLevel(logging.DEBUG)
 
 
 def load_config_file(file_path):
@@ -66,7 +70,7 @@ def save_file(output_path, file_name, contents):
         with open(output_file, "w") as f:
             f.write(contents)
 
-    print("Generated {path}".format(path=output_file))
+    logger.info("Generated {path}".format(path=output_file))
 
 
 def build_transformation_matrix(x, y, z, alpha=None, beta=0.0, gamma=0.0, **kwargs):

@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 
 import rdflib
 from rdflib import Graph, RDF
@@ -9,6 +10,9 @@ from fpm.graph import get_list_values, get_list_from_ptr
 from fpm.utils import load_template, save_file
 from ifcld.interpreters.namespaces import IFC_CONCEPTS
 
+logger = logging.getLogger("floorplan.generators.scenery")
+logger.setLevel(logging.DEBUG)
+
 
 def add_polyhedron_faces(floorplan):
     from itertools import pairwise
@@ -16,7 +20,6 @@ def add_polyhedron_faces(floorplan):
     for f in floorplan:
         if "Polyhedron" not in f.get("@type", list()):
             continue
-        # print(f)
         points = f["points"]
         bottom = points[:4]
         top = points[4:]
@@ -36,7 +39,7 @@ def add_polyhedron_faces(floorplan):
 
 
 def generate_fpm_rep_from_rdf(model_path, output_path):
-    print("Output path:", output_path)
+    logger.debug("Output path: %s", output_path)
     model_name = os.path.basename(model_path).lower().replace(".ifc.json", "")
 
     # RDF graph
@@ -56,7 +59,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
     fpm_ctx = json.loads(fp_ctx_template.render(model_id=model_name))
 
     # Add FloorPlan node
-    print("Adding floorplan node")
+    logger.debug("Adding floorplan node")
     floorplan = [
         {"@id": model_name, "@type": "FloorPlan"},
         {
@@ -72,7 +75,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
         {"@graph": floorplan, "@context": fpm_ctx},
     )
 
-    print("\nLocal placements...\n-----------------")
+    logger.info("Transforming IFC local placements...")
     placements = query_ifc_local_placements(g)
     save_file(
         output_path,
@@ -80,7 +83,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
         {"@graph": placements, "@context": fpm_ctx},
     )
 
-    print("\nWalls...\n-----------------")
+    logger.info("Transforming IFC walls...")
     walls = query_ifc_walls(g)
     save_file(
         output_path,
@@ -88,7 +91,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
         {"@graph": walls, "@context": fpm_ctx},
     )
 
-    print("\nDoors...\n-----------------")
+    logger.info("Transforming IFC doors...")
     doors = query_ifc_doors(g)
     save_file(
         output_path,
@@ -96,7 +99,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
         {"@graph": doors, "@context": fpm_ctx},
     )
 
-    print("\nSpaces...\n-----------------")
+    logger.info("Transforming IFC spaces...")
     spaces = query_ifc_spaces(g, model_name=model_name)
     save_file(
         output_path,
@@ -104,7 +107,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
         {"@graph": spaces, "@context": fpm_ctx},
     )
 
-    print("\nTask Elements...\n-----------------")
+    logger.info("Transforming task elements...")
     task_elements = query_ifc_task_elements(g)
     save_file(
         output_path,
@@ -150,7 +153,6 @@ def query_ifc_local_placements(g: Graph):
 
         prt = g.value(p, IFC_CONCEPTS["placementrelto"])
         if prt is not None:
-            print("Parent is good for ", entity)
             prt_entity = get_entity_id(g, prt)
             pj = render_ifc_template(
                 "ifc/placement/placement-rel-to.json.jinja",
@@ -171,9 +173,6 @@ def query_ifc_local_placements(g: Graph):
         rp = g.value(p, IFC_CONCEPTS["relativeplacement"])
         ap = transform_axis_placement_3d(g, rp, entity)
         placements.extend(ap)
-
-    print(len(world_frame))
-    print(world_frame)
 
     return placements
 
@@ -210,7 +209,6 @@ def query_placement_rel_to(g: Graph, placement):
     parent = g.value(placement, IFC_CONCEPTS["placementrelto"])
 
     while parent is not None:
-        # print(parent)
         new_parent = g.value(parent, IFC_CONCEPTS["placementrelto"])
         if new_parent is None:
             return parent
@@ -234,14 +232,16 @@ def query_ifc_walls(g: Graph):
     """
 
     qres = g.query(rep_query)
-    print("Total walls:", len(qres))
+    logger.info("Total walls: %d", len(qres))
     wall_json = list()
     for r in qres:
         wall_id = get_entity_id(g, r["wall"], "wall")
         placement_id = get_entity_id(g, r["placement"], "placement")
-        print(wall_id, "\t", placement_id)
+        logger.debug("%s: %s", wall_id, placement_id)
         parent = query_placement_rel_to(g, r["placement"])
-        print("\t", get_entity_id(g, parent, "placement"))
+        logger.debug(
+            "Highest level parent frame: %s", get_entity_id(g, parent, "placement")
+        )
 
         w = render_ifc_template("ifc/walls/wall-entity.json.jinja", wall_id=wall_id)
         wall_json.append(w)
@@ -282,6 +282,7 @@ def query_ifc_walls(g: Graph):
 
 
 def transform_extruded_area_solid(g: Graph, element_id, representation, parent_id=None):
+    logger.debug("Transforming extruded area solid %s", element_id)
     graph_contents = list()
     if parent_id is None:
         parent_id = element_id
@@ -358,10 +359,11 @@ def transform_extruded_area_solid(g: Graph, element_id, representation, parent_i
         graph_contents.extend(poly)
         return depth, position, coords, ext_dir, graph_contents
     else:
-        print("Support for {} not implemented yet".format(swept_area_type))
+        logger.warning("Support for {} not implemented yet".format(swept_area_type))
 
 
 def query_extruded_area_solid(g: Graph, representation):
+    logger.debug(representation)
     rep_query = """
     SELECT ?ext_dir ?depth ?swept_area ?position
     WHERE {
@@ -479,13 +481,13 @@ def query_ifc_doors(g: Graph):
     """
 
     qres = g.query(door_wall_query)
-    print("Total Door-Wall relations:", len(qres))
+    logger.info("Total Door-Wall relations: %d", len(qres))
     graph_contents = list()
     for r in qres:
         wall_id = get_entity_id(g, r["wall"], "wall")
         opening_id = get_entity_id(g, r["opening"], "opening")
         door_id = get_entity_id(g, r["door"], "door")
-        print(wall_id, " <-- voids -- ", opening_id, " <-- fills -- ", door_id)
+        logger.debug("%s <-- voids -- %s <-- fills -- %s", wall_id, opening_id, door_id)
 
         d = render_ifc_template(
             "ifc/doors/door-entity.json.jinja",
@@ -518,13 +520,12 @@ def query_ifc_doors(g: Graph):
         )
         graph_contents.append(v)
 
-        print("\nProcessing doorway")
+        logger.info("Processing doorway %s", opening_id)
         opening_reps = query_product_shape_representations(g, r["opening"])
 
         opening_placement = g.value(r["opening"], IFC_CONCEPTS["objectplacement"])
         opening_placement_id = get_entity_id(g, opening_placement, "placement")
         parent = query_placement_rel_to(g, opening_placement)
-        print("\t", get_entity_id(g, parent, "placement"))
 
         # TODO The current test file only has a single door, test with a case with multiple mapped items
 
@@ -532,8 +533,6 @@ def query_ifc_doors(g: Graph):
             rep, origin, target = query_mapped_item(g, op_shape)
             origin_id = get_entity_id(g, origin, "mapping-origin")
             target_id = get_entity_id(g, target, "mapping-target")
-            print(origin_id)
-            print(target_id)
 
             # Transformation of mapping origin (T) to mapping target (ref)
             axis_placement = transform_axis_placement_3d(g, origin, origin_id)
@@ -568,7 +567,6 @@ def query_ifc_doors(g: Graph):
             # Get the IfcRepresentationItems
             for o in g.objects(rep, IFC_CONCEPTS["items"]):
                 solid_id = get_entity_id(g, o, "extruded-area-solid")
-                print(solid_id)
                 # Individual points are specified wrt to extruded area solid frame/origin (ref)
                 _, position, _, _, poly = transform_extruded_area_solid(
                     g, solid_id, o, parent_id=opening_id
@@ -590,12 +588,11 @@ def query_ifc_doors(g: Graph):
                 )
                 graph_contents.extend(pj)
 
-        print("\nProcessing doors")
+        logger.info("Processing door %s", door_id)
         door_reps = query_product_shape_representations(g, r["door"])
         door_placement = g.value(r["door"], IFC_CONCEPTS["objectplacement"])
         door_placement_id = get_entity_id(g, door_placement, "placement")
         parent = query_placement_rel_to(g, door_placement)
-        print("\t", get_entity_id(g, parent, "placement"))
 
         for d_shape, suffix in zip(
             g.objects(door_reps, IFC_CONCEPTS["items"]), ["", "-lining"]
@@ -603,8 +600,6 @@ def query_ifc_doors(g: Graph):
             rep, origin, target = query_mapped_item(g, d_shape)
             origin_id = get_entity_id(g, origin, "mapping-origin")
             target_id = get_entity_id(g, target, "mapping-target")
-            print(origin_id)
-            print(target_id)
 
             # Transformation of mapping origin (T) to mapping target (ref)
             axis_placement = transform_axis_placement_3d(g, origin, origin_id)
@@ -649,7 +644,7 @@ def transform_polygonal_face_set(g, element, parent_id, placement_id=None):
     solid_id = get_entity_id(g, element, "polygonal-face-set")
     if placement_id is None:
         placement_id = solid_id
-    print(solid_id)
+    logger.debug("Transforming %s", solid_id)
     # TODO the frame version doesn't seem to include a polygon concept...
     #  Not including it for now, but review if it's needed
     coord_list = rdflib.collection.Collection(
@@ -687,9 +682,8 @@ def query_ifc_spaces(g: Graph, model_name):
 
         space_placement = g.value(s, IFC_CONCEPTS["objectplacement"])
         space_placement_id = get_entity_id(g, space_placement, "placement")
-        print(space_id)
+        logger.info("Processing %s", space_id)
         parent = query_placement_rel_to(g, space_placement)
-        print("\t", get_entity_id(g, parent, "placement"))
         space_json = render_ifc_template(
             "ifc/spaces/space-entity.json.jinja",
             space_id=space_id,
@@ -701,7 +695,6 @@ def query_ifc_spaces(g: Graph, model_name):
         space_reps = query_product_shape_representations(g, s)
         for space_shape in g.objects(space_reps, IFC_CONCEPTS["items"]):
             solid_id = get_entity_id(g, space_shape, "polygonal-face-set")
-            # print(space_shape)
             # TODO Check if the space frame is needed.
             #  The points could be defined wrt to the space_placement_id directly
             poly = transform_polygonal_face_set(
@@ -808,7 +801,7 @@ def query_ifc_units(g: Graph):
 
 
 def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
-    print("Querying for: {}".format(elements))
+    logger.info("Querying for: {}".format(elements))
     task_query = """
     SELECT DISTINCT ?wall ?opening ?object ?voids ?fills
     WHERE {
@@ -830,16 +823,19 @@ def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
     graph_contents = list()
 
     for concept in elements:
-        print("\n{}".format(concept))
+        logger.info("Processing {}s".format(concept))
         qres = g.query(q, initBindings={"object_type": IFC_CONCEPTS[concept]})
-        print("Total elements:", len(qres))
+        logger.info("Total elements: %d", len(qres))
         for row in qres:
             wall_id = get_entity_id(g, row["wall"], "wall")
             opening_id = get_entity_id(g, row["opening"], "opening")
             object_id = get_entity_id(
                 g, row["object"], concept.replace("IFC", "").lower()
             )
-            print(wall_id, " <-- voids -- ", opening_id, " <-- fills -- ", object_id)
+            logger.info("Processing {}".format(object_id))
+            logger.debug(
+                "%s <-- voids -- %s <-- fills -- %s", wall_id, opening_id, object_id
+            )
             o = render_ifc_template(
                 "ifc/openings/opening-entity.json.jinja",
                 opening_id=opening_id,
@@ -851,9 +847,11 @@ def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
 
             opening_reps = query_product_shape_representations(g, row["opening"])
             for rep in g.objects(opening_reps, IFC_CONCEPTS["items"]):
-                print(g.value(rep, RDF["type"]))
+                logger.debug("Shape representation: %s", g.value(rep, RDF["type"]))
+                if g.value(rep, RDF["type"]) != IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
+                    logger.warning("Not an extruded area solid representation")
+                    continue
                 solid_id = get_entity_id(g, rep, "extruded-area-solid")
-                print(solid_id)
                 # Individual points are specified wrt to extruded area solid frame/origin (ref)
                 _, position, _, _, poly = transform_extruded_area_solid(
                     g, solid_id, rep, parent_id=opening_id

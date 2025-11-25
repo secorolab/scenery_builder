@@ -1,4 +1,5 @@
 import os
+import logging
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
@@ -15,10 +16,13 @@ from fpm.graph import (
 from fpm.utils import load_template, save_file, get_output_path
 from fpm.constants import FPMODEL
 
+logger = logging.getLogger("floorplan.generators.occ_grid")
+logger.setLevel(logging.DEBUG)
+
 
 def generate_occ_grid(g, output_path, **custom_args):
     map_name = get_floorplan_model_name(g)
-    print("Map name: {}".format(map_name))
+    logger.info("Map name: {}".format(map_name))
 
     resolution = custom_args.get("resolution", 0.05)
 
@@ -35,9 +39,12 @@ def generate_occ_grid(g, output_path, **custom_args):
     points = []
     directions = []
 
+    logger.debug("Getting coordinates map")
     coords_m = get_coordinates_map(g)
+    logger.debug("Getting space points")
     space_points = get_space_points(g)
     for s in space_points:
+        logger.debug("Getting waypoint coords")
         w_coords = get_waypoint_coord_list(g, s.get("points"), coords_m)
 
         w_coords = np.array(w_coords)
@@ -79,26 +86,32 @@ def generate_occ_grid(g, output_path, **custom_args):
     draw = ImageDraw.Draw(im)
 
     # Draw free space from floorplan spaces (rooms)
+    logger.debug("Drawing free space")
     draw_floorplan_element(points, draw, free, west=west, south=south, **custom_args)
 
     # Draw obstacles (walls and columns)
+    logger.debug("Drawing walls")
     draw_floorplan_obstacle(
         g, "Wall", draw, west, south, occupied, coords_m, **custom_args
     )
+    logger.debug("Drawing columns")
     draw_floorplan_obstacle(
         g, "Column", draw, west, south, occupied, coords_m, **custom_args
     )
+    logger.debug("Drawing dividers")
     draw_floorplan_obstacle(
         g, "Divider", draw, west, south, occupied, coords_m, **custom_args
     )
 
     # Clear out wall openings; mark them as free space
+    logger.debug("Drawing entryways")
     draw_floorplan_opening(
         g, "Entryway", draw, west, south, free, coords_m, **custom_args
     )
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
     if custom_args.get("outlets"):
+        logger.debug("Drawing task elements")
         draw_tasks(
             g, im, center, map_name=map_name, output_path=output_path, **custom_args
         )
@@ -325,8 +338,6 @@ def draw_tasks(g, im, center, tasks, **kwargs):
     map_name = kwargs.get("map_name")
     output_path = kwargs.get("output_path")
     name_image = "tasks-{}.{}".format(map_name, "jpg")
-    # save_file(output_path, name_image, im)
-    print(output_path, name_image)
     fig.set_size_inches(6.4, 6.4 * w / h)
     ax.yaxis.set_inverted(False)
 

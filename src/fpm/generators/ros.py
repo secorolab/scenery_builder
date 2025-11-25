@@ -1,4 +1,9 @@
+import logging
+
 from fpm.utils import load_template, save_file, get_output_path
+
+logger = logging.getLogger("floorplan.generators.ros")
+logger.setLevel(logging.DEBUG)
 
 
 def generate_launch_file(model_name, output_path, file_name, **custom_args):
@@ -14,6 +19,7 @@ def generate_launch_file(model_name, output_path, file_name, **custom_args):
 
 
 def gazebo_world_launch(model_name, base_path, **kwargs):
+    logger.info("Generating gazebo world launch file")
     template_path = kwargs.get("template_path")
     output_path = get_output_path(base_path, "ros/launch")
 

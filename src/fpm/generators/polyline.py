@@ -1,11 +1,16 @@
+import logging
+
 from fpm.graph import get_floorplan_model_name, get_internal_walls
 from fpm.utils import save_file, load_template, get_output_path
+
+logger = logging.getLogger("floorplan.generators.polyline")
+logger.setLevel(logging.DEBUG)
 
 
 def generate_polyline_representation(
     g, output_path, template_name="polyline.poly.jinja", template_path=None, **kwargs
 ):
-    print("Generating polyline representation...")
+    logger.info("Generating polyline representation...")
     model_name = get_floorplan_model_name(g)
     file_name = kwargs.get("file_name", "{}.poly".format(model_name))
     wall_planes_by_space = get_internal_walls(g)

@@ -1,5 +1,6 @@
 import os
 import click
+import logging
 
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.gazebo import gazebo_world, door_object_models
@@ -12,11 +13,16 @@ from fpm.generators.tts import gen_tts_wall_description, gen_tts_task_descriptio
 from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
 
+logger = logging.getLogger("floorplan.cli")
+logger.setLevel(logging.DEBUG)
+
 
 def configure(ctx, param, filename):
     if not filename:
         return
     import tomllib
+
+    logger.debug("Using config file: %s", filename)
 
     ctx.default_map = dict()
     with open(filename, "rb") as f:
@@ -119,14 +125,15 @@ def transform(ctx, model_path, output_path, **kwargs):
 
     This requires that the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) is installed.
     """
-    print(model_path, output_path)
+    logger.debug("transform command arguments: %s", kwargs)
+    logger.debug(model_path, output_path)
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(model_path)
     try:
         generator(mm, model, output_path, overwrite=True)
     except Exception as e:
-        print(f"Error transforming model: {e}")
+        logger.error(f"Error transforming model: {e}")
 
 
 @floorplan.command(short_help="Generate FPM variations from a variation model")
@@ -183,10 +190,10 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     See https://github.com/secorolab/FloorPlan-DSL/blob/devel/docs/tutorials/variation.md
     for more information on creating variation models.
     """
-    print(f"Generating {variations} variation(s) from {model_path}")
-    print(f"Output path: {output_path}")
+    logger.info(f"Generating {variations} variation(s) from {model_path}")
+    logger.info(f"Output path: {output_path}")
     if seed is not None:
-        print(f"Using seed: {seed}")
+        logger.info(f"Using seed: {seed}")
 
     generator = generator_for_language_target("fpm-variation", "fpm")
     mm = metamodel_for_language("fpm-variation")
@@ -202,7 +209,7 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
             seed=seed,
         )
     except Exception as e:
-        print(f"Error generating variations: {e}")
+        logger.error(f"Error generating variations: {e}")
 
 
 @floorplan.command(
@@ -271,7 +278,7 @@ def ifc(ctx, model_path, output_path, **kwargs):
 def generate(ctx, inputs, **kwargs):
     """Generate execution artefacts from JSON-LD models"""
 
-    print(kwargs)
+    logger.debug("generate command arguments: inputs: %s, kwargs: %s", inputs, kwargs)
 
     g = build_graph_from_directory(inputs)
     try:
@@ -459,7 +466,7 @@ def gazebo(ctx, **kwargs):
 )
 def occ_grid(ctx, **kwargs):
     """Generate the occupancy grid map of the floorplan"""
-    print("Generating occupancy grid...")
+    logger.info("Generating occupancy grid...")
     get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
 
 

@@ -1,5 +1,6 @@
 import os
 import glob
+import logging
 
 import numpy as np
 
@@ -16,24 +17,27 @@ from fpm.constants import (
     QUDT_VOCAB,
     FP,
     POLY,
-    FPMODEL,
 )
 from fpm.utils import build_transformation_matrix
 
+logger = logging.getLogger("floorplan.graph")
+logger.setLevel(logging.DEBUG)
 
-def build_graph_from_directory(inputs: tuple):
+
+def build_graph_from_directory(inputs: tuple, draw_dot=False):
     # Build the graph by reading all composable models in the input folder
     g = rdflib.Graph()
     for input_folder in inputs:
         input_models = glob.glob(os.path.join(input_folder, "*.json"))
-        print("Found {} models in {}".format(len(input_models), input_folder))
-        print("Adding to the graph...")
+        logger.info("Found {} models in {}".format(len(input_models), input_folder))
         for file_path in input_models:
-            print("\t{}".format(file_path))
+            logger.info("Adding {}".format(file_path))
             g.parse(file_path, format="json-ld")
+            logger.debug("\t...done!")
 
-    with open("floorplan.dot", "w+") as dotfile:
-        rdf2dot(g, dotfile)
+    if draw_dot:
+        with open("floorplan.dot", "w+") as dotfile:
+            rdf2dot(g, dotfile)
 
     return g
 
@@ -198,11 +202,12 @@ def get_space_points(g: Graph):
     floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
 
     # Get the list of spaces
-    print("Querying all spaces...")
+    logger.info("Querying all spaces...")
     spaces = get_list_values(g, floorplan, FP["spaces"])
+    logger.info("Found %d spaces", len(spaces))
 
     # for each space, find the polygon
-    print("Get all points of a space...")
+    logger.info("Get all points of a space...")
     space_points = []
     for space in spaces:
         space_points_json = get_point_positions_in_space(g, space)
@@ -227,7 +232,7 @@ def get_unit_multiplier(g: Graph, element_id):
 
 
 def get_element_points(g: Graph, element_type="Wall"):
-    print("Querying all {}s...".format(element_type))
+    logger.info("Querying all {}s...".format(element_type))
     element_points = list()
     for element, _, _ in g.triples((None, RDF.type, FP[element_type])):
         unit_multiplier = get_unit_multiplier(g, element)
@@ -242,10 +247,11 @@ def get_element_points(g: Graph, element_type="Wall"):
 
 
 def get_opening_points(g: Graph, element="Entryway"):
-    print("Querying all {}s...".format(element))
+    logger.info("Querying all {}s...".format(element))
     opening_points = list()
     for opening, _, _ in g.triples((None, RDF.type, FP[element])):
         poly = g.value(opening, FP["3d-shape"])
+        assert poly is not None
         faces_nodes = get_list_values(g, poly, POLY["faces"])
         face_positions = list()
         for f in faces_nodes:
@@ -265,7 +271,7 @@ def get_3d_structure(g: Graph, element="Wall", threshold=0.05):
     """
     Return the 3D structure of non-cylindrical elements
     """
-    print("Getting 3D structure of all {}s...".format(element))
+    logger.info("Getting 3D structure of all {}s...".format(element))
     elements = list()
     coords_m = get_coordinates_map(g)
     for e, _, _ in g.triples((None, RDF.type, FP[element])):
@@ -305,7 +311,7 @@ def get_3d_structure(g: Graph, element="Wall", threshold=0.05):
 
 def get_internal_walls(g: Graph):
     coords_m = get_coordinates_map(g)
-    print("Getting internal walls...")
+    logger.info("Getting internal walls...")
     wall_planes_by_space = dict()
     for s, r, w in g.triples((None, FP["walls"], None)):
         wall_nodes = get_list_values(g, s, FP["walls"])
@@ -338,11 +344,13 @@ def get_internal_walls(g: Graph):
 
 
 def get_point_positions_in_space(g: Graph, space):
+    logger.debug("Querying points from polygon attribute for %s", prefixed(g, space))
     polygon = g.value(space, FP["shape"])
 
     point_nodes = get_list_values(g, polygon, POLY["points"])
 
     positions = []
+    logger.debug("Querying point positions")
     for point in point_nodes:
         position = get_point_position(g, point)
         positions.append(position)
@@ -383,6 +391,7 @@ def get_coordinates(g: Graph, coord):
             coordinates["direction-cosine-z"], coordinates["direction-cosine-x"]
         ).tolist()
     else:
+        logger.debug("Coordinates specified as individual values")
         coordinates = {
             "x": get_coord_value(g, coord, "x", default=0.0) * unit_multiplier,
             "y": get_coord_value(g, coord, "y", default=0.0) * unit_multiplier,

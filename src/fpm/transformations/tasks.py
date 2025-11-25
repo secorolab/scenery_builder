@@ -5,12 +5,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as Pol
+import logging
 
 from fpm.graph import (
     get_space_points,
     get_coordinates_map,
     get_waypoint_coord_wrt_world,
 )
+
+logger = logging.getLogger("floorplan.transformations.tasks")
+logger.setLevel(logging.DEBUG)
 
 
 def inset_shape(points, width=0.3):
@@ -134,14 +138,14 @@ def get_all_disinfection_tasks(g, inset_width):
 
     space_points = get_space_points(g)
 
-    print("Creating the insets...")
+    logger.debug("Creating the insets...")
     inset_model_framed = create_inset_json_ld(space_points, inset_width)
 
-    print("Calculating transformation path...")
+    logger.debug("Calculating transformation path...")
     # This just gets the coordinates of all poses in the graph, it doesn't calculate anything
     coordinates_map = get_coordinates_map(g)
 
-    print("Transforming the insets")
+    logger.debug("Transforming the insets")
     insets = transform_insets(g, inset_model_framed, coordinates_map)
 
     return [dict(id=inset["name"], task=[inset]) for inset in insets]

@@ -1,3 +1,4 @@
+import logging
 import bpy
 
 from fpm.transformations.blender import (
@@ -9,9 +10,13 @@ from fpm.transformations.blender import (
 from fpm.graph import get_floorplan_model_name, get_3d_structure
 from fpm.utils import save_file, get_output_path
 
+logger = logging.getLogger("floorplan.generators.mesh")
+logger.setLevel(logging.DEBUG)
+
 
 def generate_3d_mesh(g, output_path, include_doors=False, **custom_args):
     file_format = custom_args.get("format", "stl")
+    logger.info("Generating 3D mesh in %s format", file_format)
 
     model_name = get_floorplan_model_name(g)
 
@@ -19,27 +24,33 @@ def generate_3d_mesh(g, output_path, include_doors=False, **custom_args):
     # clear the blender scene
     clear_scene()
 
-    print("Getting 3D structures")
+    logger.debug("Getting 3D structure for walls")
     elements = get_3d_structure(g, "Wall")
     create_element_mesh(building, elements)
 
+    logger.debug("Getting 3D structure for columns")
     columns = get_3d_structure(g, "Column")
     create_element_mesh(building, columns)
 
+    logger.debug("Getting 3D structure for dividers")
     dividers = get_3d_structure(g, "Divider")
     create_element_mesh(building, dividers)
 
     if include_doors:
+        logger.debug("Getting 3D structure for doors")
         doors = get_3d_structure(g, "Door")
         create_element_mesh(building, doors)
 
+        logger.debug("Getting 3D structure for door linings")
         door_linings = get_3d_structure(g, "DoorLining")
         create_element_mesh(building, door_linings)
 
+    logger.debug("Getting 3D structure for entryways")
     entryways = get_3d_structure(g, "Entryway")
     create_element_mesh(building, entryways)
     subtract_opening(entryways)
 
+    logger.debug("Getting 3D structure for windows")
     windows = get_3d_structure(g, "Window")
     create_element_mesh(building, windows)
     subtract_opening(windows)
