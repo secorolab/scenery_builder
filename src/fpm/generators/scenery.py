@@ -115,6 +115,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
         {"@graph": task_elements, "@context": fpm_ctx},
     )
 
+    stats(g)
     query_ifc_units(g)
 
     # doc = list()
@@ -363,7 +364,6 @@ def transform_extruded_area_solid(g: Graph, element_id, representation, parent_i
 
 
 def query_extruded_area_solid(g: Graph, representation):
-    logger.debug(representation)
     rep_query = """
     SELECT ?ext_dir ?depth ?swept_area ?position
     WHERE {
@@ -836,11 +836,33 @@ def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
             logger.debug(
                 "%s <-- voids -- %s <-- fills -- %s", wall_id, opening_id, object_id
             )
-            o = render_ifc_template(
-                "ifc/openings/opening-entity.json.jinja",
-                opening_id=opening_id,
+
+            space_placement, plane_pos, plane_shape = query_space_boundary_rel(
+                g, row["object"]
             )
-            graph_contents.append(o)
+            plane_id = object_id + "-milling"
+            plane_pos = transform_axis_placement_3d(g, plane_pos, plane_id)
+            graph_contents.extend(plane_pos)
+            space_placement_id = get_entity_id(g, space_placement, "placement")
+            plane_placement = render_ifc_template(
+                "ifc/placement/object-placement.json.jinja",
+                placement_id=plane_id,
+            )
+            graph_contents.extend(plane_placement)
+            plane_rel_to = render_ifc_template(
+                "ifc/placement/placement-rel-to.json.jinja",
+                placement_id=plane_id,
+                ref_placement_id=space_placement_id,
+            )
+            graph_contents.extend(plane_rel_to)
+            plane_normal = render_ifc_template(
+                "ifc/task-elements/milling-task.json.jinja",
+                placement_id=plane_id,
+                element_id=plane_id,
+                opening_id=opening_id,
+                wall_id=wall_id,
+            )
+            graph_contents.extend(plane_normal)
 
             opening_placement = g.value(row["opening"], IFC_CONCEPTS["objectplacement"])
             opening_placement_id = get_entity_id(g, opening_placement, "placement")
@@ -848,37 +870,54 @@ def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
             opening_reps = query_product_shape_representations(g, row["opening"])
             for rep in g.objects(opening_reps, IFC_CONCEPTS["items"]):
                 logger.debug("Shape representation: %s", g.value(rep, RDF["type"]))
-                if g.value(rep, RDF["type"]) != IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
-                    logger.warning("Not an extruded area solid representation")
-                    continue
-                solid_id = get_entity_id(g, rep, "extruded-area-solid")
-                # Individual points are specified wrt to extruded area solid frame/origin (ref)
-                _, position, _, _, poly = transform_extruded_area_solid(
-                    g, solid_id, rep, parent_id=opening_id
-                )
-                graph_contents.extend(poly)
-
-                # Transformation of extruded area solid (mapped repr, T) to mapping origin (ref)
-                axis_placement = transform_axis_placement_3d(g, position, solid_id)
-                graph_contents.extend(axis_placement)
-                e = render_ifc_template(
-                    "ifc/placement/object-placement.json.jinja",
-                    placement_id=solid_id,
-                )
-                graph_contents.extend(e)
-                pj = render_ifc_template(
-                    "ifc/placement/placement-rel-to.json.jinja",
-                    placement_id=solid_id,
-                    ref_placement_id=opening_placement_id,
-                )
-                graph_contents.extend(pj)
-
-            for x in ["wall", "opening", "object"]:
-                placement = g.value(row[x], IFC_CONCEPTS["objectplacement"])
-                parent = query_placement_rel_to(g, placement)
-                print("\t", get_entity_id(g, parent, "placement"))
+                if g.value(rep, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
+                    solid_id = get_entity_id(g, rep, "extruded-area-solid")
+                    # Individual points are specified wrt to extruded area solid frame/origin (ref)
+                    _, position, _, _, poly = transform_extruded_area_solid(
+                        g, solid_id, rep, parent_id=opening_id
+                    )
+                    graph_contents.extend(poly)
+                    axis_placement = transform_axis_placement_3d(g, position, solid_id)
+                    graph_contents.extend(axis_placement)
+                    e = render_ifc_template(
+                        "ifc/placement/object-placement.json.jinja",
+                        placement_id=solid_id,
+                    )
+                    graph_contents.extend(e)
+                    pj = render_ifc_template(
+                        "ifc/placement/placement-rel-to.json.jinja",
+                        placement_id=solid_id,
+                        ref_placement_id=opening_placement_id,
+                    )
+                    graph_contents.extend(pj)
+                elif g.value(rep, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
+                    poly = transform_polygonal_face_set(
+                        g, rep, parent_id=opening_id, placement_id=opening_placement_id
+                    )
+                    graph_contents.extend(poly)
+                else:
+                    logger.warning("Not a supported shape representation")
 
     return graph_contents
+
+
+def query_space_boundary_rel(g: Graph, obj):
+    space_boundary_query = """
+    SELECT DISTINCT ?boundary ?space_placement ?position ?shape
+    WHERE {
+        ?boundary rdf:type ifc:IFCRELSPACEBOUNDARY .
+        ?boundary ifc:relatedbuildingelement ?object .
+        ?boundary ifc:relatingspace/ifc:objectplacement ?space_placement .
+        ?boundary ifc:connectiongeometry/ifc:surfaceonrelatingelement ?plane .
+        ?plane ifc:basissurface/ifc:position ?position .
+        ?plane ifc:outerboundary ?shape .
+    }
+    """
+    q = prepareQuery(space_boundary_query, initNs={"ifc": IFC_CONCEPTS, "rdf": RDF})
+    qres = g.query(q, initBindings={"object": obj})
+    assert len(qres) == 1
+    res = list(qres)[0]
+    return res["space_placement"], res["position"], res["shape"]
 
 
 def stats(g):
