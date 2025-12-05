@@ -126,7 +126,7 @@ def transform(ctx, model_path, output_path, **kwargs):
     This requires that the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) is installed.
     """
     logger.debug("transform command arguments: %s", kwargs)
-    logger.debug(model_path, output_path)
+    logger.debug("%s %s", model_path, output_path)
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(model_path)
@@ -529,18 +529,29 @@ def door_keyframes(ctx, **kwargs):
     is_flag=True,
     help="Generate the wall description",
 )
-@click.option(
-    "--tasks",
-    is_flag=True,
-    help="Generate the task descriptions",
-)
+# @click.option(
+#     "--tasks",
+#     # is_flag=True,
+#     help="Generate the task descriptions",
+# )
 def tts(ctx, **kwargs):
     """Generate the artefacts for the TTS simulator"""
+    logger.info("Generating artefacts for the TTS simulator...")
     gen_tts_wall_description(**ctx.obj, **ctx.parent.params, **kwargs)
-    outlets = gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
+    outlets, ducts = gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
+    logger.info("Visualizing milling task for the outlets on occupancy grid")
     get_occ_grid(
         **ctx.obj, **ctx.parent.params, **kwargs, outlets=outlets, source="bim"
     )
+    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs, ducts=ducts, source="bim")
+    logger.info("Visualizing outlet boundary frames on occupancy grid")
+    get_occ_grid(
+        **ctx.obj, **ctx.parent.params, **kwargs, planes="outlet", source="bim"
+    )
+    logger.info("Visualizing duct boundary on occupancy grid")
+    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs, planes="duct", source="bim")
+    logger.info("Visualizing wall frames on occupancy grid")
+    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs, planes="wall", source="bim")
 
 
 if __name__ == "__main__":

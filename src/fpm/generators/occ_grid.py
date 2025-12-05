@@ -1,6 +1,7 @@
 import os
 import logging
 
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
 
@@ -12,15 +13,17 @@ from fpm.graph import (
     get_opening_points,
     get_waypoint_coord_wrt_world,
     get_waypoint_coord_list,
+    get_frame_transform,
 )
 from fpm.utils import load_template, save_file, get_output_path
-from fpm.constants import FPMODEL
+from fpm.visualization.plot import plot_2d_frame, plot_2d_robot
 
 logger = logging.getLogger("floorplan.generators.occ_grid")
 logger.setLevel(logging.DEBUG)
 
 
 def generate_occ_grid(g, output_path, **custom_args):
+    plt.clf()
     map_name = get_floorplan_model_name(g)
     logger.info("Map name: {}".format(map_name))
 
@@ -111,8 +114,31 @@ def generate_occ_grid(g, output_path, **custom_args):
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
     if custom_args.get("outlets"):
-        logger.debug("Drawing task elements")
+        logger.debug("Drawing outlet task elements")
         draw_tasks(
+            g,
+            im,
+            center,
+            tasks="outlets",
+            map_name=map_name,
+            output_path=output_path,
+            **custom_args,
+        )
+    if custom_args.get("ducts"):
+        logger.debug("Drawing duct task elements")
+        draw_tasks(
+            g,
+            im,
+            center,
+            tasks="ducts",
+            map_name=map_name,
+            output_path=output_path,
+            **custom_args,
+        )
+
+    if custom_args.get("planes"):
+        logger.debug("Drawing planes")
+        draw_planes(
             g, im, center, map_name=map_name, output_path=output_path, **custom_args
         )
 
@@ -279,66 +305,80 @@ def get_occ_grid(g, base_path, **kwargs):
 
 
 def draw_tasks(g, im, center, tasks, **kwargs):
-    # print(kwargs)
-    import matplotlib.pyplot as plt
+    resolution = kwargs.get("resolution", 0.05)
+    w, h = im.size
+    border = kwargs.get("border", 50)
+    orig_x, orig_y, _ = center
+
+    logger.info("Drawing tasks: %s", tasks)
+
+    imax = plt.imshow(
+        im,
+        cmap="gray",
+        interpolation="none",
+        origin="upper",
+        extent=(
+            orig_x,
+            (w * resolution) - abs(orig_x),
+            (h * resolution) - abs(orig_y),
+            orig_y,
+        ),
+    )
+    fig = imax.get_figure()
+    ax = fig.get_axes().pop()
+    for task in kwargs.get(tasks, []):
+        name = task["name"]
+        nav_pose = task.get("nav_pose")
+        plot_2d_robot(ax, nav_pose, 1.4, 1.9)
+        nav_pose[3, 3] = 0.25
+        plot_2d_frame(ax, nav_pose, name)
+
+        milling_task = np.array(task.get("milling_vector"))
+
+        ax.scatter(
+            milling_task[0, 0],
+            milling_task[0, 1],
+            c="red",
+            marker=".",
+            s=15,
+        )
+        ax.plot(milling_task[:, 0], milling_task[:, 1], color="yellow")
+    map_name = kwargs.get("map_name")
+    output_path = kwargs.get("output_path")
+    name_image = "tasks-{}-{}.{}".format(tasks, map_name, "jpg")
+    ax.yaxis.set_inverted(False)
+    ax.set_aspect("equal", adjustable="box")
+
+    fig.savefig(os.path.join(output_path, name_image), dpi=300)
+
+
+def draw_planes(g, im, center, map_name, output_path, **kwargs):
 
     resolution = kwargs.get("resolution", 0.05)
     w, h = im.size
-    # fig = plt.figure(figsize=(6.4, 6.4 * w / h))
-    border = kwargs.get("border", 50)
-    # print(center)
+    orig_x, orig_y, _ = center
 
-    def get_img_coord(x, y, resolution, border, center):
-        orig_x, orig_y, _ = center
-        new_x = x / resolution - orig_x + border / 2
-        new_y = y / resolution - orig_y + border / 2
-        return new_x, new_y
-
-    imax = plt.imshow(im, cmap="gray")
+    imax = plt.imshow(
+        im,
+        cmap="gray",
+        interpolation="none",
+        origin="upper",
+        extent=(
+            orig_x,
+            (w * resolution) - abs(orig_x),
+            (h * resolution) - abs(orig_y),
+            orig_y,
+        ),
+    )
     fig = imax.get_figure()
     ax = fig.get_axes().pop()
-    # print(ax)
-    for task in kwargs.get("outlets"):
-        # print(task)
-        name = task["name"]
-        nav_pose = task.get("nav_pose")
-        nav_x, nav_y = get_img_coord(
-            nav_pose[0], nav_pose[1], resolution, border, center
-        )
-        ax.scatter(
-            nav_x,
-            nav_y,
-            c="blue",
-            marker="+",
-        )
-        milling_task = np.array(task.get("milling_vector"))
-        milling_x, milling_y = get_img_coord(
-            milling_task[:, 0],
-            milling_task[:, 1],
-            resolution,
-            border,
-            center,
-        )
+    name_image = "{}-frames-{}.{}".format(kwargs.get("planes"), map_name, "jpg")
+    matrices = get_frame_transform(g, kwargs.get("planes"))
+    for m in matrices:
+        m[3, 3] = 0.25
+        plot_2d_frame(ax, m)
 
-        # plt.plot(milling_x, milling_y, "r", linewidth=1)
-        ax.scatter(
-            milling_x[0],
-            milling_y[0],
-            c="red",
-            marker="x",
-            s=15,
-        )
-        ax.scatter(
-            milling_x[1],
-            milling_y[1],
-            c="c",
-            marker="x",
-            s=15,
-        )
-    map_name = kwargs.get("map_name")
-    output_path = kwargs.get("output_path")
-    name_image = "tasks-{}.{}".format(map_name, "jpg")
-    fig.set_size_inches(6.4, 6.4 * w / h)
     ax.yaxis.set_inverted(False)
-
+    ax.set_aspect("equal", adjustable="box")
+    plt.tight_layout()
     fig.savefig(os.path.join(output_path, name_image), dpi=300)

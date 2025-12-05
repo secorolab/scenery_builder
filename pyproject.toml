@@ -14,7 +14,8 @@ dependencies = [
     "rdflib@git+https://github.com/secorolab/rdflib@fix/multi-type-scoped-context",
     "click>=8.1.7",
     "pyyaml",
-    "floorplan_dsl@git+https://github.com/secorolab/FloorPlan-DSL"
+    "floorplan_dsl@git+https://github.com/secorolab/FloorPlan-DSL",
+    "transforms3d"
 ]
 requires-python = ">= 3.11"
 readme = "README.md"

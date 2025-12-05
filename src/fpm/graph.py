@@ -7,6 +7,7 @@ import numpy as np
 import rdflib
 from rdflib import RDF, Graph, Literal
 from rdflib.tools.rdf2dot import rdf2dot
+from transforms3d.quaternions import mat2quat
 
 from fpm import traversal
 from fpm.constants import (
@@ -459,3 +460,97 @@ def get_waypoint_coord_list(g: Graph, points, coordinates_map):
         w_coords.append([x, y, 0, 1])
 
     return w_coords
+
+
+def _coord_to_np_matrix(coord, scale=1.0):
+    t = np.zeros((4, 4))
+    t[0, 3] = coord.get("x")
+    t[1, 3] = coord.get("y")
+    t[2, 3] = coord.get("z")
+    t[3, 3] = scale
+    t[:3, 0] = coord.get("direction-cosine-x")
+    t[:3, 1] = coord.get("direction-cosine-y")
+    t[:3, 2] = coord.get("direction-cosine-z")
+
+    return t
+
+
+def get_pose_transform_wrt_world(g: Graph, pose_ref):
+    coord = get_coordinates(g, pose_ref)
+    m = _coord_to_np_matrix(coord)
+    pose = g.value(pose_ref, COORD["of-pose"])
+    frame = g.value(pose, GEOM["with-respect-to"])
+    transformation_path = traverse_to_world_origin(g, prefixed(g, frame))
+
+    for t in transformation_path[::-1]:
+        if g.value(t, RDF["type"]) == GEO["Frame"]:
+            continue
+        new_pose_ref = g.value(predicate=COORD["of-pose"], object=t)
+        new_m = get_coordinates(g, new_pose_ref)
+        new_m = _coord_to_np_matrix(new_m)
+        m = np.dot(new_m, m)
+
+    return m
+
+
+def get_frame_transform(g: Graph, filter_str: str):
+    matrices = list()
+    for s, p, o in g.triples((None, RDF["type"], COORD["PoseReference"])):
+        if filter_str not in str(s):
+            continue
+        m = get_pose_transform_wrt_world(g, s)
+        matrices.append(m)
+
+    return matrices
+
+
+def get_frame_tree(g: Graph, poses=None):
+    frames = dict()
+    if poses is None:
+        pose_list = g.subjects(RDF["type"], COORD["PoseReference"])
+    else:
+        pose_list = poses
+
+    for pose_ref in pose_list:
+        coord = get_coordinates(g, pose_ref)
+        pose = g.value(pose_ref, COORD["of-pose"])
+        frame = g.value(pose, GEOM["with-respect-to"])
+        transformation_path = traverse_to_world_origin(g, prefixed(g, frame))
+        frame = g.value(pose, GEOM["of"])
+        for t in transformation_path[::-1]:
+            if g.value(t, RDF["type"]) == GEO["Frame"]:
+                m = _coord_to_np_matrix(coord)
+                d = {
+                    "parent_frame_id": prefixed(g, t).split(":")[-1],
+                    "frame_id": prefixed(g, frame).split(":")[-1],
+                    "p": list(m[:3, 3]),
+                    "q": list(mat2quat(m[:3, :3])),
+                }
+                # TODO This is not optimal, rewrite to avoid loops for transforms we already know
+                frames[frame] = d
+                frame = t
+            else:
+                new_pose_ref = g.value(predicate=COORD["of-pose"], object=t)
+                coord = get_coordinates(g, new_pose_ref)
+    return frames
+
+
+def get_floorplan_elements(g: Graph, floorplan_elements: list):
+    poses = list()
+    for element in floorplan_elements:
+        for s, p, o in g.triples((None, RDF["type"], FP[element])):
+            shape3d = g.value(s, FP["3d-shape"])
+            shape_type = g.value(shape3d, RDF["type"])
+            if shape_type == POLY["Polyhedron"]:
+                point = g.value(shape3d, POLY["points"] / RDF["first"])
+            elif shape_type == POLY["Cylinder"]:
+                point = g.value(shape3d, POLY["base"] / POLY["center"])
+
+            position_ref = g.value(
+                predicate=COORD["of-position"] / GEOM["of"], object=point
+            )
+            asb = g.value(position_ref, COORD["as-seen-by"])
+            assert g.value(asb, RDF["type"]) == GEO["Frame"]
+            pose_ref = g.value(predicate=COORD["of-pose"] / GEOM["of"], object=asb)
+            poses.append(pose_ref)
+    return poses

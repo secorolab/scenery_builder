@@ -1,7 +1,10 @@
+import logging
 import numpy as np
+import rdflib
 from rdflib import Graph, RDF
+from transforms3d.quaternions import mat2quat
 
-from fpm.constants import FP, POLY
+from fpm.constants import FP, POLY, GEO, COORD, GEOM
 from fpm.graph import (
     get_3d_structure,
     get_coordinates_map,
@@ -11,8 +14,17 @@ from fpm.graph import (
     get_point_position,
     get_waypoint_coord_wrt_world,
     get_list_from_ptr,
+    get_pose_transform_wrt_world,
+    get_coordinates,
+    _coord_to_np_matrix,
+    get_frame_tree,
+    get_floorplan_elements,
 )
-from fpm.utils import render_model_template, get_output_path
+from fpm.utils import render_model_template, get_output_path, save_file
+from ifcld.interpreters.namespaces import IFC_CONCEPTS
+
+logger = logging.getLogger("floorplan.generators.tts")
+logger.setLevel(logging.DEBUG)
 
 
 def get_dim_and_center(element):
@@ -25,7 +37,7 @@ def get_dim_and_center(element):
 
 
 def gen_tts_wall_description(g, base_path, **kwargs):
-    print("Wall description")
+    logger.info("Generating wall description for simulator...")
     template_path = kwargs.get("template_path")
     output_path = get_output_path(base_path, "tts")
 
@@ -48,30 +60,33 @@ def gen_tts_wall_description(g, base_path, **kwargs):
     for wall in wall_elements:
         w = get_dim_and_center(wall)
         w["cutouts"] = openings.get(wall.get("name"))
-        print(w)
         model.append(w)
 
     render_model_template(
         model,
         output_path,
-        "walls.json",
+        "HDT-wall-description.json",
         "tts/walls.json.jinja",
         template_path,
     )
 
 
-def get_outlet_milling_task(g: Graph, element="Opening", threshold=0.05):
-    print("Getting 3D structure of all {}s...".format(element))
+def get_outlet_milling_task(g: Graph, element_type="Opening", threshold=0.05):
+    logger.info("Getting 3D structure of all {}s...".format(element_type))
     elements = list()
     coords_m = get_coordinates_map(g)
-    for e, _, _ in g.triples((None, RDF.type, FP[element])):
+    for e, _, _ in g.triples((None, RDF.type, FP[element_type])):
         name = prefixed(g, e).split(":")[-1]
+        wall = (g.value(e, FP["voids"] / RDF["first"]),)
+        assert len(wall) == 1
+        wall = wall[0]
+        wall_id = prefixed(g, wall).split(":")[-1]
 
         poly = g.value(e, FP["3d-shape"])
         if g.value(poly, RDF.type) != POLY["Cylinder"]:
             continue
 
-        # print(name, g.value(poly, RDF.type))
+        logger.debug("%s: %s", name, prefixed(g, g.value(poly, RDF.type)))
 
         base = g.value(poly, POLY["base"])
         unit_multiplier = get_unit_multiplier(g, poly)
@@ -81,6 +96,7 @@ def get_outlet_milling_task(g: Graph, element="Opening", threshold=0.05):
         # TODO unit conversion for non-zero values for the center
         center = g.value(base, POLY["center"])
         radius = g.value(base, POLY["radius"]).toPython() * unit_multiplier
+        logger.debug("radius: %s, depth: %s", radius, height)
 
         # TODO Milling action: find center of base circle, use axis and height to project 2nd face and get its center
         p = get_point_position(g, center)
@@ -89,8 +105,8 @@ def get_outlet_milling_task(g: Graph, element="Opening", threshold=0.05):
         positions = list()
         for coord in [p, pp]:
             x, y, z = get_waypoint_coord_wrt_world(g, coord, coords_m)
-            # print(round(x, 2), "\t", round(y, 2), "\t", round(z, 2))
             positions.append((x, y, z))
+        logger.debug("Milling vector: %s", positions)
 
         # TODO Navigation actions: Add a robot transform from:
         # 1) base circle of outlets
@@ -98,68 +114,219 @@ def get_outlet_milling_task(g: Graph, element="Opening", threshold=0.05):
         # z=0
         # Translation: (1.0, 1.0) in M
         # Rotation: X axis must be parallel to the wall
-        # TODO Are there any conventions I can use for the axes of their object placements?
-        nav_pose = dict(**p)
-        nav_pose["z"] = axis[-1].toPython() * -1.0
-        nav_pose["y"] = nav_pose["y"] + 1.0
-        x, y, z = get_waypoint_coord_wrt_world(g, nav_pose, coords_m)
-        # print(round(x, 2), "\t", round(y, 2), "\t", round(z, 2))
+        plane = get_milling_plane(g, e)
+        start = g.value(plane, GEO["start"])
+        start_pose_ref = get_start_pose_coords(g, start)
+        m_start_wrt_world = get_pose_transform_wrt_world(g, start_pose_ref)
+        nav_pose = translate_nav_pose(g, start_pose_ref, x=-1.0, z=1.7)
 
+        logger.debug("Position: [%s, %s, %s]", round(x, 2), round(y, 2), round(z, 2))
         element = {
             "name": name,
             "depth": height,
             "milling_vector": positions,
-            "nav_pose": [x, y, z],
+            "nav_pose": nav_pose,
             "radius": radius,
+            "origin": m_start_wrt_world[:3, 3],
+            "voids": wall_id,
         }
         elements.append(element)
 
     return elements
 
 
-def get_duct_milling_task(g: Graph, element="Opening"):
-    # TODO Both actions: find both faces that are parallel to ground and get their centers.
-    # TODO Milling action: Vector of milling is their direction (e.g., top-bottom)
-    print("Getting 3D structure of all {}s...".format(element))
+def translate_nav_pose(g: Graph, pose_ref, x=0.0, y=0.0, z=0.0):
+    translation = np.array(
+        [
+            [1.0, 0.0, 0.0, x],
+            [0.0, 0.0, 1.0, y],
+            [0.0, 1.0, 0.0, z],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    t_wrt_world = get_pose_transform_wrt_world(g, pose_ref)
+    nav_pose = np.dot(t_wrt_world, translation)
+    return nav_pose
+
+
+def get_milling_plane(g: Graph, opening):
+    plane = get_list_values(g, opening, GEO["vectors"])
+    assert len(plane) == 1
+    plane = plane[0]
+
+    return plane
+
+
+def get_start_pose_coords(g: Graph, point):
+    frame = g.value(predicate=GEO["origin"], object=point)
+    start_pose = g.value(predicate=GEOM["of"], object=frame)
+    start_pose_ref = g.value(predicate=COORD["of-pose"], object=start_pose)
+    return start_pose_ref
+
+
+def get_duct_milling_task(g: Graph, element_type="Opening"):
+    logger.info("Getting 3D structure of all {}s...".format(element_type))
     elements = list()
-    coords_m = get_coordinates_map(g)
-    for e, _, _ in g.triples((None, RDF.type, FP[element])):
+    for e, _, _ in g.triples((None, RDF.type, FP[element_type])):
         name = prefixed(g, e).split(":")[-1]
+
+        wall = (g.value(e, FP["voids"] / RDF["first"]),)
+        assert len(wall) == 1
+        wall = wall[0]
+        wall_id = prefixed(g, wall).split(":")[-1]
 
         poly = g.value(e, FP["3d-shape"])
         if g.value(poly, RDF.type) == POLY["Cylinder"]:
             continue
 
-        vertices = get_list_values(g, poly, POLY["points"])
-        positions = list()
-        for point in vertices:
-            p = get_point_position(g, point)
+        logger.debug("%s: %s", name, prefixed(g, g.value(poly, RDF.type)))
 
-            x, y, z = get_waypoint_coord_wrt_world(g, p, coords_m)
-            positions.append((x, y, z))
+        plane = get_milling_plane(g, e)
+        start = g.value(plane, GEO["start"])
+        end = g.value(plane, GEO["end"])
+        start_pose_ref = get_start_pose_coords(g, start)
 
-        faces_nodes = get_list_values(g, poly, POLY["faces"])
-        faces = list()
-        for f in faces_nodes:
-            face_vertices = get_list_from_ptr(g, f)
-            face = [vertices.index(point) for point in face_vertices]
-            faces.append(face)
+        m_start_wrt_world = get_pose_transform_wrt_world(g, start_pose_ref)
 
-    # ducts = get_3d_structure(g, "Opening")
-    # for duct in ducts:
-    #     print(duct)
+        end_position = get_point_position(g, end)
+        coords_m = get_coordinates_map(g)
+        end_position_coord = get_waypoint_coord_wrt_world(g, end_position, coords_m)
+        end_position_coord = np.array(end_position_coord)
+
+        # TODO Both actions: find both faces that are parallel to ground and get their centers.
+        faces = rdflib.collection.Collection(
+            g,
+            g[poly : POLY["faces"]].__next__(),
+        )
+        all_faces = list()
+        for f in faces:
+            face = rdflib.collection.Collection(g, f)
+            face_coords = []
+            for point in face:
+                p = get_point_position(g, point)
+
+                x, y, z = get_waypoint_coord_wrt_world(g, p, coords_m)
+                face_coords.append((x, y, z))
+            face_coords = np.array(face_coords)
+            if np.allclose(face_coords[:, 2], face_coords[0, 2]):
+                all_faces.append(face_coords)
+
+        # TODO Milling action: Vector of milling is their direction (e.g., top-bottom)
+        assert len(all_faces) == 2
+        milling_vector = list()
+        for f in all_faces:
+            center_xy = np.mean(f, axis=0)
+            milling_vector.append(center_xy)
+
+        # Sort bottom to top
+        milling_vector.sort(key=lambda x: x[2])
+        depth = abs(milling_vector[0][2] - milling_vector[1][2])
+        logger.info("Depth: %s", depth)
+
+        # Calculate width
+        base = all_faces[0]
+        v_thickness = m_start_wrt_world[:3, 3] - end_position_coord
+        v1 = abs(base[0, :] - base[1, :])
+        v2 = abs(base[0, :] - base[-1, :])
+        if np.dot(v1, v_thickness) == 0.0:
+            width = v1.sum()
+            thickness = v2.sum()
+        else:
+            width = v2.sum()
+            thickness = v1.sum()
+        logger.info("width: %s, thickness: %s", width, thickness)
+
+        nav_pose = translate_nav_pose(g, start_pose_ref, x=-1.0, z=1.7)
+
+        element = {
+            "name": name,
+            "width": width,
+            "thickness": thickness,
+            "depth": depth,
+            "milling_vector": milling_vector,
+            "origin": m_start_wrt_world[:3, 3],
+            "nav_pose": nav_pose,
+            "voids": wall_id,
+        }
+        elements.append(element)
+
     return elements
 
 
+def convert_to_nav2_goal_format(goals: list) -> list:
+    nav2_goals = list()
+    for g in goals:
+        m = g["nav_pose"]
+        t = {
+            "name": g["name"],
+            "voids": g["voids"],
+            "nav2_goal": {
+                "p": list(m[:3, 3]),
+                "q": list(mat2quat(m[:3, :3])),
+            },
+            "milling_vector": [list(p) for p in g["milling_vector"]],
+            "depth": g["depth"],
+            "position": list(g["origin"]),
+        }
+        if g.get("radius"):
+            t["radius"] = g["radius"]
+            t["type"] = "outlet"
+        else:
+            t["width"] = g["width"]
+            t["thickness"] = g["thickness"]
+            t["type"] = "duct"
+        nav2_goals.append(t)
+    return nav2_goals
+
+
 def gen_tts_task_description(g, base_path, **kwargs):
-    print("Task description")
+    logger.info("Generating task description...")
     template_path = kwargs.get("template_path")
     output_path = get_output_path(base_path, "tts")
 
+    tasks = list()
+
+    logger.info("Generating task description for outlets")
     outlets = get_outlet_milling_task(g, "Opening")
-    for outlet in outlets:
-        print(outlet)
+    tasks.extend(convert_to_nav2_goal_format(outlets))
 
-    # ducts = get_duct_milling_task(g, "Opening")
+    logger.info("Generating task description for ducts")
+    ducts = get_duct_milling_task(g, "Opening")
+    tasks.extend(convert_to_nav2_goal_format(ducts))
 
-    return outlets
+    save_file(output_path, "tasks-gui.json", tasks)
+    save_file(
+        output_path,
+        "HDT-task-description.json",
+        [
+            {
+                "entity_name": "KukaPlatform1",
+                "tasks": tasks,
+            },
+            {
+                "entity_name": "Human1",
+                "tasks": list(),
+            },
+        ],
+    )
+
+    render_model_template(
+        tasks,
+        output_path,
+        "nav-goals.yaml",
+        "tts/nav-goals.yaml.jinja",
+        template_path,
+    )
+
+    floorplan_elements = ["Space", "Opening", "Wall", "Door", "Entryway"]
+    element_poses = get_floorplan_elements(g, floorplan_elements)
+    frames = get_frame_tree(g, element_poses)
+    render_model_template(
+        frames,
+        output_path,
+        "frames-ros2.launch",
+        "tts/frames-ros2.launch.jinja",
+        template_path,
+    )
+
+    return outlets, ducts
