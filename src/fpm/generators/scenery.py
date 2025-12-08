@@ -462,6 +462,45 @@ def transform_cartesian_transformation_operator(g: Graph, target, target_id):
     return cto
 
 
+def transform_mapped_item(g: Graph, origin, target, object_placement_id):
+    graph_contents = list()
+
+    origin_id = get_entity_id(g, origin, "mapping-origin")
+    target_id = get_entity_id(g, target, "mapping-target")
+
+    # Transformation of mapping origin (T) to mapping target (ref)
+    axis_placement = transform_axis_placement_3d(g, origin, origin_id)
+    graph_contents.extend(axis_placement)
+    e = render_ifc_template(
+        "ifc/placement/object-placement.json.jinja",
+        placement_id=origin_id,
+    )
+    graph_contents.extend(e)
+    pj = render_ifc_template(
+        "ifc/placement/placement-rel-to.json.jinja",
+        placement_id=origin_id,
+        ref_placement_id=target_id,
+    )
+    graph_contents.extend(pj)
+
+    # mapping target (T) to object placement (ref)
+    cto = transform_cartesian_transformation_operator(g, target, target_id)
+    graph_contents.extend(cto)
+    e = render_ifc_template(
+        "ifc/placement/object-placement.json.jinja",
+        placement_id=target_id,
+    )
+    graph_contents.extend(e)
+    pj = render_ifc_template(
+        "ifc/placement/placement-rel-to.json.jinja",
+        placement_id=target_id,
+        ref_placement_id=object_placement_id,
+    )
+    graph_contents.extend(pj)
+
+    return graph_contents
+
+
 def query_ifc_doors(g: Graph):
     door_wall_query = """
     SELECT DISTINCT ?wall ?opening ?door ?voids ?fills
@@ -534,35 +573,9 @@ def query_ifc_doors(g: Graph):
             origin_id = get_entity_id(g, origin, "mapping-origin")
             target_id = get_entity_id(g, target, "mapping-target")
 
-            # Transformation of mapping origin (T) to mapping target (ref)
-            axis_placement = transform_axis_placement_3d(g, origin, origin_id)
-            graph_contents.extend(axis_placement)
-            e = render_ifc_template(
-                "ifc/placement/object-placement.json.jinja",
-                placement_id=origin_id,
+            graph_contents.extend(
+                transform_mapped_item(g, origin, target, opening_placement_id)
             )
-            graph_contents.extend(e)
-            pj = render_ifc_template(
-                "ifc/placement/placement-rel-to.json.jinja",
-                placement_id=origin_id,
-                ref_placement_id=target_id,
-            )
-            graph_contents.extend(pj)
-
-            # mapping target (T) to object placement (ref)
-            cto = transform_cartesian_transformation_operator(g, target, target_id)
-            graph_contents.extend(cto)
-            e = render_ifc_template(
-                "ifc/placement/object-placement.json.jinja",
-                placement_id=target_id,
-            )
-            graph_contents.extend(e)
-            pj = render_ifc_template(
-                "ifc/placement/placement-rel-to.json.jinja",
-                placement_id=target_id,
-                ref_placement_id=opening_placement_id,
-            )
-            graph_contents.extend(pj)
 
             # Get the IfcRepresentationItems
             for o in g.objects(rep, IFC_CONCEPTS["items"]):
@@ -601,35 +614,10 @@ def query_ifc_doors(g: Graph):
             origin_id = get_entity_id(g, origin, "mapping-origin")
             target_id = get_entity_id(g, target, "mapping-target")
 
-            # Transformation of mapping origin (T) to mapping target (ref)
-            axis_placement = transform_axis_placement_3d(g, origin, origin_id)
-            graph_contents.extend(axis_placement)
-            e = render_ifc_template(
-                "ifc/placement/object-placement.json.jinja",
-                placement_id=origin_id,
+            graph_contents.extend(
+                transform_mapped_item(g, origin, target, door_placement_id)
             )
-            graph_contents.extend(e)
-            pj = render_ifc_template(
-                "ifc/placement/placement-rel-to.json.jinja",
-                placement_id=origin_id,
-                ref_placement_id=target_id,
-            )
-            graph_contents.extend(pj)
 
-            # mapping target (T) to object placement (ref)
-            cto = transform_cartesian_transformation_operator(g, target, target_id)
-            graph_contents.extend(cto)
-            e = render_ifc_template(
-                "ifc/placement/object-placement.json.jinja",
-                placement_id=target_id,
-            )
-            graph_contents.extend(e)
-            pj = render_ifc_template(
-                "ifc/placement/placement-rel-to.json.jinja",
-                placement_id=target_id,
-                ref_placement_id=door_placement_id,
-            )
-            graph_contents.extend(pj)
             for d in g.objects(rep, IFC_CONCEPTS["items"]):
                 parent_id = door_id + suffix
                 shape = transform_polygonal_face_set(
