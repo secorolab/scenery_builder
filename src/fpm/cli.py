@@ -9,7 +9,11 @@ from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
 from fpm.generators.door_keyframes import get_keyframes
-from fpm.generators.tts import gen_tts_wall_description, gen_tts_task_description
+from fpm.generators.tts import (
+    gen_tts_wall_description,
+    gen_tts_task_description,
+    gen_ros_frames,
+)
 from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
 
@@ -525,33 +529,59 @@ def door_keyframes(ctx, **kwargs):
 @generate.command()
 @click.pass_context
 @click.option(
-    "--walls",
-    is_flag=True,
-    help="Generate the wall description",
+    "--robot-translation-x",
+    "x",
+    type=click.FLOAT,
+    default=-1.0,
+    show_default=True,
+    help="Translation of the robot in x wrt to a task element for a navigation goal",
 )
-# @click.option(
-#     "--tasks",
-#     # is_flag=True,
-#     help="Generate the task descriptions",
-# )
+@click.option(
+    "--robot-translation-z",
+    "z",
+    type=click.FLOAT,
+    default=1.7,
+    show_default=True,
+    help="Translation of the robot in z wrt to a task element for a navigation goal",
+)
+@click.option(
+    "--ros-frames",
+    is_flag=True,
+    help="Generate a ROS launch file with frame transformations for task elements",
+)
+@click.option(
+    "--visualize",
+    is_flag=True,
+    help="Generate images visualizing the environment and tasks",
+)
 def tts(ctx, **kwargs):
     """Generate the artefacts for the TTS simulator"""
     logger.info("Generating artefacts for the TTS simulator...")
+    logger.debug("Arguments: %s", kwargs)
     gen_tts_wall_description(**ctx.obj, **ctx.parent.params, **kwargs)
     outlets, ducts = gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
-    logger.info("Visualizing milling task for the outlets on occupancy grid")
-    get_occ_grid(
-        **ctx.obj, **ctx.parent.params, **kwargs, outlets=outlets, source="bim"
-    )
-    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs, ducts=ducts, source="bim")
-    logger.info("Visualizing outlet boundary frames on occupancy grid")
-    get_occ_grid(
-        **ctx.obj, **ctx.parent.params, **kwargs, planes="outlet", source="bim"
-    )
-    logger.info("Visualizing duct boundary on occupancy grid")
-    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs, planes="duct", source="bim")
-    logger.info("Visualizing wall frames on occupancy grid")
-    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs, planes="wall", source="bim")
+    if kwargs.get("ros_frames"):
+        gen_ros_frames(**ctx.obj, **ctx.parent.params, **kwargs)
+    if kwargs.get("visualize"):
+        logger.info("Visualizing milling task for the outlets on occupancy grid")
+        get_occ_grid(
+            **ctx.obj, **ctx.parent.params, **kwargs, outlets=outlets, source="bim"
+        )
+        get_occ_grid(
+            **ctx.obj, **ctx.parent.params, **kwargs, ducts=ducts, source="bim"
+        )
+        logger.info("Visualizing outlet boundary frames on occupancy grid")
+        get_occ_grid(
+            **ctx.obj, **ctx.parent.params, **kwargs, planes="outlet", source="bim"
+        )
+        logger.info("Visualizing duct boundary on occupancy grid")
+        get_occ_grid(
+            **ctx.obj, **ctx.parent.params, **kwargs, planes="duct", source="bim"
+        )
+        logger.info("Visualizing wall frames on occupancy grid")
+        get_occ_grid(
+            **ctx.obj, **ctx.parent.params, **kwargs, planes="wall", source="bim"
+        )
 
 
 if __name__ == "__main__":
