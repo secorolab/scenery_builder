@@ -561,12 +561,6 @@ def query_ifc_doors(g: Graph):
         )
         graph_contents.append(d)
 
-        dl = render_ifc_template(
-            "ifc/doors/door-lining.json.jinja",
-            door_id=door_id,
-        )
-        graph_contents.append(dl)
-
         f = render_ifc_template(
             "ifc/doors/filling-rel.json.jinja",
             door_id=door_id,
@@ -616,9 +610,7 @@ def query_ifc_doors(g: Graph):
         door_placement_id = get_entity_id(g, door_placement, "placement")
         parent = query_placement_rel_to(g, door_placement)
 
-        for d_shape, suffix in zip(
-            g.objects(door_reps, IFC_CONCEPTS["items"]), ["", "-lining"]
-        ):
+        for d_shape in g.objects(door_reps, IFC_CONCEPTS["items"]):
             rep, origin, target = query_mapped_item(g, d_shape)
             origin_id = get_entity_id(g, origin, "mapping-origin")
             target_id = get_entity_id(g, target, "mapping-target")
@@ -627,8 +619,41 @@ def query_ifc_doors(g: Graph):
                 transform_mapped_item(g, origin, target, door_placement_id)
             )
 
+            handle = 1
+            lining = 1
+            panel = 1
             for d in g.objects(rep, IFC_CONCEPTS["items"]):
-                parent_id = door_id + suffix
+                shape_aspect = str(get_shape_aspect(g, d)).lower()
+                if shape_aspect == "lining":
+                    parent_id = f"{door_id}-{shape_aspect}-{lining}"
+                    dl = render_ifc_template(
+                        "ifc/doors/door-lining.json.jinja",
+                        element_id=parent_id,
+                        door_id=door_id,
+                    )
+                    graph_contents.extend(dl)
+                    lining = lining + 1
+                elif shape_aspect == "handle":
+                    parent_id = f"{door_id}-{shape_aspect}-{handle}"
+                    dh = render_ifc_template(
+                        "ifc/doors/door-handle.json.jinja",
+                        door_id=door_id,
+                        element_id=parent_id,
+                    )
+                    graph_contents.extend(dh)
+                    handle = handle + 1
+                elif shape_aspect == "panel":
+                    parent_id = f"{door_id}-{shape_aspect}-{panel}"
+                    dp = render_ifc_template(
+                        "ifc/doors/door-panel.json.jinja",
+                        door_id=door_id,
+                        element_id=parent_id,
+                    )
+                    graph_contents.extend(dp)
+                    panel = panel + 1
+                else:
+                    raise ValueError("Unknown shape aspect: %s" % shape_aspect)
+
                 if g.value(d, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
                     shape = transform_polygonal_face_set(
                         g, d, parent_id=parent_id, placement_id=origin_id
@@ -643,6 +668,22 @@ def query_ifc_doors(g: Graph):
                     logger.warning("Shape is %s", g.value(d, RDF["type"]))
 
     return graph_contents
+
+
+def get_shape_aspect(g: Graph, rep):
+    query = """
+    SELECT DISTINCT ?shape_rep ?shape_aspect ?shape_aspect_name
+    WHERE {
+        ?shape_aspect rdf:type ifc:IFCSHAPEASPECT  .
+        ?shape_aspect ifc:shaperepresentations/rdf:rest*/rdf:first ?shape_rep .
+        ?shape_rep ifc:items ?item .
+        ?shape_aspect ifc:name ?shape_aspect_name .
+    }
+    """
+    qres = g.query(query, initBindings={"item": rep})
+    assert len(qres) == 1
+
+    return list(qres)[0]["shape_aspect_name"]
 
 
 def transform_polygonal_face_set(g, element, parent_id, placement_id=None):
