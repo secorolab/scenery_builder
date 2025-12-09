@@ -622,8 +622,8 @@ def query_ifc_doors(g: Graph):
             handle = 1
             lining = 1
             panel = 1
-            for d in g.objects(rep, IFC_CONCEPTS["items"]):
-                shape_aspect = str(get_shape_aspect(g, d)).lower()
+            for i in g.objects(rep, IFC_CONCEPTS["items"]):
+                shape_aspect = str(get_shape_aspect(g, i)).lower()
                 if shape_aspect == "lining":
                     parent_id = f"{door_id}-{shape_aspect}-{lining}"
                     dl = render_ifc_template(
@@ -654,18 +654,18 @@ def query_ifc_doors(g: Graph):
                 else:
                     raise ValueError("Unknown shape aspect: %s" % shape_aspect)
 
-                if g.value(d, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
+                if g.value(i, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
                     shape = transform_polygonal_face_set(
-                        g, d, parent_id=parent_id, placement_id=origin_id
+                        g, i, parent_id=parent_id, placement_id=origin_id
                     )
                     graph_contents.extend(shape)
-                elif g.value(d, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
+                elif g.value(i, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
                     shape = transform_mapped_extruded_area_solid(
-                        g, d, parent_id, origin_id
+                        g, i, parent_id, origin_id
                     )
                     graph_contents.extend(shape)
                 else:
-                    logger.warning("Shape is %s", g.value(d, RDF["type"]))
+                    logger.warning("Shape is %s", g.value(i, RDF["type"]))
 
     return graph_contents
 
