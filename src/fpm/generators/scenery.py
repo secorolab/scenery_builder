@@ -501,6 +501,33 @@ def transform_mapped_item(g: Graph, origin, target, object_placement_id):
     return graph_contents
 
 
+def transform_mapped_extruded_area_solid(g: Graph, rep, element_id):
+    graph_contents = list()
+    solid_id = get_entity_id(g, rep, "extruded-area-solid")
+    # Individual points are specified wrt to extruded area solid frame/origin (ref)
+    _, position, _, _, poly = transform_extruded_area_solid(
+        g, solid_id, rep, parent_id=element_id
+    )
+    graph_contents.extend(poly)
+
+    # Transformation of extruded area solid (mapped repr, T) to mapping origin (ref)
+    axis_placement = transform_axis_placement_3d(g, position, solid_id)
+    graph_contents.extend(axis_placement)
+    e = render_ifc_template(
+        "ifc/placement/object-placement.json.jinja",
+        placement_id=solid_id,
+    )
+    graph_contents.extend(e)
+    pj = render_ifc_template(
+        "ifc/placement/placement-rel-to.json.jinja",
+        placement_id=solid_id,
+        ref_placement_id=element_id,
+    )
+    graph_contents.extend(pj)
+
+    return graph_contents
+
+
 def query_ifc_doors(g: Graph):
     door_wall_query = """
     SELECT DISTINCT ?wall ?opening ?door ?voids ?fills
@@ -620,10 +647,16 @@ def query_ifc_doors(g: Graph):
 
             for d in g.objects(rep, IFC_CONCEPTS["items"]):
                 parent_id = door_id + suffix
-                shape = transform_polygonal_face_set(
-                    g, d, parent_id=parent_id, placement_id=origin_id
-                )
-                graph_contents.extend(shape)
+                if g.value(d, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
+                    shape = transform_polygonal_face_set(
+                        g, d, parent_id=parent_id, placement_id=origin_id
+                    )
+                    graph_contents.extend(shape)
+                elif g.value(d, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
+                    shape = transform_mapped_extruded_area_solid(g, d, parent_id)
+                    graph_contents.extend(shape)
+                else:
+                    logger.warning("Shape is %s", g.value(d, RDF["type"]))
 
     return graph_contents
 
