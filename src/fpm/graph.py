@@ -50,6 +50,8 @@ def prefixed(g, node):
 
 def get_list_values(g: Graph, subject, predicate):
     ptr = g.value(subject, predicate)
+    if ptr == RDF.nil:
+        return []
     values = get_list_from_ptr(g, ptr)
     return values
 
