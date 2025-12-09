@@ -501,12 +501,12 @@ def transform_mapped_item(g: Graph, origin, target, object_placement_id):
     return graph_contents
 
 
-def transform_mapped_extruded_area_solid(g: Graph, rep, element_id):
+def transform_mapped_extruded_area_solid(g: Graph, rep, parent_id, origin_id):
     graph_contents = list()
     solid_id = get_entity_id(g, rep, "extruded-area-solid")
     # Individual points are specified wrt to extruded area solid frame/origin (ref)
     _, position, _, _, poly = transform_extruded_area_solid(
-        g, solid_id, rep, parent_id=element_id
+        g, solid_id, rep, parent_id=parent_id
     )
     graph_contents.extend(poly)
 
@@ -521,7 +521,7 @@ def transform_mapped_extruded_area_solid(g: Graph, rep, element_id):
     pj = render_ifc_template(
         "ifc/placement/placement-rel-to.json.jinja",
         placement_id=solid_id,
-        ref_placement_id=element_id,
+        ref_placement_id=origin_id,
     )
     graph_contents.extend(pj)
 
@@ -606,27 +606,9 @@ def query_ifc_doors(g: Graph):
 
             # Get the IfcRepresentationItems
             for o in g.objects(rep, IFC_CONCEPTS["items"]):
-                solid_id = get_entity_id(g, o, "extruded-area-solid")
-                # Individual points are specified wrt to extruded area solid frame/origin (ref)
-                _, position, _, _, poly = transform_extruded_area_solid(
-                    g, solid_id, o, parent_id=opening_id
+                graph_contents.extend(
+                    transform_mapped_extruded_area_solid(g, o, opening_id, origin_id)
                 )
-                graph_contents.extend(poly)
-
-                # Transformation of extruded area solid (mapped repr, T) to mapping origin (ref)
-                axis_placement = transform_axis_placement_3d(g, position, solid_id)
-                graph_contents.extend(axis_placement)
-                e = render_ifc_template(
-                    "ifc/placement/object-placement.json.jinja",
-                    placement_id=solid_id,
-                )
-                graph_contents.extend(e)
-                pj = render_ifc_template(
-                    "ifc/placement/placement-rel-to.json.jinja",
-                    placement_id=solid_id,
-                    ref_placement_id=origin_id,
-                )
-                graph_contents.extend(pj)
 
         logger.info("Processing door %s", door_id)
         door_reps = query_product_shape_representations(g, r["door"])
@@ -653,7 +635,9 @@ def query_ifc_doors(g: Graph):
                     )
                     graph_contents.extend(shape)
                 elif g.value(d, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
-                    shape = transform_mapped_extruded_area_solid(g, d, parent_id)
+                    shape = transform_mapped_extruded_area_solid(
+                        g, d, parent_id, origin_id
+                    )
                     graph_contents.extend(shape)
                 else:
                     logger.warning("Shape is %s", g.value(d, RDF["type"]))
@@ -892,25 +876,10 @@ def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
             for rep in g.objects(opening_reps, IFC_CONCEPTS["items"]):
                 logger.debug("Shape representation: %s", g.value(rep, RDF["type"]))
                 if g.value(rep, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
-                    solid_id = get_entity_id(g, rep, "extruded-area-solid")
-                    # Individual points are specified wrt to extruded area solid frame/origin (ref)
-                    _, position, _, _, poly = transform_extruded_area_solid(
-                        g, solid_id, rep, parent_id=opening_id
+                    meas = transform_mapped_extruded_area_solid(
+                        g, rep, opening_id, opening_placement_id
                     )
-                    graph_contents.extend(poly)
-                    axis_placement = transform_axis_placement_3d(g, position, solid_id)
-                    graph_contents.extend(axis_placement)
-                    e = render_ifc_template(
-                        "ifc/placement/object-placement.json.jinja",
-                        placement_id=solid_id,
-                    )
-                    graph_contents.extend(e)
-                    pj = render_ifc_template(
-                        "ifc/placement/placement-rel-to.json.jinja",
-                        placement_id=solid_id,
-                        ref_placement_id=opening_placement_id,
-                    )
-                    graph_contents.extend(pj)
+                    graph_contents.extend(meas)
                 elif g.value(rep, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
                     poly = transform_polygonal_face_set(
                         g, rep, parent_id=opening_id, placement_id=opening_placement_id
