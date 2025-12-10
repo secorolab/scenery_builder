@@ -2,7 +2,7 @@
   {
     "@id": "pose-coord-{{ placement_id }}",
     "@type": "PoseCoordinate",
-    "unit": "MiliM",
+    "unit": "{{ length_unit }}",
     {%  set coords = list(rdflib.collection.Collection(g, g[relative_placement : IFC_CONCEPTS["location"] / IFC_CONCEPTS["coordinates"]].__next__())) -%}
     "coordinates":  [{{ coords[0] }}, {{ coords[1] }}, {{ coords[2] }}]
   }

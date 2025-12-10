@@ -35,7 +35,7 @@
 "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
 "of-position": "position-{{ point_id }}",
 "as-seen-by": "{{ element_id }}-frame",
-"unit": "MiliM",
+"unit": "{{ length_unit }}",
 {% set z = depth.toPython() * extruded_dir[-1].toPython() %}
 "coordinates": [{{ p[0] }}, {{ p[1] }}, {{ z }} ]
 }{% if not loop.last %},{% endif %}

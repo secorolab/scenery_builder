@@ -9,7 +9,7 @@
     "@type": "Circle",
     "center": "{{ point_id }}-center",
     "quantity-kind": ["Radius"],
-    {#  "unit": [],#}
+      "unit": "{{ length_unit }}",
     "radius": {{ radius }}
   },
   {
@@ -38,7 +38,7 @@
     "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
     "of-position": "position-{{ point_id }}-center",
     "as-seen-by": "{{ element_id }}-frame",
-    "unit": "MiliM",
+    "unit": "{{ length_unit }}",
 {#    "coordinates": {{ coordinates }}#}
     {%  set coords = list(rdflib.collection.Collection(g, g[relative_placement : IFC_CONCEPTS["location"] / IFC_CONCEPTS["coordinates"]].__next__())) -%}
     "coordinates":  [{{ coords[0] }}, {{ coords[1] }} ]

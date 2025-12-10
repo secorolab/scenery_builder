@@ -46,7 +46,7 @@
     "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
     "of-position": "position-{{ point_id }}",
     "as-seen-by": "{{ placement_id }}-frame",
-    "unit": "MiliM",
+    "unit": "{{ length_unit }}",
   {% set point_coords = list(rdflib.collection.Collection(g, p)) -%}
     "coordinates": [{{ point_coords[0] }}, {{ point_coords[1] }}, {{ point_coords[2] }} ]
   }{% if not loop.last %},{% endif %}

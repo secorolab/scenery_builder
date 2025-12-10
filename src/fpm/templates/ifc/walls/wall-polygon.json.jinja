@@ -31,7 +31,7 @@
 "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
 "of-position": "position-{{ point_id }}",
 "as-seen-by": "{{ element_id }}-frame",
-"unit": "MiliM",
+"unit": "{{ length_unit }}",
 "coordinates": {{ p }}
 }{% if not loop.last %},{% endif %}
 {% endfor %}

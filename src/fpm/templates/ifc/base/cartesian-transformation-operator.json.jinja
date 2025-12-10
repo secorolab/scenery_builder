@@ -2,7 +2,7 @@
   {
     "@id": "pose-coord-{{ placement_id }}",
     "@type": ["PoseReference", "PoseCoordinate", "DirectionCosineXYZ", "VectorXYZ"],
-    "unit": ["UNITLESS", "MiliM"],
+    "unit": ["UNITLESS", "{{ length_unit }}"],
     {% set ax1 = list(rdflib.collection.Collection(g, g[target : IFC_CONCEPTS["axis1"] / IFC_CONCEPTS["directionratios"]].__next__())) -%}
     "direction-cosine-x": [{{ ax1[0] }}, {{ ax1[1] }}, {{ ax1[2] }}],
     {% set ax2 = list(rdflib.collection.Collection(g, g[target : IFC_CONCEPTS["axis2"] / IFC_CONCEPTS["directionratios"]].__next__())) -%}

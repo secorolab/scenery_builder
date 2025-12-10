@@ -9,6 +9,7 @@ from rdflib.plugins.sparql import prepareQuery
 from fpm.graph import get_list_values, get_list_from_ptr
 from fpm.utils import load_template, save_file
 from ifcld.interpreters.namespaces import IFC_CONCEPTS
+from ifcld.query import units_query, convert_units_query, project_units_query
 
 logger = logging.getLogger("floorplan.generators.scenery")
 logger.setLevel(logging.DEBUG)
@@ -51,7 +52,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
     )
     g.bind(
         "ifc",
-        "https://secorolab.github.io/metamodels/ifc/".format(model_name),
+        "https://secorolab.github.io/metamodels/ifc/",
     )
 
     # Get the FPM context template for this model
@@ -75,8 +76,10 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
         {"@graph": floorplan, "@context": fpm_ctx},
     )
 
+    length_unit = str(g.namespace_manager.curie(query_ifc_units(g)[0])).split(":")[-1]
+
     logger.info("Transforming IFC local placements...")
-    placements = query_ifc_local_placements(g)
+    placements = query_ifc_local_placements(g, length_unit)
     save_file(
         output_path,
         "{}.placement.fpm.json".format(model_name),
@@ -84,7 +87,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
     )
 
     logger.info("Transforming IFC walls...")
-    walls = query_ifc_walls(g)
+    walls = query_ifc_walls(g, length_unit)
     save_file(
         output_path,
         "{}.walls.fpm.json".format(model_name),
@@ -92,7 +95,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
     )
 
     logger.info("Transforming IFC doors...")
-    doors = query_ifc_doors(g)
+    doors = query_ifc_doors(g, length_unit)
     save_file(
         output_path,
         "{}.doors.fpm.json".format(model_name),
@@ -100,7 +103,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
     )
 
     logger.info("Transforming IFC spaces...")
-    spaces = query_ifc_spaces(g, model_name=model_name)
+    spaces = query_ifc_spaces(g, model_name, length_unit)
     save_file(
         output_path,
         "{}.spaces.fpm.json".format(model_name),
@@ -108,7 +111,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
     )
 
     logger.info("Transforming task elements...")
-    task_elements = query_ifc_task_elements(g)
+    task_elements = query_ifc_task_elements(g, length_unit)
     save_file(
         output_path,
         "{}.task.fpm.json".format(model_name),
@@ -116,7 +119,6 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
     )
 
     stats(g)
-    query_ifc_units(g)
 
     # doc = list()
     # for l in [placements, walls, doors, spaces]:
@@ -141,14 +143,15 @@ def render_ifc_template(template_path, **kwargs):
     return json.loads(content)
 
 
-def query_ifc_local_placements(g: Graph):
+def query_ifc_local_placements(g: Graph, length_unit):
     placements = list()
     world_frame = list()
 
     for p in g.subjects(RDF.type, IFC_CONCEPTS["IFCLOCALPLACEMENT"]):
         entity = get_entity_id(g, p)
         e = render_ifc_template(
-            "ifc/placement/object-placement.json.jinja", placement_id=entity
+            "ifc/placement/object-placement.json.jinja",
+            placement_id=entity,
         )
         placements.extend(e)
 
@@ -172,13 +175,13 @@ def query_ifc_local_placements(g: Graph):
         placements.extend(pj)
 
         rp = g.value(p, IFC_CONCEPTS["relativeplacement"])
-        ap = transform_axis_placement_3d(g, rp, entity)
+        ap = transform_axis_placement_3d(g, rp, entity, length_unit)
         placements.extend(ap)
 
     return placements
 
 
-def transform_axis_placement_3d(g: Graph, rel_placement, entity):
+def transform_axis_placement_3d(g: Graph, rel_placement, entity, length_unit):
     placement = list()
     vars = dict(
         placement_id=entity,
@@ -187,6 +190,7 @@ def transform_axis_placement_3d(g: Graph, rel_placement, entity):
         IFC_CONCEPTS=IFC_CONCEPTS,
         rdflib=rdflib,
         list=list,
+        length_unit=length_unit,
     )
 
     axis = g.value(rel_placement, IFC_CONCEPTS["axis"])
@@ -217,7 +221,7 @@ def query_placement_rel_to(g: Graph, placement):
             parent = new_parent
 
 
-def query_ifc_walls(g: Graph):
+def query_ifc_walls(g: Graph, length_unit):
     wall_concepts = [
         "IFCWALLSTANDARDCASE",
         "IFCWALL",
@@ -251,7 +255,7 @@ def query_ifc_walls(g: Graph):
         representation = query_product_shape_representations(g, r["wall"])[0]
         for s in g.objects(representation, IFC_CONCEPTS["items"]):
             depth, position, _, _, g_contents = transform_extruded_area_solid(
-                g, wall_id, s
+                g, wall_id, s, length_unit
             )
             wall_json.extend(g_contents)
 
@@ -259,13 +263,14 @@ def query_ifc_walls(g: Graph):
                 "ifc/walls/wall-representation.json.jinja",
                 wall_id=wall_id,
                 depth=depth,
+                length_unit=length_unit,
             )
             wall_json.append(w_rep)
 
             # Wall placement
             # TODO for now it assumes position is not None
             # TODO this also implies that position is 0, 0?
-            ap = transform_axis_placement_3d(g, position, wall_id)
+            ap = transform_axis_placement_3d(g, position, wall_id, length_unit)
             wall_json.extend(ap)
             op = render_ifc_template(
                 "ifc/placement/object-placement.json.jinja",
@@ -282,7 +287,9 @@ def query_ifc_walls(g: Graph):
     return wall_json
 
 
-def transform_extruded_area_solid(g: Graph, element_id, representation, parent_id=None):
+def transform_extruded_area_solid(
+    g: Graph, element_id, representation, length_unit, parent_id=None
+):
     logger.debug("Transforming extruded area solid %s", element_id)
     graph_contents = list()
     if parent_id is None:
@@ -298,6 +305,7 @@ def transform_extruded_area_solid(g: Graph, element_id, representation, parent_i
             parent_id=parent_id,
             element_id=element_id,
             coords=coords,
+            length_unit=length_unit,
         )
         graph_contents.extend(w_polygon)
         w_polyhedron = render_ifc_template(
@@ -307,6 +315,7 @@ def transform_extruded_area_solid(g: Graph, element_id, representation, parent_i
             coords=coords,
             depth=depth,
             extruded_dir=ext_dir,
+            length_unit=length_unit,
         )
         graph_contents.extend(w_polyhedron)
         add_polyhedron_faces(graph_contents)
@@ -329,6 +338,7 @@ def transform_extruded_area_solid(g: Graph, element_id, representation, parent_i
             list=list,
             IFC_CONCEPTS=IFC_CONCEPTS,
             g=g,
+            length_unit=length_unit,
         )
         graph_contents.extend(poly)
         return depth, position, None, ext_dir, graph_contents
@@ -355,6 +365,7 @@ def transform_extruded_area_solid(g: Graph, element_id, representation, parent_i
             depth=depth,
             extruded_dir=ext_dir,
             coords=coords,
+            length_unit=length_unit,
         )
         add_polyhedron_faces(poly)
         graph_contents.extend(poly)
@@ -447,7 +458,9 @@ def query_mapped_item(g: Graph, product):
     return res["representation"], res["origin"], res["target"]
 
 
-def transform_cartesian_transformation_operator(g: Graph, target, target_id):
+def transform_cartesian_transformation_operator(
+    g: Graph, target, target_id, length_unit
+):
     vars = dict(
         placement_id=target_id,
         g=g,
@@ -455,6 +468,7 @@ def transform_cartesian_transformation_operator(g: Graph, target, target_id):
         IFC_CONCEPTS=IFC_CONCEPTS,
         rdflib=rdflib,
         list=list,
+        length_unit=length_unit,
     )
     cto = render_ifc_template(
         "ifc/base/cartesian-transformation-operator.json.jinja", **vars
@@ -462,14 +476,14 @@ def transform_cartesian_transformation_operator(g: Graph, target, target_id):
     return cto
 
 
-def transform_mapped_item(g: Graph, origin, target, object_placement_id):
+def transform_mapped_item(g: Graph, origin, target, object_placement_id, length_unit):
     graph_contents = list()
 
     origin_id = get_entity_id(g, origin, "mapping-origin")
     target_id = get_entity_id(g, target, "mapping-target")
 
     # Transformation of mapping origin (T) to mapping target (ref)
-    axis_placement = transform_axis_placement_3d(g, origin, origin_id)
+    axis_placement = transform_axis_placement_3d(g, origin, origin_id, length_unit)
     graph_contents.extend(axis_placement)
     e = render_ifc_template(
         "ifc/placement/object-placement.json.jinja",
@@ -484,7 +498,7 @@ def transform_mapped_item(g: Graph, origin, target, object_placement_id):
     graph_contents.extend(pj)
 
     # mapping target (T) to object placement (ref)
-    cto = transform_cartesian_transformation_operator(g, target, target_id)
+    cto = transform_cartesian_transformation_operator(g, target, target_id, length_unit)
     graph_contents.extend(cto)
     e = render_ifc_template(
         "ifc/placement/object-placement.json.jinja",
@@ -501,17 +515,19 @@ def transform_mapped_item(g: Graph, origin, target, object_placement_id):
     return graph_contents
 
 
-def transform_mapped_extruded_area_solid(g: Graph, rep, parent_id, origin_id):
+def transform_mapped_extruded_area_solid(
+    g: Graph, rep, parent_id, origin_id, length_unit
+):
     graph_contents = list()
     solid_id = get_entity_id(g, rep, "extruded-area-solid")
     # Individual points are specified wrt to extruded area solid frame/origin (ref)
     _, position, _, _, poly = transform_extruded_area_solid(
-        g, solid_id, rep, parent_id=parent_id
+        g, solid_id, rep, length_unit, parent_id=parent_id
     )
     graph_contents.extend(poly)
 
     # Transformation of extruded area solid (mapped repr, T) to mapping origin (ref)
-    axis_placement = transform_axis_placement_3d(g, position, solid_id)
+    axis_placement = transform_axis_placement_3d(g, position, solid_id, length_unit)
     graph_contents.extend(axis_placement)
     e = render_ifc_template(
         "ifc/placement/object-placement.json.jinja",
@@ -528,7 +544,7 @@ def transform_mapped_extruded_area_solid(g: Graph, rep, parent_id, origin_id):
     return graph_contents
 
 
-def query_ifc_doors(g: Graph):
+def query_ifc_doors(g: Graph, length_unit):
     door_wall_query = """
     SELECT DISTINCT ?wall ?opening ?door ?voids ?fills
     WHERE {
@@ -595,13 +611,17 @@ def query_ifc_doors(g: Graph):
             target_id = get_entity_id(g, target, "mapping-target")
 
             graph_contents.extend(
-                transform_mapped_item(g, origin, target, opening_placement_id)
+                transform_mapped_item(
+                    g, origin, target, opening_placement_id, length_unit
+                )
             )
 
             # Get the IfcRepresentationItems
             for o in g.objects(rep, IFC_CONCEPTS["items"]):
                 graph_contents.extend(
-                    transform_mapped_extruded_area_solid(g, o, opening_id, origin_id)
+                    transform_mapped_extruded_area_solid(
+                        g, o, opening_id, origin_id, length_unit
+                    )
                 )
 
         logger.info("Processing door %s", door_id)
@@ -616,7 +636,7 @@ def query_ifc_doors(g: Graph):
             target_id = get_entity_id(g, target, "mapping-target")
 
             graph_contents.extend(
-                transform_mapped_item(g, origin, target, door_placement_id)
+                transform_mapped_item(g, origin, target, door_placement_id, length_unit)
             )
 
             handle = 1
@@ -656,12 +676,12 @@ def query_ifc_doors(g: Graph):
 
                 if g.value(i, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
                     shape = transform_polygonal_face_set(
-                        g, i, parent_id=parent_id, placement_id=origin_id
+                        g, i, parent_id, length_unit, placement_id=origin_id
                     )
                     graph_contents.extend(shape)
                 elif g.value(i, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
                     shape = transform_mapped_extruded_area_solid(
-                        g, i, parent_id, origin_id
+                        g, i, parent_id, origin_id, length_unit
                     )
                     graph_contents.extend(shape)
                 else:
@@ -686,7 +706,7 @@ def get_shape_aspect(g: Graph, rep):
     return list(qres)[0]["shape_aspect_name"]
 
 
-def transform_polygonal_face_set(g, element, parent_id, placement_id=None):
+def transform_polygonal_face_set(g, element, parent_id, length_unit, placement_id=None):
     solid_id = get_entity_id(g, element, "polygonal-face-set")
     if placement_id is None:
         placement_id = solid_id
@@ -715,11 +735,12 @@ def transform_polygonal_face_set(g, element, parent_id, placement_id=None):
         rdflib=rdflib,
         list=list,
         IFC_CONCEPTS=IFC_CONCEPTS,
+        length_unit=length_unit,
     )
     return poly
 
 
-def query_ifc_spaces(g: Graph, model_name):
+def query_ifc_spaces(g: Graph, model_name, length_unit):
     graph_contents = []
     spaces = []
     for s in g.subjects(RDF.type, IFC_CONCEPTS["IFCSPACE"]):
@@ -744,7 +765,7 @@ def query_ifc_spaces(g: Graph, model_name):
             # TODO Check if the space frame is needed.
             #  The points could be defined wrt to the space_placement_id directly
             poly = transform_polygonal_face_set(
-                g, space_shape, space_id, placement_id=space_id
+                g, space_shape, space_id, length_unit, placement_id=space_id
             )
             graph_contents.extend(poly)
             # TODO We create a polygon of the space by identifying the face that has an equal and the minimum z value
@@ -796,16 +817,6 @@ def get_space_polygon_points(g: Graph, space_shape):
 
 def query_ifc_units(g: Graph):
     print("\nUnits...\n-----------------")
-    units_query = """
-    SELECT ?unit ?name ?unittype ?prefix ?dimensions
-    WHERE {
-        ?unit rdf:type ifc:IFCSIUNIT  .
-        ?unit qudt:hasUnit ?name .
-        ?unit qudt:hasQuantityKind ?unittype .
-        OPTIONAL { ?unit ifc:prefix ?prefix}
-        OPTIONAL{ ?unit ifc:dimensions ?dimensions}
-    }
-    """
 
     print("@id\tname\tunittype\tprefix\tdimensions")
     qres = g.query(units_query)
@@ -819,17 +830,6 @@ def query_ifc_units(g: Graph):
                 row["dimensions"],
             )
         )
-    convert_units_query = """
-    SELECT ?unit ?name ?unittype ?prefix ?dimensions ?factor
-    WHERE {
-        ?unit rdf:type ifc:IFCCONVERSIONBASEDUNIT  .
-        ?unit ifc:name ?name .
-        ?unit ifc:unittype ?unittype .
-        OPTIONAL { ?unit ifc:prefix ?prefix}
-        OPTIONAL{ ?unit ifc:dimensions ?dimensions}
-        OPTIONAL{ ?unit ifc:conversionfactor ?factor}
-    }
-    """
 
     qres = g.query(convert_units_query)
     print("\n@id\tname\tunittype\tprefix\tdimensions\tconv. factor")
@@ -845,8 +845,12 @@ def query_ifc_units(g: Graph):
             )
         )
 
+    qres = g.query(project_units_query)
+    assert len(qres) == 1
+    return list(qres)[0]
 
-def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
+
+def query_ifc_task_elements(g, length_unit, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
     logger.info("Querying for: {}".format(elements))
     task_query = """
     SELECT DISTINCT ?wall ?opening ?object ?voids ?fills
@@ -887,7 +891,7 @@ def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
                 g, row["object"]
             )
             plane_id = object_id + "-milling"
-            plane_pos = transform_axis_placement_3d(g, plane_pos, plane_id)
+            plane_pos = transform_axis_placement_3d(g, plane_pos, plane_id, length_unit)
             graph_contents.extend(plane_pos)
             space_placement_id = get_entity_id(g, space_placement, "placement")
             plane_placement = render_ifc_template(
@@ -907,6 +911,7 @@ def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
                 element_id=plane_id,
                 opening_id=opening_id,
                 wall_id=wall_id,
+                length_unit=length_unit,
             )
             graph_contents.extend(plane_normal)
 
@@ -918,12 +923,16 @@ def query_ifc_task_elements(g, elements=["IFCOUTLET", "IFCDUCTSEGMENT"]):
                 logger.debug("Shape representation: %s", g.value(rep, RDF["type"]))
                 if g.value(rep, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
                     meas = transform_mapped_extruded_area_solid(
-                        g, rep, opening_id, opening_placement_id
+                        g, rep, opening_id, opening_placement_id, length_unit
                     )
                     graph_contents.extend(meas)
                 elif g.value(rep, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
                     poly = transform_polygonal_face_set(
-                        g, rep, parent_id=opening_id, placement_id=opening_placement_id
+                        g,
+                        rep,
+                        opening_id,
+                        length_unit,
+                        placement_id=opening_placement_id,
                     )
                     graph_contents.extend(poly)
                 else:
