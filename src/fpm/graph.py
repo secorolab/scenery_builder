@@ -223,11 +223,11 @@ def get_unit_multiplier(g: Graph, element_id):
     # Convert units if not in M
     pose_units = list(g.objects(element_id, QUDT["unit"]))
     for unit in pose_units:
-        if unit in [QUDT_VOCAB["MiliM"], QUDT_VOCAB["M"]]:
+        if unit in [QUDT_VOCAB["MilliM"], QUDT_VOCAB["M"]]:
             break
     if unit == QUDT_VOCAB["M"]:
         m = 1
-    elif unit == QUDT_VOCAB["MiliM"]:
+    elif unit == QUDT_VOCAB["MilliM"]:
         m = 0.001
     else:
         raise ValueError("Unknown unit", unit)

@@ -759,6 +759,7 @@ def query_ifc_spaces(g: Graph, model_name, length_unit):
             space_id=space_id,
             space_ref_frame=space_placement_id,
             model_name=model_name,
+            length_unit=length_unit,
         )
         graph_contents.extend(space_json)
 

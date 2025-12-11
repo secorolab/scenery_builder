@@ -20,7 +20,7 @@
 {#    "axis": [{% for i in axis %}{{ i["@value"] }}{% if not loop.last %},{% endif %}{% endfor %}],#}
     "axis": [{{ extruded_dir[0] }}, {{ extruded_dir[1] }}, {{ extruded_dir[2] }}],
     "height": {{ depth }},
-    "unit": "MiliM"
+    "unit": "{{ length_unit }}"
   },
   {
     "@id": "{{ point_id }}-center",
