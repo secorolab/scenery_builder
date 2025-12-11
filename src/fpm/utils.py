@@ -57,7 +57,7 @@ def save_file(output_path, file_name, contents):
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=4)
     elif ext in [".pgm", ".jpg"]:
-        contents.save(output_file, quality=95)
+        contents.save(output_file, quality=100)
     elif ext in [".stl"]:
         # Use different STL export method depending on Blender version
         if bpy.app.version >= (4, 1, 0):

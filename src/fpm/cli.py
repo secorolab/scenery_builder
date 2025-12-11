@@ -2,6 +2,7 @@ import os
 import click
 import logging
 
+from fpm.generators.dot import visualize_frame_tree
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.gazebo import gazebo_world, door_object_models
 from fpm.generators.tasks import get_disinfection_tasks
@@ -283,8 +284,12 @@ def generate(ctx, inputs, **kwargs):
     """Generate execution artefacts from JSON-LD models"""
 
     logger.debug("generate command arguments: inputs: %s, kwargs: %s", inputs, kwargs)
+    _load_graph_to_ctx(ctx, inputs)
 
-    g = build_graph_from_directory(inputs)
+
+def _load_graph_to_ctx(ctx, input_paths):
+    logger.debug("Loading graph from paths: %s", input_paths)
+    g = build_graph_from_directory(input_paths)
     try:
         model_name = get_floorplan_model_name(g)
     except ValueError as e:
@@ -587,6 +592,37 @@ def tts(ctx, **kwargs):
             visualize_frames=["outlet", "duct", "wall"],
             source="bim",
         )
+
+
+@floorplan.command(short_help="Visualize aspects of a floorplan model")
+@click.pass_context
+@click.option(
+    "-i",
+    "--inputs",
+    "--input-path",
+    type=click.Path(exists=True, resolve_path=True),
+    required=True,
+    multiple=True,
+    help="Path with JSON-LD models to be used as inputs",
+)
+@click.option(
+    "-o",
+    "--output-path",
+    type=click.Path(exists=True, resolve_path=True),
+    default=os.path.join("."),
+    help="Output path for generated artefacts",
+)
+def visualize(ctx, inputs, output_path, **kwargs):
+    floorplan_elements = ["Space", "Opening", "Wall", "Door", "Entryway", "DoorPanel"]
+    print(ctx.obj, ctx.parent.params)
+    _load_graph_to_ctx(ctx, inputs)
+    visualize_frame_tree(
+        output_path=output_path,
+        floorplan_elements=floorplan_elements,
+        **ctx.obj,
+        # **ctx.parent.params,
+        **kwargs,
+    )
 
 
 if __name__ == "__main__":
