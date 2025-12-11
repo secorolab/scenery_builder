@@ -468,9 +468,18 @@ def gazebo(ctx, **kwargs):
     show_default=True,
     help="ROS version for launch files",
 )
+@click.option(
+    "--visualize-frames",
+    type=click.Choice(
+        ["wall", "door", "entryway", "space", "opening"], case_sensitive=False
+    ),
+    help="Which element frames to visualize",
+    multiple=True,
+)
 def occ_grid(ctx, **kwargs):
     """Generate the occupancy grid map of the floorplan"""
     logger.info("Generating occupancy grid...")
+    logger.debug("Arguments: %s", kwargs)
     get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
@@ -570,17 +579,13 @@ def tts(ctx, **kwargs):
         get_occ_grid(
             **ctx.obj, **ctx.parent.params, **kwargs, ducts=ducts, source="bim"
         )
-        logger.info("Visualizing outlet boundary frames on occupancy grid")
+        logger.info("Visualizing frames on occupancy grid")
         get_occ_grid(
-            **ctx.obj, **ctx.parent.params, **kwargs, planes="outlet", source="bim"
-        )
-        logger.info("Visualizing duct boundary on occupancy grid")
-        get_occ_grid(
-            **ctx.obj, **ctx.parent.params, **kwargs, planes="duct", source="bim"
-        )
-        logger.info("Visualizing wall frames on occupancy grid")
-        get_occ_grid(
-            **ctx.obj, **ctx.parent.params, **kwargs, planes="wall", source="bim"
+            **ctx.obj,
+            **ctx.parent.params,
+            **kwargs,
+            visualize_frames=["outlet", "duct", "wall"],
+            source="bim",
         )
 
 

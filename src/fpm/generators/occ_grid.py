@@ -136,12 +136,18 @@ def generate_occ_grid(g, output_path, **custom_args):
             **custom_args,
         )
 
-    if custom_args.get("planes"):
-        logger.debug("Drawing planes")
-        draw_planes(
-            g, im, center, map_name=map_name, output_path=output_path, **custom_args
+    for frame_type in custom_args.get("visualize_frames", []):
+        plt.clf()
+        logger.debug("Drawing frames for %s", frame_type)
+        draw_frames(
+            g,
+            im,
+            center,
+            map_name=map_name,
+            output_path=output_path,
+            frame_type=frame_type,
+            **custom_args,
         )
-
     im = ImageOps.flip(im)
 
     for ext in ["pgm", "jpg"]:
@@ -352,7 +358,7 @@ def draw_tasks(g, im, center, tasks, **kwargs):
     fig.savefig(os.path.join(output_path, name_image), dpi=300)
 
 
-def draw_planes(g, im, center, map_name, output_path, **kwargs):
+def draw_frames(g, im, center, map_name, output_path, frame_type, **kwargs):
 
     resolution = kwargs.get("resolution", 0.05)
     w, h = im.size
@@ -372,8 +378,8 @@ def draw_planes(g, im, center, map_name, output_path, **kwargs):
     )
     fig = imax.get_figure()
     ax = fig.get_axes().pop()
-    name_image = "{}-frames-{}.{}".format(kwargs.get("planes"), map_name, "jpg")
-    matrices = get_frame_transform(g, kwargs.get("planes"))
+    name_image = "{}-frames-{}.{}".format(frame_type, map_name, "jpg")
+    matrices = get_frame_transform(g, frame_type)
     for m in matrices:
         m[3, 3] = 0.25
         plot_2d_frame(ax, m)
