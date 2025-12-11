@@ -476,10 +476,11 @@ def transform_cartesian_transformation_operator(
     return cto
 
 
-def transform_mapped_item(g: Graph, origin, target, object_placement_id, length_unit):
+def transform_mapped_item(
+    g: Graph, origin, origin_id, target, object_placement_id, length_unit
+):
     graph_contents = list()
 
-    origin_id = get_entity_id(g, origin, "mapping-origin")
     target_id = get_entity_id(g, target, "mapping-target")
 
     # Transformation of mapping origin (T) to mapping target (ref)
@@ -519,7 +520,7 @@ def transform_mapped_extruded_area_solid(
     g: Graph, rep, parent_id, origin_id, length_unit
 ):
     graph_contents = list()
-    solid_id = get_entity_id(g, rep, "extruded-area-solid")
+    solid_id = parent_id + "-" + get_entity_id(g, rep, "extruded-area-solid")
     # Individual points are specified wrt to extruded area solid frame/origin (ref)
     _, position, _, _, poly = transform_extruded_area_solid(
         g, solid_id, rep, length_unit, parent_id=parent_id
@@ -607,12 +608,12 @@ def query_ifc_doors(g: Graph, length_unit):
 
         for op_shape in g.objects(opening_reps, IFC_CONCEPTS["items"]):
             rep, origin, target = query_mapped_item(g, op_shape)
-            origin_id = get_entity_id(g, origin, "mapping-origin")
+            origin_id = opening_id + "-" + get_entity_id(g, origin, "mapping-origin")
             target_id = get_entity_id(g, target, "mapping-target")
 
             graph_contents.extend(
                 transform_mapped_item(
-                    g, origin, target, opening_placement_id, length_unit
+                    g, origin, origin_id, target, opening_placement_id, length_unit
                 )
             )
 
@@ -632,11 +633,13 @@ def query_ifc_doors(g: Graph, length_unit):
 
         for d_shape in g.objects(door_reps, IFC_CONCEPTS["items"]):
             rep, origin, target = query_mapped_item(g, d_shape)
-            origin_id = get_entity_id(g, origin, "mapping-origin")
+            origin_id = door_id + "-" + get_entity_id(g, origin, "mapping-origin")
             target_id = get_entity_id(g, target, "mapping-target")
 
             graph_contents.extend(
-                transform_mapped_item(g, origin, target, door_placement_id, length_unit)
+                transform_mapped_item(
+                    g, origin, origin_id, target, door_placement_id, length_unit
+                )
             )
 
             handle = 1
