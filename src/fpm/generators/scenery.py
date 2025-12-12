@@ -371,8 +371,17 @@ def query_ifc_walls(g: Graph, walls, length_unit):
                             "Unsupported item: %s", g.value(o, RDF["type"])
                         )
 
-            elif g.value(o, RDF["type"]) == IFC_CONCEPTS["IFCFACETEDBREP"]:
-                logger.warning("Unsupported item type: %s", g.value(o, RDF["type"]))
+            elif g.value(s, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
+
+                shape = transform_polygonal_face_set(
+                    g, s, wall_id, length_unit, placement_id=placement_id
+                )
+
+                wall_json.extend(shape)
+            elif g.value(s, RDF["type"]) == IFC_CONCEPTS["IFCFACETEDBREP"]:
+                logger.warning("Unsupported item type: %s", g.value(s, RDF["type"]))
+            elif g.value(s, RDF["type"]) == IFC_CONCEPTS["IFCBOOLEANCLIPPINGRESULT"]:
+                logger.warning("Unsupported item type: %s", g.value(s, RDF["type"]))
             else:
                 raise ValueError("Unsupported type %s" % g.value(s, RDF["type"]))
 
@@ -543,6 +552,7 @@ def query_product_shape_representations(g: Graph, product):
     for row in qres:
         representations.append(row["representation"])
 
+    print(representations)
     return representations
 
 
@@ -683,7 +693,11 @@ def query_ifc_doors(g: Graph, doors, length_unit):
         qres = g.query(q, initBindings={"door": door})
         assert len(list(qres)) == 1
         wall, opening, wall_type = list(qres)[0]
-        assert wall_type in WALL_CONCEPTS
+        try:
+            assert wall_type in WALL_CONCEPTS
+        except AssertionError:
+            logger.error("Wall type {} not in Wall Concepts".format(wall_type))
+            continue
         wall_id = get_entity_id(g, wall, "wall")
         opening_id = get_entity_id(g, opening, "opening")
         logger.debug("%s <-- voids -- %s <-- fills -- %s", wall_id, opening_id, door_id)
@@ -719,8 +733,6 @@ def query_ifc_doors(g: Graph, doors, length_unit):
         opening_placement = g.value(opening, IFC_CONCEPTS["objectplacement"])
         opening_placement_id = get_entity_id(g, opening_placement, "placement")
         parent = query_placement_rel_to(g, opening_placement)
-
-        # TODO The current test file only has a single door, test with a case with multiple mapped items
 
         for op_shape in g.objects(opening_reps, IFC_CONCEPTS["items"]):
             if g.value(op_shape, RDF["type"]) == IFC_CONCEPTS["IFCMAPPEDITEM"]:
@@ -853,6 +865,8 @@ def query_ifc_doors(g: Graph, doors, length_unit):
                     else:
                         logger.warning("Shape is %s", g.value(i, RDF["type"]))
 
+            elif g.value(d_shape, RDF["type"]) == IFC_CONCEPTS["IFCFACETEDBREP"]:
+                logger.warning("Unsupported shape: %s", g.value(d_shape, RDF["type"]))
             else:
                 raise ValueError(
                     "Unsupported shape: {}".format(g.value(d_shape, RDF["type"]))
