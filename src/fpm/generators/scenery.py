@@ -3,7 +3,7 @@ import os
 import logging
 
 import rdflib
-from rdflib import Graph, RDF
+from rdflib import Graph, RDF, URIRef
 from rdflib.plugins.sparql import prepareQuery
 
 from fpm.graph import get_list_values, get_list_from_ptr
@@ -1167,10 +1167,28 @@ def query_space_boundary_rel(g: Graph, obj):
 
 
 def stats(g):
+    def get_object_type_count(g: Graph, obj_type):
+        if isinstance(obj_type, URIRef):
+            obj = obj_type
+        else:
+            obj = IFC_CONCEPTS[obj_type]
+
+        return len(list(g.subjects(RDF["type"], obj)))
+
+    print("Total sites: ", get_object_type_count(g, "IFCSITE"))
+    print("Total buildings: ", get_object_type_count(g, "IFCBUILDING"))
+    print("Total storeys: ", get_object_type_count(g, "IFCBUILDINGSTOREY"))
+    print("Total spaces: ", get_object_type_count(g, "IFCSPACE"))
+    total_walls = 0
+    for wt in WALL_CONCEPTS:
+        wall_count = get_object_type_count(g, wt)
+        total_walls = total_walls + wall_count
+    print("Total walls: ", total_walls)
+    print("Total openings: ", get_object_type_count(g, "IFCOPENINGELEMENT"))
+
     voiding_query = """
     SELECT DISTINCT ?wall ?opening 
     WHERE {
-        ?wall rdf:type ifc:IFCWALL  .
         ?opening rdf:type ifc:IFCOPENINGELEMENT  .
         ?r rdf:type ifc:IFCRELVOIDSELEMENT .
         ?r ifc:relatingbuildingelement ?wall .
@@ -1178,16 +1196,13 @@ def stats(g):
     }
     """
 
-    print()
     qres = g.query(voiding_query)
-    print("Total openings voiding walls:", len(qres))
-    # for r in qres:
-    #     print(
-    #         get_entity_id(g, r["opening"], "opening"),
-    #         " --> voids --> ",
-    #         get_entity_id(g, r["wall"], "wall"),
-    #     )
-    #
+    print("Total openings voiding objects:", len(qres))
+
+    print("Total doors: ", get_object_type_count(g, "IFCDOOR"))
+    print("Total outlets: ", get_object_type_count(g, "IFCOUTLET"))
+    print("Total ducts: ", get_object_type_count(g, "IFCDUCT"))
+
     filling_query = """
     SELECT DISTINCT ?object ?opening 
     WHERE {
@@ -1199,9 +1214,3 @@ def stats(g):
     """
     qres = g.query(filling_query)
     print("Total objects filling openings:", len(qres))
-    # for r in qres:
-    #     print(
-    #         get_entity_id(g, r["object"], "object"),
-    #         " --> fills --> ",
-    #         get_entity_id(g, r["opening"], "opening"),
-    #     )
