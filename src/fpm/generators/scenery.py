@@ -17,6 +17,7 @@ from ifcld.query import (
     top_sites,
     building_storeys,
     spatial_containment,
+    cartesian_point,
 )
 
 logger = logging.getLogger("floorplan.generators.scenery")
@@ -357,17 +358,19 @@ def query_ifc_walls(g: Graph, walls, length_unit):
                 # Get the IfcRepresentationItems
                 for o in g.objects(rep, IFC_CONCEPTS["items"]):
                     if g.value(o, RDF["type"]) == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
-                        wall_json.extend(
-                            transform_mapped_extruded_area_solid(
-                                g, o, wall_id, origin_id, length_unit
-                            )
+                        shape = transform_mapped_extruded_area_solid(
+                            g, o, wall_id, origin_id, length_unit
                         )
                     elif g.value(o, RDF["type"]) == IFC_CONCEPTS["IFCFACETEDBREP"]:
-                        transform_faceted_brep(g, o)
+                        shape = transform_faceted_brep(
+                            g, o, wall_id, length_unit, placement_id
+                        )
                     else:
                         raise ValueError(
                             "Unsupported item: %s", g.value(o, RDF["type"])
                         )
+
+                    wall_json.extend(shape)
 
             elif g.value(s, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
 
@@ -377,7 +380,10 @@ def query_ifc_walls(g: Graph, walls, length_unit):
 
                 wall_json.extend(shape)
             elif g.value(s, RDF["type"]) == IFC_CONCEPTS["IFCFACETEDBREP"]:
-                transform_faceted_brep(g, s)
+                shape = transform_faceted_brep(
+                    g, s, wall_id, length_unit, placement_id=placement_id
+                )
+                wall_json.extend(shape)
             elif g.value(s, RDF["type"]) == IFC_CONCEPTS["IFCBOOLEANCLIPPINGRESULT"]:
                 transform_unsupported_shapes(g, s)
             else:
@@ -390,8 +396,61 @@ def transform_unsupported_shapes(g: Graph, element):
     logger.error("Unsupported item type: %s", g.value(element, RDF["type"]))
 
 
-def transform_faceted_brep(g: Graph, element):
-    logger.warning("Unsupported item type: %s", g.value(element, RDF["type"]))
+def transform_faceted_brep(
+    g: Graph, element, parent_id=None, length_unit=None, placement_id=None
+):
+    solid_id = get_entity_id(g, element, "faceted-brep")
+    logger.debug("Transforming %s", solid_id)
+
+    faces = list()
+    points = set()
+
+    for face in g[element : IFC_CONCEPTS["outer"] / IFC_CONCEPTS["cfsfaces"]]:
+        bounds = g[face : IFC_CONCEPTS["bounds"]]
+        out_bounds = [
+            b
+            for b in bounds
+            if g.value(b, RDF["type"]) == IFC_CONCEPTS["IFCFACEOUTERBOUND"]
+        ]
+        assert len(out_bounds) == 1
+        bound = list(g[out_bounds[0] : IFC_CONCEPTS["bound"]])
+        assert len(bound) == 1
+        bound = bound.pop()
+
+        if g.value(bound, RDF["type"]) == IFC_CONCEPTS["IFCPOLYLOOP"]:
+            face_points = list()
+            poly_points = rdflib.collection.Collection(
+                g, g.value(bound, IFC_CONCEPTS["polygon"])
+            )
+            for point in poly_points:
+                p = g.query(cartesian_point, initBindings={"point": point})
+                coords = tuple([a.toPython() for (a,) in p])
+                points.add(coords)
+                face_points.append(coords)
+            faces.append(face_points)
+        else:
+            logger.error("Unsupported item type: %s", g.value(bound, RDF["type"]))
+
+    points = list(points)
+    faces_idx = list()
+    for f in faces:
+        faces_idx.append([points.index(p) for p in f])
+
+    poly = render_ifc_template(
+        "ifc/base/faceted-brep.json.jinja",
+        element_id=solid_id,
+        parent_id=parent_id,
+        placement_id=placement_id,
+        points=points,
+        faces=faces_idx,
+        g=g,
+        rdflib=rdflib,
+        list=list,
+        IFC_CONCEPTS=IFC_CONCEPTS,
+        length_unit=length_unit,
+    )
+
+    return poly
 
 
 def transform_extruded_area_solid(
@@ -872,7 +931,10 @@ def query_ifc_doors(g: Graph, doors, length_unit):
                         logger.warning("Shape is %s", g.value(i, RDF["type"]))
 
             elif g.value(d_shape, RDF["type"]) == IFC_CONCEPTS["IFCFACETEDBREP"]:
-                transform_faceted_brep(g, d_shape)
+                _poly = transform_faceted_brep(
+                    g, d_shape, door_id, length_unit, door_placement_id
+                )
+                graph_contents.extend(_poly)
             else:
                 raise ValueError(
                     "Unsupported shape: {}".format(g.value(d_shape, RDF["type"]))
@@ -977,7 +1039,10 @@ def query_ifc_spaces(g: Graph, elements, model_name, length_unit):
                 )
                 graph_contents.extend(polygon)
             elif shape_type == IFC_CONCEPTS["IFCFACETEDBREP"]:
-                transform_faceted_brep(g, space_shape)
+                _poly = transform_faceted_brep(
+                    g, space_shape, space_id, length_unit, space_id
+                )
+                graph_contents.extend(_poly)
             else:
                 raise ValueError("Unsupported shape: {}".format(shape_type))
 
