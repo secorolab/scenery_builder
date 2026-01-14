@@ -967,8 +967,13 @@ def query_ifc_doors(g: Graph, doors, length_unit):
                             g, i, parent_id, origin_id, length_unit
                         )
                         graph_contents.extend(shape)
+                    elif g.value(i, RDF["type"]) == IFC_CONCEPTS["IFCFACETEDBREP"]:
+                        shape = transform_faceted_brep(
+                            g, i, parent_id, length_unit, origin_id
+                        )
+                        graph_contents.extend(shape)
                     else:
-                        logger.warning("Shape is %s", g.value(i, RDF["type"]))
+                        transform_unsupported_shapes(g, i)
 
             elif g.value(d_shape, RDF["type"]) == IFC_CONCEPTS["IFCFACETEDBREP"]:
                 _poly = transform_faceted_brep(
@@ -1255,7 +1260,7 @@ def query_ifc_task_elements(
                     )
                     graph_contents.extend(poly)
                 else:
-                    logger.warning("Not a supported shape representation")
+                    transform_unsupported_shapes(g, rep)
 
     return graph_contents
 
