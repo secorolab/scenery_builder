@@ -16,8 +16,6 @@
     "@id": "{{ element_id }}-cylinder",
     "@type": "Cylinder",
     "base": "{{ element_id }}-polygon",
-{#    {% set axis = shape["items"]["extrudeddirection"]["directionratios"]["@list"] %}#}
-{#    "axis": [{% for i in axis %}{{ i["@value"] }}{% if not loop.last %},{% endif %}{% endfor %}],#}
     "axis": [{{ extruded_dir[0] }}, {{ extruded_dir[1] }}, {{ extruded_dir[2] }}],
     "height": {{ depth }},
     "unit": "{{ length_unit }}"
@@ -30,14 +28,14 @@
     "@id": "position-{{ point_id }}-center",
     "@type": "Position",
     "of": "{{ point_id }}-center",
-    "with-respect-to": "{{ element_id }}-origin",
+    "with-respect-to": "{{ solid_id }}-origin",
     "quantity-kind": "Length"
   },
   {
     "@id": "position-coord-{{ point_id }}-center-wrt-{{ element_id }}-origin",
     "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
     "of-position": "position-{{ point_id }}-center",
-    "as-seen-by": "{{ element_id }}-frame",
+    "as-seen-by": "{{ solid_id }}-frame",
     "unit": "{{ length_unit }}",
 {#    "coordinates": {{ coordinates }}#}
     {%  set coords = list(rdflib.collection.Collection(g, g[relative_placement : IFC_CONCEPTS["location"] / IFC_CONCEPTS["coordinates"]].__next__())) -%}
