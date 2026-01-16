@@ -85,16 +85,19 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
     # project = g.value(predicate=RDF.type, object=IFC_CONCEPTS["IFCPROJECT"])
     qres = g.query(building_storeys)
     for storey, name in qres:
-        logger.warning("Storey: %s. URI: %s", name, storey)
+        logger.info("Storey: %s. URI: %s", name, storey)
         children_result = g.query(sp_dec, initBindings={"parent": storey})
         children = list(children_result)
-        containment_results = g.query(sp_cont, initBindings={"parent": storey})
+        containment_results = g.query(sp_cont, initBindings={"element": storey})
         contains = list(containment_results)
+
         cont_spaces = list()
         while children:
             child, concept_type = children.pop()
             if concept_type == IFC_CONCEPTS["IFCSPACE"]:
                 cont_spaces.append((child, concept_type))
+            else:
+                logger.error("Child concept: %s of type %s", child, concept_type)
             children_result = g.query(sp_dec, initBindings={"parent": child})
             children.extend(list(children_result))
             containment_results = g.query(sp_cont, initBindings={"element": child})
