@@ -1,6 +1,8 @@
 import os
 import click
+import logging
 
+from fpm.generators.dot import visualize_frame_tree
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.gazebo import gazebo_world, door_object_models
 from fpm.generators.tasks import get_disinfection_tasks
@@ -8,13 +10,24 @@ from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
 from fpm.generators.door_keyframes import get_keyframes
+from fpm.generators.tts import (
+    gen_tts_wall_description,
+    gen_tts_task_description,
+    gen_ros_frames,
+)
+from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
+
+logger = logging.getLogger("floorplan.cli")
+logger.setLevel(logging.DEBUG)
 
 
 def configure(ctx, param, filename):
     if not filename:
         return
     import tomllib
+
+    logger.debug("Using config file: %s", filename)
 
     ctx.default_map = dict()
     with open(filename, "rb") as f:
@@ -117,14 +130,15 @@ def transform(ctx, model_path, output_path, **kwargs):
 
     This requires that the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) is installed.
     """
-    print(model_path, output_path)
+    logger.debug("transform command arguments: %s", kwargs)
+    logger.debug("%s %s", model_path, output_path)
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(model_path)
     try:
         generator(mm, model, output_path, overwrite=True)
     except Exception as e:
-        print(f"Error transforming model: {e}")
+        logger.error(f"Error transforming model: {e}")
 
 
 @floorplan.command(short_help="Generate FPM variations from a variation model")
@@ -181,10 +195,10 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     See https://github.com/secorolab/FloorPlan-DSL/blob/devel/docs/tutorials/variation.md
     for more information on creating variation models.
     """
-    print(f"Generating {variations} variation(s) from {model_path}")
-    print(f"Output path: {output_path}")
+    logger.info(f"Generating {variations} variation(s) from {model_path}")
+    logger.info(f"Output path: {output_path}")
     if seed is not None:
-        print(f"Using seed: {seed}")
+        logger.info(f"Using seed: {seed}")
 
     generator = generator_for_language_target("fpm-variation", "fpm")
     mm = metamodel_for_language("fpm-variation")
@@ -200,7 +214,31 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
             seed=seed,
         )
     except Exception as e:
-        print(f"Error generating variations: {e}")
+        logger.error(f"Error generating variations: {e}")
+
+
+@floorplan.command(
+    short_help="Generate FPM JSON-LD models from an IFCLD model",
+)
+@click.pass_context
+@click.option(
+    "-m",
+    "--model",
+    "model_path",
+    type=click.Path(exists=True, resolve_path=True, file_okay=True, dir_okay=False),
+    required=True,
+    help="Path to the fpm model to transform into JSON-LD",
+)
+@click.option(
+    "-o",
+    "--output-path",
+    type=click.Path(exists=True, resolve_path=True),
+    default=os.path.join("."),
+    help="Output path for generated artefacts",
+)
+def ifc(ctx, model_path, output_path, **kwargs):
+
+    generate_fpm_rep_from_rdf(model_path, output_path)
 
 
 @floorplan.group(
@@ -245,9 +283,13 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
 def generate(ctx, inputs, **kwargs):
     """Generate execution artefacts from JSON-LD models"""
 
-    print(kwargs)
+    logger.debug("generate command arguments: inputs: %s, kwargs: %s", inputs, kwargs)
+    _load_graph_to_ctx(ctx, inputs)
 
-    g = build_graph_from_directory(inputs)
+
+def _load_graph_to_ctx(ctx, input_paths):
+    logger.debug("Loading graph from paths: %s", input_paths)
+    g = build_graph_from_directory(input_paths)
     try:
         model_name = get_floorplan_model_name(g)
     except ValueError as e:
@@ -260,6 +302,18 @@ def generate(ctx, inputs, **kwargs):
 
 @generate.command(short_help="Generate a 3D-mesh of the floorplan")
 @click.pass_context
+@click.option(
+    "--include-doors",
+    is_flag=True,
+    help="Flag to indicate that the mesh should include the door meshes",
+)
+@click.option(
+    "--format",
+    type=click.Choice(["stl", "gltf"], case_sensitive=False),
+    default="stl",
+    show_default=True,
+    help="Output format of the 3D mesh",
+)
 def mesh(ctx, **kwargs):
     """Generate a 3D-mesh in STL or gltF 2.0 format"""
     get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
@@ -412,8 +466,25 @@ def gazebo(ctx, **kwargs):
     show_default=True,
     help="Value for cells to be considered free in the occupancy map",
 )
+@click.option(
+    "--source",
+    type=click.Choice(["fpm", "bim"], case_sensitive=False),
+    default="fpm",
+    show_default=True,
+    help="ROS version for launch files",
+)
+@click.option(
+    "--visualize-frames",
+    type=click.Choice(
+        ["wall", "door", "entryway", "space", "opening"], case_sensitive=False
+    ),
+    help="Which element frames to visualize",
+    multiple=True,
+)
 def occ_grid(ctx, **kwargs):
     """Generate the occupancy grid map of the floorplan"""
+    logger.info("Generating occupancy grid...")
+    logger.debug("Arguments: %s", kwargs)
     get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
@@ -467,6 +538,91 @@ def polyline(ctx, **kwargs):
 def door_keyframes(ctx, **kwargs):
     """Generate the sampled keyframes for doors with time-based behaviours"""
     get_keyframes(**ctx.obj, **ctx.parent.params, **kwargs)
+
+
+@generate.command()
+@click.pass_context
+@click.option(
+    "--robot-translation-x",
+    "x",
+    type=click.FLOAT,
+    default=-1.0,
+    show_default=True,
+    help="Translation of the robot in x wrt to a task element for a navigation goal",
+)
+@click.option(
+    "--robot-translation-z",
+    "z",
+    type=click.FLOAT,
+    default=1.7,
+    show_default=True,
+    help="Translation of the robot in z wrt to a task element for a navigation goal",
+)
+@click.option(
+    "--ros-frames",
+    is_flag=True,
+    help="Generate a ROS launch file with frame transformations for task elements",
+)
+@click.option(
+    "--visualize",
+    is_flag=True,
+    help="Generate images visualizing the environment and tasks",
+)
+def tts(ctx, **kwargs):
+    """Generate the artefacts for the TTS simulator"""
+    logger.info("Generating artefacts for the TTS simulator...")
+    logger.debug("Arguments: %s", kwargs)
+    gen_tts_wall_description(**ctx.obj, **ctx.parent.params, **kwargs)
+    outlets, ducts = gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
+    if kwargs.get("ros_frames"):
+        gen_ros_frames(**ctx.obj, **ctx.parent.params, **kwargs)
+    if kwargs.get("visualize"):
+        logger.info("Visualizing milling task for the outlets on occupancy grid")
+        get_occ_grid(
+            **ctx.obj, **ctx.parent.params, **kwargs, outlets=outlets, source="bim"
+        )
+        get_occ_grid(
+            **ctx.obj, **ctx.parent.params, **kwargs, ducts=ducts, source="bim"
+        )
+        logger.info("Visualizing frames on occupancy grid")
+        get_occ_grid(
+            **ctx.obj,
+            **ctx.parent.params,
+            **kwargs,
+            visualize_frames=["outlet", "duct", "wall"],
+            source="bim",
+        )
+
+
+@floorplan.command(short_help="Visualize aspects of a floorplan model")
+@click.pass_context
+@click.option(
+    "-i",
+    "--inputs",
+    "--input-path",
+    type=click.Path(exists=True, resolve_path=True),
+    required=True,
+    multiple=True,
+    help="Path with JSON-LD models to be used as inputs",
+)
+@click.option(
+    "-o",
+    "--output-path",
+    type=click.Path(exists=True, resolve_path=True),
+    default=os.path.join("."),
+    help="Output path for generated artefacts",
+)
+def visualize(ctx, inputs, output_path, **kwargs):
+    floorplan_elements = ["Space", "Opening", "Wall", "Door", "Entryway", "DoorPanel"]
+    print(ctx.obj, ctx.parent.params)
+    _load_graph_to_ctx(ctx, inputs)
+    visualize_frame_tree(
+        output_path=output_path,
+        floorplan_elements=floorplan_elements,
+        **ctx.obj,
+        # **ctx.parent.params,
+        **kwargs,
+    )
 
 
 if __name__ == "__main__":

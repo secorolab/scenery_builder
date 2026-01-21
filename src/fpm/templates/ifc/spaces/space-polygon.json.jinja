@@ -1,0 +1,15 @@
+[
+  {
+    "@id": "{{ parent_id }}",
+    "shape": "{{ element_id }}-polygon"
+  },
+  {
+    "@id": "{{ element_id }}-polygon",
+    "@type": "Polygon",
+    "points": [
+      {% for idx in points %}
+      "{{ element_id }}-point-{{ idx }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+]

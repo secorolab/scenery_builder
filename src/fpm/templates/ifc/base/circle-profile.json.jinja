@@ -1,0 +1,47 @@
+[
+  {
+    "@id":  "{{ parent_id }}",
+    "shape": "{{ element_id }}-polygon",
+    "3d-shape": "{{ element_id }}-cylinder"
+  },
+  {
+    "@id": "{{ element_id }}-polygon",
+    "@type": "Circle",
+    "center": "{{ point_id }}-center",
+    "quantity-kind": ["Radius"],
+      "unit": "{{ length_unit }}",
+    "radius": {{ radius }}
+  },
+  {
+    "@id": "{{ element_id }}-cylinder",
+    "@type": "Cylinder",
+    "base": "{{ element_id }}-polygon",
+{#    {% set axis = shape["items"]["extrudeddirection"]["directionratios"]["@list"] %}#}
+{#    "axis": [{% for i in axis %}{{ i["@value"] }}{% if not loop.last %},{% endif %}{% endfor %}],#}
+    "axis": [{{ extruded_dir[0] }}, {{ extruded_dir[1] }}, {{ extruded_dir[2] }}],
+    "height": {{ depth }},
+    "unit": "{{ length_unit }}"
+  },
+  {
+    "@id": "{{ point_id }}-center",
+    "@type": [ "3D", "Euclidean", "Point" ]
+  },
+  {
+    "@id": "position-{{ point_id }}-center",
+    "@type": "Position",
+    "of": "{{ point_id }}-center",
+    "with-respect-to": "{{ element_id }}-origin",
+    "quantity-kind": "Length"
+  },
+  {
+    "@id": "position-coord-{{ point_id }}-center-wrt-{{ element_id }}-origin",
+    "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
+    "of-position": "position-{{ point_id }}-center",
+    "as-seen-by": "{{ element_id }}-frame",
+    "unit": "{{ length_unit }}",
+{#    "coordinates": {{ coordinates }}#}
+    {%  set coords = list(rdflib.collection.Collection(g, g[relative_placement : IFC_CONCEPTS["location"] / IFC_CONCEPTS["coordinates"]].__next__())) -%}
+    "coordinates":  [{{ coords[0] }}, {{ coords[1] }} ]
+  }
+
+]

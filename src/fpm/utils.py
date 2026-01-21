@@ -1,5 +1,6 @@
 import os
 import tomllib
+import logging
 
 import yaml
 import json
@@ -9,11 +10,28 @@ import numpy as np
 
 from jinja2 import Environment, FileSystemLoader, PackageLoader
 
+logger = logging.getLogger("floorplan.utils")
+logger.setLevel(logging.DEBUG)
+
 
 def load_config_file(file_path):
     with open(file_path, "rb") as f:
         data = tomllib.load(f)
     return data
+
+
+def render_model_template(
+    model, output_folder, file_name, template_name, template_path=None
+):
+    template = load_template(template_name, template_path)
+
+    output = template.render(model=model, trim_blocks=True, lstrip_blocks=True)
+    if file_name.endswith(".json"):
+        output = json.loads(output)
+    elif file_name.endswith(".yaml"):
+        output = yaml.safe_load(output)
+
+    save_file(output_folder, file_name, output)
 
 
 def load_template(template_name, template_folder=None):
@@ -39,7 +57,7 @@ def save_file(output_path, file_name, contents):
         with open(output_file, "w") as f:
             json.dump(contents, f, indent=4)
     elif ext in [".pgm", ".jpg"]:
-        contents.save(output_file, quality=95)
+        contents.save(output_file, quality=100)
     elif ext in [".stl"]:
         # Use different STL export method depending on Blender version
         if bpy.app.version >= (4, 1, 0):
@@ -48,26 +66,32 @@ def save_file(output_path, file_name, contents):
             bpy.ops.export_mesh.stl(filepath=output_file)
     elif ext in [".dae"]:
         bpy.ops.wm.collada_export(filepath=output_file)
+    elif ext == ".gltf":
+        bpy.ops.export_scene.gltf(filepath=output_file)
     else:
         with open(output_file, "w") as f:
             f.write(contents)
 
-    print("Generated {path}".format(path=output_file))
+    logger.info("Generated {path}".format(path=output_file))
 
 
-def build_transformation_matrix(x, y, z, alpha):
-
-    c = np.cos
-    s = np.sin
+def build_transformation_matrix(x, y, z, alpha=None, beta=0.0, gamma=0.0, **kwargs):
 
     t = np.array([[x], [y], [z], [1]])
     # fmt: off
-    R = np.array([
-        [c(alpha), -s(alpha), 0],
-        [s(alpha), c(alpha), 0],
+    if alpha is not None:
+        R = np.array([
+        [np.cos(alpha), -np.sin(alpha), 0],
+        [np.sin(alpha), np.cos(alpha), 0],
         [0, 0, 1],
         [0, 0, 0]]
-    )
+        )
+    else:
+        cosx = kwargs.get("direction-cosine-x", [1.0, 0.0, 0.0])
+        cosz = kwargs.get("direction-cosine-z", [0.0, 0.0, 1.0])
+        cosy = kwargs.get("direction-cosine-y", np.cross(cosz, cosx))
+        R = np.vstack((np.array([cosx, cosy, cosz]).T, [0.0] *3))
+
     # fmt: on
 
     return np.hstack((R, t))

@@ -1,0 +1,16 @@
+<launch>
+    <arg name="x" default="0.0"/>
+    <arg name="y" default="0.0"/>
+    <arg name="z" default="0.0"/>
+    <arg name="yaw" default="0.0"/>
+    <node
+            pkg="tf2_ros" exec="static_transform_publisher"
+            args="--x $(var x) --y $(var y) --z $(var z) --yaw $(var yaw) --frame-id map --child-frame-id world-frame"
+    />
+    {% for k, frame in model.items() %}
+  <node
+    pkg="tf2_ros" exec="static_transform_publisher"
+    args="--x {{ frame.p[0] }} --y {{ frame.p[1] }} --z {{ frame.p[2] }} --qx {{ frame.q[0] }} --qy {{ frame.q[1] }} --qz {{ frame.q[2] }} --qw {{ frame.q[3] }} --frame-id {{ frame.parent_frame_id }} --child-frame-id {{ frame.frame_id }}"
+  />
+    {% endfor %}
+</launch>

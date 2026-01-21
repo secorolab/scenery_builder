@@ -1,0 +1,20 @@
+[
+  {
+    "@id": "pose-coord-{{ placement_id }}",
+    "@type": "PoseCoordinate",
+  {% if world_frame %}
+    "as-seen-by": "world-frame"
+  {% else %}
+    "as-seen-by": "{{ ref_placement_id }}-frame"
+  {% endif %}
+  },
+  {
+    "@id": "pose-{{ placement_id }}",
+    "@type": "Pose",
+    {% if world_frame %}
+    "with-respect-to": "world-frame"
+    {% else %}
+    "with-respect-to": "{{ ref_placement_id }}-frame"
+    {% endif %}
+  }
+]
