@@ -82,7 +82,7 @@ def create_inset_json_ld(model, width):
                 "name": "position-inset-point-{i:04d}-to-{name}-frame".format(
                     i=i, name=space_name
                 ),
-                "as-seen-by": "{name}-frame".format(name=space_name),
+                "as-seen-by": "fpm:{name}-frame".format(name=space_name),
                 "x": point[0],
                 "y": point[1],
                 "z": 0.0,
