@@ -38,4 +38,4 @@ console_formatter = AnsiColorFormatter(
 # ch.setFormatter(console_formatter)
 fh.setFormatter(file_formatter)
 logger.addHandler(ch)
-logger.addHandler(fh)
+# logger.addHandler(fh)
