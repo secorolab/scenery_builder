@@ -56,7 +56,8 @@ def generate_3d_mesh(g, output_path, include_doors=False, **custom_args):
     subtract_opening(windows)
 
     file_name = "{name}.{ext}".format(name=model_name, ext=file_format)
-    save_file(output_path, file_name, None)
+    output_file = save_file(output_path, file_name, None)
+    return output_file
 
 
 def create_element_mesh(building, elements):
@@ -79,4 +80,4 @@ def subtract_opening(openings):
 
 def get_3d_mesh(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "3d-mesh")
-    generate_3d_mesh(g, output_path, **kwargs)
+    return generate_3d_mesh(g, output_path, **kwargs)

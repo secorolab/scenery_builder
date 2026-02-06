@@ -23,6 +23,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def generate_occ_grid(g, output_path, **custom_args):
+    output_files = []
     plt.clf()
     map_name = get_floorplan_model_name(g)
     logger.info("Map name: {}".format(map_name))
@@ -77,7 +78,8 @@ def generate_occ_grid(g, output_path, **custom_args):
         0,
     ]
 
-    save_map_metadata(output_path, map_name, center, **custom_args)
+    f = save_map_metadata(output_path, map_name, center, **custom_args)
+    output_files.append(f)
 
     # Create canvas
     floor = (
@@ -152,7 +154,9 @@ def generate_occ_grid(g, output_path, **custom_args):
 
     for ext in ["pgm", "jpg"]:
         name_image = "{}.{}".format(map_name, ext)
-        save_file(output_path, name_image, im)
+        f = save_file(output_path, name_image, im)
+        output_files.append(f)
+    return output_files
 
 
 def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
@@ -302,12 +306,12 @@ def save_map_metadata(output_path, map_name, center, **custom_args):
         "laser_height": custom_args.get("laser_height", 0.7),
     }
 
-    save_file(output_path, file_name, map_metadata)
+    return save_file(output_path, file_name, map_metadata)
 
 
 def get_occ_grid(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "maps")
-    generate_occ_grid(g, output_path, **kwargs)
+    return generate_occ_grid(g, output_path, **kwargs)
 
 
 def draw_tasks(g, im, center, tasks, **kwargs):

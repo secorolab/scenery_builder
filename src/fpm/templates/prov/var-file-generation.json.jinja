@@ -1,0 +1,24 @@
+{
+  "@context": {
+    "prov": "http://www.w3.org/ns/prov#",
+    "smm": "https://secorolab.github.io/metamodels/scenario#",
+    "secoro": "https://secorolab.github.io/models/"
+  },
+  "@graph": [
+    {
+      "@id": "secoro:{{ fpm_file }}",
+      "@type": "prov:Entity"
+    },
+    {
+      "@id": "secoro:{{ var_file }}",
+      "@type": "prov:Entity",
+      "dc:references":  "secoro:{{ fpm_file }}"
+    },
+    {
+      "@id": "secoro:{{ gen_file }}",
+      "@type": "prov:Entity",
+      "prov:generatedAtTime":  "{{ gen_time }}",
+      "prov:wasDerivedFrom": "{{ var_file }}"
+    }
+  ]
+}

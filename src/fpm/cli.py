@@ -3,6 +3,11 @@ import click
 import logging
 
 from fpm.generators.dot import visualize_frame_tree
+from fpm.generators.prov import (
+    fpm_prov_generation_graph,
+    artefact_prov_generation_graph,
+    var_prov_generation_graph,
+)
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.gazebo import gazebo_world, door_object_models
 from fpm.generators.tasks import get_disinfection_tasks
@@ -119,6 +124,11 @@ def floorplan(docs):
     default=os.path.join("."),
     help="Output path for generated artefacts",
 )
+@click.option(
+    "--prov",
+    is_flag=True,
+    help="Flag to whether to generate a PROV graph of this activity",
+)
 def transform(ctx, model_path, output_path, **kwargs):
     """Transform an FPM model into JSON-LD
 
@@ -136,9 +146,12 @@ def transform(ctx, model_path, output_path, **kwargs):
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(model_path)
     try:
-        generator(mm, model, output_path, overwrite=True)
+        res = generator(mm, model, output_path, overwrite=True)
     except Exception as e:
         logger.error(f"Error transforming model: {e}")
+
+    if kwargs.get("prov"):
+        fpm_prov_generation_graph(model, model_path, res, output_path)
 
 
 @floorplan.command(short_help="Generate FPM variations from a variation model")
@@ -175,6 +188,11 @@ def transform(ctx, model_path, output_path, **kwargs):
     default=os.path.join("."),
     help="Output path for generated variations",
 )
+@click.option(
+    "--prov",
+    is_flag=True,
+    help="Flag to whether to generate a PROV graph of this activity",
+)
 def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     """Generate FPM model variations from a variation specification
 
@@ -204,7 +222,7 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     mm = metamodel_for_language("fpm-variation")
     model = mm.model_from_file(model_path)
     try:
-        generator(
+        f, res = generator(
             mm,
             model,
             output_path,
@@ -215,6 +233,9 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
         )
     except Exception as e:
         logger.error(f"Error generating variations: {e}")
+
+    if kwargs.get("prov"):
+        var_prov_generation_graph(model_path, f, res, output_path)
 
 
 @floorplan.command(
@@ -280,6 +301,11 @@ def ifc(ctx, model_path, output_path, **kwargs):
     show_default=True,
     callback=configure,
 )
+@click.option(
+    "--prov",
+    is_flag=True,
+    help="Flag to whether to generate a PROV graph of this activity",
+)
 def generate(ctx, inputs, **kwargs):
     """Generate execution artefacts from JSON-LD models"""
 
@@ -316,7 +342,17 @@ def _load_graph_to_ctx(ctx, input_paths):
 )
 def mesh(ctx, **kwargs):
     """Generate a 3D-mesh in STL or gltF 2.0 format"""
-    get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_file = get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
+
+    prov = ctx.parent.params.get("prov")
+    if prov:
+        artefact_prov_generation_graph(
+            ctx.obj.get("model_name"),
+            ctx.parent.params.get("inputs"),
+            [output_file],
+            "3D-Mesh",
+            ctx.parent.params.get("base_path"),
+        )
 
 
 @generate.command(short_help="Generate navigation waypoints for all rooms")
@@ -386,8 +422,22 @@ def tasks(ctx, **kwargs):
 )
 def gazebo(ctx, **kwargs):
     """Generate Gazebo world, models and launch files"""
-    door_object_models(**ctx.obj, **ctx.parent.params, **kwargs)
-    gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_files = []
+    files = door_object_models(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_files.extend(files)
+
+    files = gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_files.extend(files)
+
+    prov = ctx.parent.params.get("prov")
+    if prov:
+        artefact_prov_generation_graph(
+            ctx.obj.get("model_name"),
+            ctx.parent.params.get("inputs"),
+            output_files,
+            "GazeboModel",
+            ctx.parent.params.get("base_path"),
+        )
 
     base_path = ctx.parent.params.get("base_path")
     subfolders = ["gazebo/models", "gazebo/worlds/", "3d-mesh", "behaviors"]
@@ -485,7 +535,17 @@ def occ_grid(ctx, **kwargs):
     """Generate the occupancy grid map of the floorplan"""
     logger.info("Generating occupancy grid...")
     logger.debug("Arguments: %s", kwargs)
-    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_files = get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
+
+    prov = ctx.parent.params.get("prov")
+    if prov:
+        artefact_prov_generation_graph(
+            ctx.obj.get("model_name"),
+            ctx.parent.params.get("inputs"),
+            output_files,
+            "OccupancyGrid",
+            ctx.parent.params.get("base_path"),
+        )
 
 
 @generate.command(short_help="Generate a 3D polyline representation of the floorplan")
