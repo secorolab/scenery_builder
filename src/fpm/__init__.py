@@ -23,19 +23,20 @@ class AnsiColorFormatter(logging.Formatter):
 
 logger = logging.getLogger("floorplan")
 logger.setLevel(logging.INFO)
-fh = logging.FileHandler("floorplan-cli.log")
-fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
-file_formatter = logging.Formatter(
-    "{asctime} | {levelname:<8s} | {name:<30s} | {message}",
-    style="{",
-)
 console_formatter = AnsiColorFormatter(
     "{asctime} | {levelname:<8s} | {name:<30s} | {message}",
     style="{",
 )
 # ch.setFormatter(console_formatter)
-fh.setFormatter(file_formatter)
 logger.addHandler(ch)
+
+# fh = logging.FileHandler("floorplan-cli.log")
+# fh.setLevel(logging.DEBUG)
+# file_formatter = logging.Formatter(
+#     "{asctime} | {levelname:<8s} | {name:<30s} | {message}",
+#     style="{",
+# )
+# fh.setFormatter(file_formatter)
 # logger.addHandler(fh)
