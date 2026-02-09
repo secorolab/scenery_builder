@@ -1,43 +1,43 @@
 {
   "@context": {
     "prov": "http://www.w3.org/ns/prov#",
-    "secoro": "https://secorolab.github.io/models/"
+    "models": "{{ model_base_iri }}"
   },
   "@graph": [
     {
-      "@id": "secoro:{{ env_id }}",
+      "@id": "models:{{ env_id }}",
       "@type": "prov:Collection",
       "prov:hadMember": [
-        "secoro:{{ env_id }}/json-ld/",
+        "models:{{ env_id }}/json-ld/",
         {% for source_file in source_files -%}
-        "secoro:{{ source_file }}"{% if not loop.last %},{% endif %}
+        "models:{{ env_id }}/{{ source_file }}"{% if not loop.last %},{% endif %}
         {%- endfor %}
       ]
     },
     {% for source_file in source_files -%}
     {
-      "@id": "secoro:{{ source_file }}",
+      "@id": "models:{{ source_file }}",
       "@type": "prov:Entity"
     },
     {%- endfor %}
     {
-      "@id": "secoro:{{ env_id }}/json-ld/",
+      "@id": "models:{{ env_id }}/json-ld/",
       "@type": "prov:Collection",
       "prov:hadMember": [
         {% for gen_file in generated_files -%}
-          "secoro:{{ env_id }}/json-ld/{{ gen_file }}"{% if not loop.last %},{% endif %}
+          "models:{{ env_id }}/json-ld/{{ gen_file }}"{% if not loop.last %},{% endif %}
         {% endfor %}
       ],
       "prov:wasDerivedFrom": [
         {% for source_file in source_files -%}
-        "secoro:{{ source_file }}"{% if not loop.last %},{% endif %}
+        "models:{{ env_id }}/{{ source_file }}"{% if not loop.last %},{% endif %}
         {%- endfor %}
       ],
       "prov:generatedAtTime": "{{ gen_time }}"
     },
     {% for gen_file in generated_files -%}
     {
-      "@id": "secoro:{{ env_id }}/json-ld/{{ gen_file }}",
+      "@id": "models:{{ env_id }}/json-ld/{{ gen_file }}",
       "@type": "prov:Entity"
     }{% if not loop.last %},{% endif %}
     {% endfor %}

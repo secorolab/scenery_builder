@@ -2,20 +2,21 @@
   "@context": {
     "prov": "http://www.w3.org/ns/prov#",
     "smm": "https://secorolab.github.io/metamodels/scenario#",
-    "secoro": "https://secorolab.github.io/models/"
+    "dcterms": "http://purl.org/dc/terms/",
+    "models": "{{ model_base_iri }}"
   },
   "@graph": [
     {
-      "@id": "secoro:{{ fpm_file }}",
+      "@id": "models:{{ fpm_file }}",
       "@type": "prov:Entity"
     },
     {
-      "@id": "secoro:{{ var_file }}",
+      "@id": "models:{{ var_file }}",
       "@type": "prov:Entity",
-      "dc:references":  "secoro:{{ fpm_file }}"
+      "dcterms:references":  "models:{{ fpm_file }}"
     },
     {
-      "@id": "secoro:{{ gen_file }}",
+      "@id": "models:{{ gen_file }}",
       "@type": "prov:Entity",
       "prov:generatedAtTime":  "{{ gen_time }}",
       "prov:wasDerivedFrom": "{{ var_file }}"

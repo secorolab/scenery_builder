@@ -22,13 +22,14 @@ def fpm_prov_generation_graph(model, model_path, generated_files, base_path, **k
         generated_files=generated_files,
         gen_time=gen_time,
         env_id=f"{model.name}",
+        model_base_iri=kwargs.get("model_base_iri"),
     )
     contents = json.loads(contents)
     return save_file(output_path, file_name, contents)
 
 
 def artefact_prov_generation_graph(
-    env_id, source_files, generated_files, artefact_type, base_path
+    env_id, source_files, generated_files, artefact_type, base_path, **kwargs
 ):
     gen_time = datetime.datetime.now().isoformat()
 
@@ -45,6 +46,7 @@ def artefact_prov_generation_graph(
         gen_time=gen_time,
         env_id=env_id,
         artefact_type=artefact_type,
+        model_base_iri=kwargs.get("model_base_iri"),
     )
     contents = json.loads(contents)
     return save_file(output_path, file_name, contents)
@@ -69,6 +71,7 @@ def var_prov_generation_graph(var_file, fpm_file, generated_files, base_path, **
             gen_time=gen_time,
             fpm_file=os.path.relpath(fpm_file, prefix),
             env_id="test",
+            model_base_iri=kwargs.get("model_base_iri"),
         )
         contents = json.loads(contents)
         save_file(base_path, file_name, contents)

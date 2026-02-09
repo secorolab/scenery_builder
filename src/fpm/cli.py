@@ -129,6 +129,13 @@ def floorplan(docs):
     is_flag=True,
     help="Flag to whether to generate a PROV graph of this activity",
 )
+@click.option(
+    "--model-base-iri",
+    type=click.STRING,
+    default="https://secorolab.github.io/models/",
+    show_default=True,
+    help="Default model IRI to be used as a prefix in the PROV models",
+)
 def transform(ctx, model_path, output_path, **kwargs):
     """Transform an FPM model into JSON-LD
 
@@ -151,7 +158,7 @@ def transform(ctx, model_path, output_path, **kwargs):
         logger.error(f"Error transforming model: {e}")
 
     if kwargs.get("prov"):
-        fpm_prov_generation_graph(model, model_path, res, output_path)
+        fpm_prov_generation_graph(model, model_path, res, output_path, **kwargs)
 
 
 @floorplan.command(short_help="Generate FPM variations from a variation model")
@@ -192,6 +199,13 @@ def transform(ctx, model_path, output_path, **kwargs):
     "--prov",
     is_flag=True,
     help="Flag to whether to generate a PROV graph of this activity",
+)
+@click.option(
+    "--model-base-iri",
+    type=click.STRING,
+    default="https://secorolab.github.io/models/",
+    show_default=True,
+    help="Default model IRI to be used as a prefix in the PROV models",
 )
 def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     """Generate FPM model variations from a variation specification
@@ -235,7 +249,7 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
         logger.error(f"Error generating variations: {e}")
 
     if kwargs.get("prov"):
-        var_prov_generation_graph(model_path, f, res, output_path)
+        var_prov_generation_graph(model_path, f, res, output_path, **kwargs)
 
 
 @floorplan.command(
@@ -306,6 +320,13 @@ def ifc(ctx, model_path, output_path, **kwargs):
     is_flag=True,
     help="Flag to whether to generate a PROV graph of this activity",
 )
+@click.option(
+    "--model-base-iri",
+    type=click.STRING,
+    default="https://secorolab.github.io/models/",
+    show_default=True,
+    help="Default model IRI to be used as a prefix in the PROV models",
+)
 def generate(ctx, inputs, **kwargs):
     """Generate execution artefacts from JSON-LD models"""
 
@@ -352,6 +373,7 @@ def mesh(ctx, **kwargs):
             [output_file],
             "3D-Mesh",
             ctx.parent.params.get("base_path"),
+            model_base_iri=ctx.parent.params.get("model_base_iri"),
         )
 
 
@@ -437,6 +459,7 @@ def gazebo(ctx, **kwargs):
             output_files,
             "GazeboModel",
             ctx.parent.params.get("base_path"),
+            model_base_iri=ctx.parent.params.get("model_base_iri"),
         )
 
     base_path = ctx.parent.params.get("base_path")
@@ -545,6 +568,7 @@ def occ_grid(ctx, **kwargs):
             output_files,
             "OccupancyGrid",
             ctx.parent.params.get("base_path"),
+            model_base_iri=ctx.parent.params.get("model_base_iri"),
         )
 
 
