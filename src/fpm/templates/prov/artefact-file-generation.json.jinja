@@ -1,14 +1,17 @@
 {
-  "@context": {
-    "prov": "http://www.w3.org/ns/prov#",
-    "smm": "https://secorolab.github.io/metamodels/scenario#",
-    "models": "{{ model_base_iri }}"
-  },
+  "@context": [
+    {
+      "prov": "http://www.w3.org/ns/prov#",
+      "smm": "https://secorolab.github.io/metamodels/scenario#",
+      "models": "{{ model_base_iri }}"
+    },
+    "https://secorolab.github.io/metamodels/prov.json"
+  ],
   "@graph": [
     {
       "@id": "models:{{ env_id }}",
-      "@type": "prov:Collection",
-      "prov:hadMember": [
+      "@type": "Collection",
+      "hadMember": [
         {% for gen_file in generated_files -%}
           "models:{{ env_id }}/{{ gen_file }}",
         {% endfor -%}
@@ -20,19 +23,19 @@
     {% for source_file in source_files -%}
     {
       "@id": "models:{{ env_id }}/{{ source_file }}",
-      "@type": "prov:Entity"
+      "@type": "Entity"
     },
     {%- endfor %}
     {% for gen_file in generated_files -%}
     {
       "@id": "models:{{ env_id }}/{{ gen_file }}",
-      "@type": ["prov:Entity", "smm:{{ artefact_type }}"],
-      "prov:wasDerivedFrom": [
+      "@type": "Entity",
+      "wasDerivedFrom": [
         {% for source_file in source_files -%}
         "models:{{ env_id }}/{{ source_file }}"{% if not loop.last %},{% endif %}
         {%- endfor %}
       ],
-      "prov:generatedAtTime": "{{ gen_time }}"
+      "generatedAtTime": "{{ gen_time }}"
     }{% if not loop.last %},{% endif %}
     {% endfor %}
   ]

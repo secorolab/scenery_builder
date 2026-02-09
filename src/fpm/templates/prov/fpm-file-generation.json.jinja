@@ -1,13 +1,16 @@
 {
-  "@context": {
-    "prov": "http://www.w3.org/ns/prov#",
-    "models": "{{ model_base_iri }}"
-  },
+  "@context": [
+    {
+      "prov": "http://www.w3.org/ns/prov#",
+      "models": "{{ model_base_iri }}"
+    },
+    "https://secorolab.github.io/metamodels/prov.json"
+  ],
   "@graph": [
     {
       "@id": "models:{{ env_id }}",
-      "@type": "prov:Collection",
-      "prov:hadMember": [
+      "@type": "Collection",
+      "hadMember": [
         "models:{{ env_id }}/json-ld/",
         {% for source_file in source_files -%}
         "models:{{ env_id }}/{{ source_file }}"{% if not loop.last %},{% endif %}
@@ -17,28 +20,28 @@
     {% for source_file in source_files -%}
     {
       "@id": "models:{{ source_file }}",
-      "@type": "prov:Entity"
+      "@type": "Entity"
     },
     {%- endfor %}
     {
       "@id": "models:{{ env_id }}/json-ld/",
-      "@type": "prov:Collection",
-      "prov:hadMember": [
+      "@type": "Collection",
+      "hadMember": [
         {% for gen_file in generated_files -%}
           "models:{{ env_id }}/json-ld/{{ gen_file }}"{% if not loop.last %},{% endif %}
         {% endfor %}
       ],
-      "prov:wasDerivedFrom": [
+      "wasDerivedFrom": [
         {% for source_file in source_files -%}
         "models:{{ env_id }}/{{ source_file }}"{% if not loop.last %},{% endif %}
         {%- endfor %}
       ],
-      "prov:generatedAtTime": "{{ gen_time }}"
+      "generatedAtTime": "{{ gen_time }}"
     },
     {% for gen_file in generated_files -%}
     {
       "@id": "models:{{ env_id }}/json-ld/{{ gen_file }}",
-      "@type": "prov:Entity"
+      "@type": "Entity"
     }{% if not loop.last %},{% endif %}
     {% endfor %}
   ]
