@@ -11,17 +11,24 @@ def generate_sdf_file(
 
     output = template.render(model=model, trim_blocks=True, lstrip_blocks=True)
 
-    save_file(output_folder, file_name, output)
+    return save_file(output_folder, file_name, output)
 
 
 def gazebo_world(g, model_name, base_path, **kwargs):
+    output_files = []
 
-    gazebo_floorplan_model(model_name, base_path, **kwargs)
-    gazebo_world_model(g, model_name, base_path, **kwargs)
-    gazebo_world_launch(model_name, base_path, **kwargs)
+    f = gazebo_floorplan_model(model_name, base_path, **kwargs)
+    output_files.extend(f)
+    f = gazebo_world_model(g, model_name, base_path, **kwargs)
+    output_files.extend(f)
+    f = gazebo_world_launch(model_name, base_path, **kwargs)
+    output_files.extend(f)
+
+    return output_files
 
 
 def door_object_models(g, base_path, **kwargs):
+    output_files = []
     template_path = kwargs.get("template_path")
 
     object_models = get_all_object_models(g)
@@ -31,43 +38,51 @@ def door_object_models(g, base_path, **kwargs):
         model_name = model["name"][5:]
         output_path = get_output_path(base_path, "gazebo/models", model_name)
         model["contact_sensors"] = contact_sensors
-        generate_sdf_file(
+        f = generate_sdf_file(
             model,
             output_path,
             "model.sdf",
             "gazebo/door.sdf.jinja",
             template_path=template_path,
         )
-        generate_sdf_file(
+        output_files.append(f)
+        f = generate_sdf_file(
             model,
             output_path,
             "model.config",
             "gazebo/model.config.jinja",
             template_path=template_path,
         )
+        output_files.append(f)
+    return output_files
 
 
 def gazebo_floorplan_model(model_name, base_path, **kwargs):
+    output_files = []
     template_path = kwargs.get("template_path")
     model = {
         "name": model_name,
         "contact_sensors": kwargs.get("contact_sensors", False),
     }
     output_path = get_output_path(base_path, "gazebo/models", model_name)
-    generate_sdf_file(
+    f = generate_sdf_file(
         model,
         output_path,
         "model.config",
         "gazebo/model.config.jinja",
         template_path=template_path,
     )
-    generate_sdf_file(
+    output_files.append(f)
+    f = generate_sdf_file(
         model,
         output_path,
         "model.sdf",
         "gazebo/floorplan.sdf.jinja",
         template_path=template_path,
     )
+    output_files.append(f)
+
+    return output_files
 
 
 def gazebo_world_model(g, model_name, base_path, **kwargs):
@@ -81,10 +96,12 @@ def gazebo_world_model(g, model_name, base_path, **kwargs):
     else:
         file_name = "{name}.world".format(name=model_name)
 
-    generate_sdf_file(
+    f = generate_sdf_file(
         model,
         output_path,
         file_name,
         template_name="gazebo/world.sdf.jinja",
         template_path=template_path,
     )
+
+    return [f]

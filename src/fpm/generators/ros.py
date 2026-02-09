@@ -15,7 +15,7 @@ def generate_launch_file(model_name, output_path, file_name, **custom_args):
 
     output = template.render(ros_pkg=ros_pkg, model_name=model_name)
 
-    save_file(output_path, file_name, output)
+    return save_file(output_path, file_name, output)
 
 
 def gazebo_world_launch(model_name, base_path, **kwargs):
@@ -30,7 +30,7 @@ def gazebo_world_launch(model_name, base_path, **kwargs):
         file_name = "{name}.ros1.launch".format(name=model_name)
         template_name = "ros/world.ros1.launch.jinja"
 
-    generate_launch_file(
+    f = generate_launch_file(
         model_name,
         output_path,
         file_name,
@@ -38,3 +38,5 @@ def gazebo_world_launch(model_name, base_path, **kwargs):
         template_path=template_path,
         **kwargs,
     )
+
+    return [f]

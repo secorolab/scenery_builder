@@ -31,7 +31,7 @@ def render_model_template(
     elif file_name.endswith(".yaml"):
         output = yaml.safe_load(output)
 
-    save_file(output_folder, file_name, output)
+    return save_file(output_folder, file_name, output)
 
 
 def load_template(template_name, template_folder=None):
@@ -73,6 +73,7 @@ def save_file(output_path, file_name, contents):
             f.write(contents)
 
     logger.info("Generated {path}".format(path=output_file))
+    return output_file
 
 
 def build_transformation_matrix(x, y, z, alpha=None, beta=0.0, gamma=0.0, **kwargs):
