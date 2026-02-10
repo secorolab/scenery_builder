@@ -19,7 +19,7 @@
     },
     {% for source_file in source_files -%}
     {
-      "@id": "models:{{ source_file }}",
+      "@id": "models:{{ env_id }}/{{ source_file }}",
       "@type": "Entity"
     },
     {%- endfor %}

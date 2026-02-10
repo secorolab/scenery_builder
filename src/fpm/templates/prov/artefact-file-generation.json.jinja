@@ -15,23 +15,17 @@
           "models:{{ env_id }}/{{ gen_file }}",
         {% endfor -%}
         {% for source_file in source_files -%}
-        "models:{{ env_id }}/{{ source_file }}"{% if not loop.last %},{% endif %}
+        "models:{{ env_id }}/{{ source_file }}/"{% if not loop.last %},{% endif %}
         {%- endfor %}
       ]
     },
-    {% for source_file in source_files -%}
-    {
-      "@id": "models:{{ env_id }}/{{ source_file }}",
-      "@type": "Entity"
-    },
-    {%- endfor %}
     {% for gen_file in generated_files -%}
     {
       "@id": "models:{{ env_id }}/{{ gen_file }}",
       "@type": "Entity",
       "wasDerivedFrom": [
         {% for source_file in source_files -%}
-        "models:{{ env_id }}/{{ source_file }}"{% if not loop.last %},{% endif %}
+        "models:{{ env_id }}/{{ source_file }}/"{% if not loop.last %},{% endif %}
         {%- endfor %}
       ],
       "generatedAtTime": "{{ gen_time }}"
