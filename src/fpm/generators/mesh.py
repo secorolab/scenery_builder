@@ -55,9 +55,12 @@ def generate_3d_mesh(g, output_path, include_doors=False, **custom_args):
     create_element_mesh(building, windows)
     subtract_opening(windows)
 
-    file_name = "{name}.{ext}".format(name=model_name, ext=file_format)
-    output_file = save_file(output_path, file_name, None)
-    return output_file
+    output_files = []
+    for e in file_format:
+        file_name = "{name}.{ext}".format(name=model_name, ext=e)
+        output_file = save_file(output_path, file_name, None)
+        output_files.append(output_file)
+    return output_files
 
 
 def create_element_mesh(building, elements):

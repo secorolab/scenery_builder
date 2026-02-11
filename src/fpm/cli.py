@@ -357,8 +357,9 @@ def _load_graph_to_ctx(ctx, input_paths):
 @click.option(
     "--format",
     type=click.Choice(["stl", "gltf"], case_sensitive=False),
-    default="stl",
+    default=["stl"],
     show_default=True,
+    multiple=True,
     help="Output format of the 3D mesh",
 )
 def mesh(ctx, **kwargs):
