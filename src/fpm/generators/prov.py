@@ -1,9 +1,13 @@
 import os
 import json
-
+import glob
 import datetime
+import logging
 
 from fpm.utils import load_template, save_file, get_output_path
+from robofair.metadata import FileMetadata
+
+logger = logging.getLogger("floorplan.generators.prov")
 
 
 def fpm_prov_generation_graph(model, model_path, generated_files, base_path, **kwargs):
@@ -28,6 +32,12 @@ def fpm_prov_generation_graph(model, model_path, generated_files, base_path, **k
     return save_file(output_path, file_name, contents)
 
 
+def jsonld_prov_metadata(fpm_file, generated_files, **kwargs):
+    fpm_file_metadata(fpm_file)
+    for f in generated_files:
+        gen_file_metadata(f, [fpm_file])
+
+
 def artefact_prov_generation_graph(
     env_id, source_files, generated_files, artefact_type, base_path, **kwargs
 ):
@@ -50,6 +60,48 @@ def artefact_prov_generation_graph(
     )
     contents = json.loads(contents)
     return save_file(output_path, file_name, contents)
+
+
+def artefact_prov_metadata(source_files, generated_files, **kwargs):
+    _source_files = []
+    for d in source_files:
+        _source_files.extend(glob.glob(os.path.join(d, "*.json")))
+
+    for f in generated_files:
+        if os.path.basename(os.path.basename(f)) in kwargs.get(
+            "ignored_extensions", []
+        ):
+            logger.debug(f"Skipping {f} metadata")
+            continue
+
+        gen_file_metadata(f, _source_files)
+
+
+def gen_file_metadata(f, source_files):
+    f_mdata = FileMetadata(f)
+    mdata = dict(
+        created_at=f_mdata.missing_metadata.get("updated_at"),
+        attributed_to="https://purl.org/secorolab/scenery_builder",
+        derived_from=[os.path.relpath(sf, os.path.dirname(f)) for sf in source_files],
+    )
+    f_mdata.add_missing_metadata(mdata, save=True)
+
+
+def fpm_file_metadata(fpm_file):
+    fpm_mdata = FileMetadata(fpm_file)
+    if fpm_mdata.metadata_file is None:
+        fpm_mdata.save_missing_metadata()
+
+
+def var_prov_metadata(var_file, fpm_file, generated_files, **kwargs):
+    for f in generated_files:
+        gen_file_metadata(f, [var_file])
+
+    fpm_file_metadata(fpm_file)
+
+    var_mdata = FileMetadata(var_file)
+    var_ref_fpm = {"references": os.path.relpath(fpm_file, os.path.dirname(var_file))}
+    var_mdata.add_missing_metadata(var_ref_fpm, save=True)
 
 
 def var_prov_generation_graph(var_file, fpm_file, generated_files, base_path, **kwargs):

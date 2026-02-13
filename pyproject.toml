@@ -16,7 +16,8 @@ dependencies = [
     "pyyaml",
     "floorplan_dsl@git+https://github.com/secorolab/FloorPlan-DSL",
     "transforms3d",
-    "ifcld@git+https://github.com/secorolab/ifcld"
+    "ifcld@git+https://github.com/secorolab/ifcld",
+    "robofair@git+https://github.com/secorolab/robofair"
 ]
 requires-python = ">= 3.11"
 readme = "README.md"
