@@ -7,6 +7,9 @@ from fpm.generators.prov import (
     fpm_prov_generation_graph,
     artefact_prov_generation_graph,
     var_prov_generation_graph,
+    var_prov_metadata,
+    artefact_prov_metadata,
+    jsonld_prov_metadata,
 )
 from fpm.graph import build_graph_from_directory, get_floorplan_model_name
 from fpm.generators.gazebo import gazebo_world, door_object_models
@@ -157,6 +160,7 @@ def transform(ctx, model_path, output_path, **kwargs):
     except Exception as e:
         logger.error(f"Error transforming model: {e}")
 
+    jsonld_prov_metadata(model_path, res)
     if kwargs.get("prov"):
         fpm_prov_generation_graph(model, model_path, res, output_path, **kwargs)
 
@@ -247,6 +251,8 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
         )
     except Exception as e:
         logger.error(f"Error generating variations: {e}")
+
+    var_prov_metadata(model_path, f, res)
 
     if kwargs.get("prov"):
         var_prov_generation_graph(model_path, f, res, output_path, **kwargs)
@@ -366,12 +372,13 @@ def mesh(ctx, **kwargs):
     """Generate a 3D-mesh in STL or gltF 2.0 format"""
     output_file = get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
 
+    artefact_prov_metadata(ctx.parent.params.get("inputs"), output_file)
     prov = ctx.parent.params.get("prov")
     if prov:
         artefact_prov_generation_graph(
             ctx.obj.get("model_name"),
             ctx.parent.params.get("inputs"),
-            [output_file],
+            output_file,
             "3D-Mesh",
             ctx.parent.params.get("base_path"),
             model_base_iri=ctx.parent.params.get("model_base_iri"),
@@ -452,6 +459,9 @@ def gazebo(ctx, **kwargs):
     files = gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
     output_files.extend(files)
 
+    artefact_prov_metadata(
+        ctx.parent.params.get("inputs"), output_files, ignored_extensions=[".jpg"]
+    )
     prov = ctx.parent.params.get("prov")
     if prov:
         artefact_prov_generation_graph(
@@ -561,6 +571,7 @@ def occ_grid(ctx, **kwargs):
     logger.debug("Arguments: %s", kwargs)
     output_files = get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
 
+    artefact_prov_metadata(ctx.parent.params.get("inputs"), output_files)
     prov = ctx.parent.params.get("prov")
     if prov:
         artefact_prov_generation_graph(
