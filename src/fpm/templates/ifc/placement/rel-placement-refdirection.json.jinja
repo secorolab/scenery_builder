@@ -3,7 +3,9 @@
     "@id": "pose-coord-{{ placement_id }}",
     "@type": "DirectionCosineXYZ",
     "unit": "UNITLESS",
+    {% if not refdirection %}
     {% set refdirection = list(rdflib.collection.Collection(g, g[relative_placement : IFC_CONCEPTS["refdirection"] / IFC_CONCEPTS["directionratios"]].__next__())) -%}
+    {% endif %}
     "direction-cosine-x": [{% for v in refdirection %}{{ v }}{% if not loop.last %},{% endif %}{% endfor %}]
   }
 ]
