@@ -62,6 +62,16 @@ def generate_occ_grid(g, output_path, **custom_args):
                 np.amin(w_coords[:, 0]),  # west
             ]
         )
+    wall_points = get_obstacle_points(g, "Wall", coords_m)
+    for w in wall_points:
+        directions.append(
+            [
+                np.amax(w[:, 1]),  # north
+                np.amin(w[:, 1]),  # south
+                np.amax(w[:, 0]),  # east
+                np.amin(w[:, 0]),  # west
+            ]
+        )
 
     # Get the left/right, top/bottom of the entire map
     directions = np.array(directions)
