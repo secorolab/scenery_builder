@@ -102,7 +102,7 @@ def generate_occ_grid(g, map_name, **custom_args):
 
     # Draw obstacles (walls and columns)
     logger.debug("Drawing walls")
-    draw_floorplan_obstacle(
+    draw_floorplan_opening(
         g, "Wall", draw, west, south, occupied, coords_m, **custom_args
     )
     logger.debug("Drawing columns")
