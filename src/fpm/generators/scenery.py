@@ -257,16 +257,32 @@ def transform_axis_placement_3d(g: Graph, rel_placement, entity, length_unit):
     )
 
     axis = g.value(rel_placement, IFC_CONCEPTS["axis"])
+    refdir = g.value(rel_placement, IFC_CONCEPTS["refdirection"])
+
+    if refdir is None and axis is None:
+        axis_default = [0.0, 0.0, 1.0]
+        refdir_default = [1.0, 0.0, 0.0]
+
     if axis is not None:
         a = render_ifc_template("ifc/placement/rel-placement-axis.json.jinja", **vars)
-        placement.extend(a)
+    else:
+        a = render_ifc_template(
+            "ifc/placement/rel-placement-axis.json.jinja", axis=axis_default, **vars
+        )
 
-    refdir = g.value(rel_placement, IFC_CONCEPTS["refdirection"])
+    placement.extend(a)
+
     if refdir is not None:
         r = render_ifc_template(
             "ifc/placement/rel-placement-refdirection.json.jinja", **vars
         )
-        placement.extend(r)
+    else:
+        r = render_ifc_template(
+            "ifc/placement/rel-placement-refdirection.json.jinja",
+            refdirection=refdir_default,
+            **vars,
+        )
+    placement.extend(r)
 
     c = render_ifc_template("ifc/placement/rel-placement-coords.json.jinja", **vars)
     placement.extend(c)
