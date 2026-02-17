@@ -160,12 +160,12 @@ def generate_occ_grid(g, output_path, **custom_args):
         save_file(output_path, name_image, im)
 
 
-def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
-    column_points = get_element_points(g, element)
+def get_obstacle_points(g, element, coords_map, **kwargs):
+    obstacle_points = get_element_points(g, element)
     c_points = list()
 
     laser_height = kwargs.get("laser_height", 0.7)
-    for s in column_points:
+    for s in obstacle_points:
         height = s.get("height")
         if laser_height > height:
             # Don't process elements that are below the laser height
@@ -176,6 +176,11 @@ def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **k
 
         c_coords = np.array(c_coords)
         c_points.append(c_coords)
+    return c_points
+
+
+def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
+    c_points = get_obstacle_points(g, element, coords_map, **kwargs)
 
     draw_floorplan_element(
         c_points,
