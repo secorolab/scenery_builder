@@ -84,8 +84,13 @@ def generate_occ_grid(g, map_name, **custom_args):
     draw = ImageDraw.Draw(im)
 
     # Draw free space from floorplan spaces (rooms)
-    logger.debug("Drawing free space")
-    draw_floorplan_element(points, draw, free, west=west, south=south, **custom_args)
+    if len(points) > 0:
+        logger.debug("Drawing free space")
+        draw_floorplan_element(
+            points, draw, free, west=west, south=south, **custom_args
+        )
+    else:
+        logger.debug("No free spaces found")
 
     # Draw obstacles (walls and columns)
     logger.debug("Drawing walls")
