@@ -34,27 +34,25 @@ def generate_occ_grid(g, map_name, **custom_args):
     free = custom_args.get("free_value", 255)
     border = custom_args.get("border", 50)
 
-    points = []
+    if "{{model_name}}" in output_path:
+        output_path = output_path.replace("{{model_name}}", map_name)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
     directions = []
 
     logger.debug("Getting coordinates map")
     coords_m = get_coordinates_map(g)
     logger.debug("Getting space points")
-    space_points = get_space_points(g)
-    for s in space_points:
-        logger.debug("Getting waypoint coords")
-        w_coords = get_waypoint_coord_list(g, s.get("points"), coords_m)
-
-        w_coords = np.array(w_coords)
-        points.append(w_coords)
-
+    points = get_free_space_points(g, coords_m)
+    for s in points:
         # Get the left/right, top/bottom of each space
         directions.append(
             [
-                np.amax(w_coords[:, 1]),  # north
-                np.amin(w_coords[:, 1]),  # south
-                np.amax(w_coords[:, 0]),  # east
-                np.amin(w_coords[:, 0]),  # west
+                np.amax(s[:, 1]),  # north
+                np.amin(s[:, 1]),  # south
+                np.amax(s[:, 0]),  # east
+                np.amin(s[:, 0]),  # west
             ]
         )
     wall_points = get_obstacle_points(g, "Wall", coords_m)
@@ -124,6 +122,19 @@ def generate_occ_grid(g, map_name, **custom_args):
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
     return metadata, im
+
+
+def get_free_space_points(g, coords_map, **kwargs):
+    space_points = get_space_points(g)
+    points = []
+    for s in space_points:
+        logger.debug("Getting waypoint coords")
+        w_coords = get_waypoint_coord_list(g, s.get("points"), coords_map)
+
+        w_coords = np.array(w_coords)
+        points.append(w_coords)
+
+    return points
 
 
 def get_obstacle_points(g, element, coords_map, **kwargs):
