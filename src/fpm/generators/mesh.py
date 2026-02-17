@@ -72,7 +72,10 @@ def subtract_opening(openings):
     for opening in openings:
         name = opening.get("name")
         for wall in opening.get("voids", list()):
-            boolean_operation_difference(wall, name)
+            try:
+                boolean_operation_difference(wall, name)
+            except KeyError as e:
+                logger.error(e)
         bpy.data.objects[name].select_set(True)
         bpy.ops.object.delete()
 
