@@ -459,9 +459,7 @@ def gazebo(ctx, **kwargs):
     files = gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
     output_files.extend(files)
 
-    artefact_prov_metadata(
-        ctx.parent.params.get("inputs"), output_files, ignored_extensions=[".jpg"]
-    )
+    artefact_prov_metadata(ctx.parent.params.get("inputs"), output_files)
     prov = ctx.parent.params.get("prov")
     if prov:
         artefact_prov_generation_graph(
@@ -571,7 +569,9 @@ def occ_grid(ctx, **kwargs):
     logger.debug("Arguments: %s", kwargs)
     output_files = get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
 
-    artefact_prov_metadata(ctx.parent.params.get("inputs"), output_files)
+    artefact_prov_metadata(
+        ctx.parent.params.get("inputs"), output_files, ignored_extensions=[".jpg"]
+    )
     prov = ctx.parent.params.get("prov")
     if prov:
         artefact_prov_generation_graph(
