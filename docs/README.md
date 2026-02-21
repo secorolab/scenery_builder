@@ -145,6 +145,29 @@ If you want to change the path of the volumes inside the Docker container (i.e.,
 docker run -v <local input path>:/new/input/path -v <local output path>:/new/output/path scenery_builder:latest -i /new/input/path -o /new/output/path <optional arguments>
 ```
 
+#### Using the scenery_builder.sh wrapper script
+
+For convenience, the repository includes a `scenery_builder.sh` wrapper script that simplifies running the scenery_builder Docker container. This script automatically handles volume mounting and path translation between your local filesystem and the container.
+
+Usage:
+
+```bash
+./scenery_builder.sh <command> -i <input_path> -o <output_path> [additional arguments]
+```
+
+Examples:
+
+```bash
+./scenery_builder.sh transform -i rooms.fpm -o ./output_dir
+./scenery_builder.sh generate -i ./input_dir -o ./output_dir mesh gazebo occ-grid
+```
+
+The script automatically:
+- Mounts the appropriate directories as Docker volumes
+- Translates local paths to container paths
+- Inserts the required `-i`, `-m`, and `-o` flags after the respective commands
+- Uses the official scenery_builder Docker image from the GitHub Container Registry
+
 ## Example
 
 ![3D asset generated from the environment description](images/hospital_no_brackground.png)
