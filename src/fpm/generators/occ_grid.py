@@ -152,7 +152,7 @@ def generate_occ_grid(g, output_path, **custom_args):
         )
     im = ImageOps.flip(im)
 
-    for ext in ["pgm", "jpg"]:
+    for ext in ["jpg", "pgm"]:
         name_image = "{}.{}".format(map_name, ext)
         f = save_file(output_path, name_image, im)
         output_files.append(f)
