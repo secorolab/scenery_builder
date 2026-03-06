@@ -21,11 +21,12 @@ WORKDIR /tmp
 # RUN pip install --no-cache-dir . -t /usr/src/app/modules
 
 # Copy the rest of the application
-COPY . .
+#COPY . .
 
 # Install the application itself
 #RUN pip install --no-cache-dir --no-deps . -t /usr/src/app/modules && rm -rf .git
-RUN pip install . -t /usr/src/app/modules && rm -rf .git
+#RUN pip install . -t /usr/src/app/modules && rm -rf .git
+RUN pip install git+https://github.com/secorolab/scenery_builder.git@devel
 
 ENV BLENDER_USER_SCRIPTS=/usr/src/app
 
