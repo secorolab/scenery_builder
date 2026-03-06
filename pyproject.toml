@@ -27,7 +27,7 @@ maintainers = [
 
 [tool.poetry]
 packages = [{include = "fpm", from = "src"}]
-include = [{path="*.jinja"}, {path="*/__version__.py"}]
+include = [{path="*.jinja"}]
 version = "0.0.0"
 
 [tool.poetry.group.test.dependencies]
@@ -70,7 +70,7 @@ folders = [
   { path = "src" }
 ]
 
-[tool.poetry-dynamic-versioning.files."src/fpm/__version__.py"]
+[tool.poetry-dynamic-versioning.files."src/fpm/__init__.py"]
 persistent-substitution = true
 initial-content = """
   # These version placeholders will be replaced later during substitution.

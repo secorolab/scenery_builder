@@ -2,7 +2,7 @@ import os
 import click
 import logging
 
-from fpm.__version__ import __version__
+from fpm import __version__
 from fpm.generators.dot import visualize_frame_tree
 from fpm.generators.prov import (
     fpm_prov_generation_graph,
@@ -26,6 +26,10 @@ from fpm.generators.tts import (
 )
 from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
+
+from fpm.logging import logger as floorplan_logger
+
+floorplan_logger.setLevel(logging.DEBUG)
 
 logger = logging.getLogger("floorplan.cli")
 logger.setLevel(logging.DEBUG)
