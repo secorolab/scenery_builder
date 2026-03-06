@@ -390,5 +390,6 @@ def draw_frames(g, im, center, map_name, output_path, frame_type, **kwargs):
 
     ax.yaxis.set_inverted(False)
     ax.set_aspect("equal", adjustable="box")
+    ax.grid(True)
     plt.tight_layout()
     fig.savefig(os.path.join(output_path, name_image), dpi=300)
