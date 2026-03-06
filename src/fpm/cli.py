@@ -2,6 +2,7 @@ import os
 import click
 import logging
 
+from fpm.__version__ import __version__
 from fpm.generators.dot import visualize_frame_tree
 from fpm.generators.prov import (
     fpm_prov_generation_graph,
@@ -105,7 +106,9 @@ def config_behaviors(ctx, param, filename):
     callback=_gen_docs,
     help="Generate the documentation for this CLI",
 )
-def floorplan(docs):
+@click.version_option(__version__)
+@click.pass_context
+def floorplan(ctx, docs):
     """CLI for the scenery builder artefact generation"""
     pass
 
