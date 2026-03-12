@@ -17,6 +17,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   prepare:
     runs-on: ubuntu-24.04
@@ -29,19 +33,22 @@ jobs:
       - name: Set outputs
         id: set-outputs
         run: |
-          echo 'image=ghcr.io/${{ steps.repository_owner.outputs.lowercase }}/asterisk-hass-addon' >> "${GITHUB_OUTPUT}"
+          echo 'image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' >> "${GITHUB_OUTPUT}"
           # Only enable push on push events or pull requests coming from the same repository, except from dependabot
           echo 'push=${{ github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}' >> "${GITHUB_OUTPUT}"
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: |
-            ${{ steps.set-outputs.outputs.image }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,format=short
+            # set latest tag for default branch
+            type=raw,value=latest,enable={{is_default_branch}}
     outputs:
       image: ${{ steps.set-outputs.outputs.image }}
       push: ${{ steps.set-outputs.outputs.push }}
