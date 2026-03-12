@@ -63,6 +63,8 @@ def artefact_prov_generation_graph(
 
 
 def artefact_prov_metadata(source_files, generated_files, **kwargs):
+    ignored_extensions = kwargs.get("ignored_extensions", [])
+    logger.debug(f"Ignored extensions: {ignored_extensions}")
     _source_files = []
     for d in source_files:
         _source_files.extend(glob.glob(os.path.join(d, "*.json")))
@@ -73,6 +75,8 @@ def artefact_prov_metadata(source_files, generated_files, **kwargs):
         ):
             logger.debug(f"Skipping {f} metadata")
             continue
+        elif f.endswith(".gltf"):
+            f = f.replace(".gltf", ".glb")
 
         gen_file_metadata(f, _source_files)
 
