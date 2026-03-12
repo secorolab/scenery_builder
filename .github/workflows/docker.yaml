@@ -1,80 +1,170 @@
-#
-name: Create and publish a Docker image
+name: ci
 
-# Configures this workflow to run every time a change is pushed to the branch called `release`.
 on:
   push:
-    branches: ['main', 'docker', 'devel']
+    branches:
+      - "main"
+      - "docker"
+      - "devel"
     tags:
-      - v*
+      - "v*"
   pull_request:
-    branches: ['main', 'docker', 'devel']
+    branches:
+      - "main"
+      - "devel"
 
-# Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
-# There is a single job in this workflow. It's configured to run on the latest available version of Ubuntu.
 jobs:
-  build-and-push-image:
-    runs-on: ubuntu-latest
-    # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
-      # 
+  prepare:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Fetch tags
+      - name: Get lowercase GitHub username
+        id: repository_owner
+        uses: ASzc/change-string-case-action@v6
+        with:
+          string: ${{ github.repository_owner }}
+      - name: Set outputs
+        id: set-outputs
         run: |
-          git pull origin --tags
-      # Uses the `docker/login-action` action to log in to the Container registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
-      - name: Extract metadata (tags, labels) for Docker
+          echo 'image=ghcr.io/${{ steps.repository_owner.outputs.lowercase }}/asterisk-hass-addon' >> "${GITHUB_OUTPUT}"
+          # Only enable push on push events or pull requests coming from the same repository, except from dependabot
+          echo 'push=${{ github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}' >> "${GITHUB_OUTPUT}"
+      - name: Docker meta
         id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: |
+            ${{ steps.set-outputs.outputs.image }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=short
-            # set latest tag for default branch
-            type=raw,value=latest,enable={{is_default_branch}}
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+    outputs:
+      image: ${{ steps.set-outputs.outputs.image }}
+      push: ${{ steps.set-outputs.outputs.push }}
+      meta-version: ${{ steps.meta.outputs.version }}
+      meta-labels: ${{ steps.meta.outputs.labels }}
+      meta-json: ${{ steps.meta.outputs.json }}
+  build:
+    needs:
+      - prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    name: build (${{ matrix.target.platform }})
+    runs-on: ${{ matrix.target.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # Needed to calculate branch for tag
+          fetch-depth: 0
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
-      # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
-      # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
-      - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        if: needs.prepare.outputs.push == 'true'
+        uses: docker/login-action@v4
         with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-      
-      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set vars
+        id: vars
+        run: |
+          echo "artifact-name=digest-$(echo '${{ matrix.target.platform }}' | tr / -)" >> "${GITHUB_OUTPUT}"
+
+          # Set the cache-to output
+          echo 'cache-to=type=gha,scope=${{ github.ref_name }}-${{ matrix.target.platform }}' >> "${GITHUB_OUTPUT}"
+
+          # Set the cache-from output
+          if [[ '${{ github.event_name }}' == 'push' ]]; then
+            if [[ '${{ github.ref }}' == 'refs/tags/v'* ]]; then
+              # Use cache from the branch when building a tag
+              branch="$(git branch -r --contains '${{ github.ref }}')"
+              branch="${branch##*/}"
+              echo "cache-from=type=gha,scope=${branch}-${{ matrix.target.platform }}" >> "${GITHUB_OUTPUT}"
+            else
+              # Use cache from the same branch when not building a tag
+              echo 'cache-from=type=gha,scope=${{ github.ref_name }}-${{ matrix.target.platform }}' >> "${GITHUB_OUTPUT}"
+            fi
+          else
+            # Use cache from target branch too when building a pull request
+
+            # In this case, it has to be a multiline string
+            # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+            EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+
+            echo "cache-from<<${EOF}" >> "${GITHUB_OUTPUT}"
+
+            printf '%s\n' \
+              "type=gha,scope=${{ github.ref_name }}-${{ matrix.target.platform }}" \
+              "type=gha,scope=${{ github.base_ref }}-${{ matrix.target.platform }}" \
+              >> "${GITHUB_OUTPUT}"
+
+            echo "${EOF}" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-      
+          context: asterisk
+          platforms: ${{ matrix.target.platform }}
+          labels: ${{ needs.prepare.outputs.meta-labels }}
+          outputs: |
+            type=image,name=${{ needs.prepare.outputs.image }},push-by-digest=true,name-canonical=true,push=${{ needs.prepare.outputs.push }}
+          cache-from: |
+            ${{ steps.vars.outputs.cache-from }}
+          cache-to: |
+            ${{ steps.vars.outputs.cache-to }}
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest='${{ steps.build.outputs.digest }}'
+          touch "/tmp/digests/${digest#sha256:}"
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.vars.outputs.artifact-name }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  push:
+    needs:
+      - prepare
+      - build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          pattern: digest-*
+          merge-multiple: true
+          path: /tmp/digests
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to GitHub Container Registry
+        if: needs.prepare.outputs.push == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create manifest list and push
+        if: needs.prepare.outputs.push == 'true'
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(jq -r '"-t " + (.tags | join(" -t "))' <<< '${{ needs.prepare.outputs.meta-json }}') \
+            $(printf '${{ needs.prepare.outputs.image }}@sha256:%s ' *)
+      - name: Inspect image
+        if: needs.prepare.outputs.push == 'true'
+        run: |
+          docker buildx imagetools inspect '${{ needs.prepare.outputs.image }}:${{ needs.prepare.outputs.meta-version }}'
