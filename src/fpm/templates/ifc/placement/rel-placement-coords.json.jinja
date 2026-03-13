@@ -4,6 +4,6 @@
     "@type": "PoseCoordinate",
     "unit": "{{ length_unit }}",
     {%  set coords = list(rdflib.collection.Collection(g, g[relative_placement : IFC_CONCEPTS["location"] / IFC_CONCEPTS["coordinates"]].__next__())) -%}
-    "coordinates":  [{{ coords[0] }}, {{ coords[1] }}, {{ coords[2] }}]
+    "coordinates":  [{% for v in coords %}{{ v }}{% if not loop.last %},{% endif %}{% endfor %}]
   }
 ]

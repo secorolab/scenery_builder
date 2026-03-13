@@ -214,7 +214,11 @@ def get_space_points(g: Graph):
     space_points = []
     for space in spaces:
         space_points_json = get_point_positions_in_space(g, space)
-        space_points.append(space_points_json)
+        if space_points_json is None:
+            space_points_json = get_point_positions_in_space_from_polyhedron(g, space)
+            space_points.extend(space_points_json)
+        else:
+            space_points.append(space_points_json)
 
     return space_points
 
@@ -253,19 +257,21 @@ def get_opening_points(g: Graph, element="Entryway"):
     logger.info("Querying all {}s...".format(element))
     opening_points = list()
     for opening, _, _ in g.triples((None, RDF.type, FP[element])):
-        poly = g.value(opening, FP["3d-shape"])
-        assert poly is not None
-        faces_nodes = get_list_values(g, poly, POLY["faces"])
-        face_positions = list()
-        for f in faces_nodes:
-            face_vertices = get_list_from_ptr(g, f)
-            positions = list()
-            for point in face_vertices:
-                p = get_point_position(g, point)
-                positions.append(p)
-            face_positions.append(positions)
+        logger.debug("Querying points of %s", opening)
 
-        opening_points.append(face_positions)
+        for poly in g.objects(opening, FP["3d-shape"]):
+            # assert poly is not None
+            faces_nodes = get_list_values(g, poly, POLY["faces"])
+            face_positions = list()
+            for f in faces_nodes:
+                face_vertices = get_list_from_ptr(g, f)
+                positions = list()
+                for point in face_vertices:
+                    p = get_point_position(g, point)
+                    positions.append(p)
+                face_positions.append(positions)
+
+            opening_points.append(face_positions)
 
     return opening_points
 
@@ -280,34 +286,38 @@ def get_3d_structure(g: Graph, element="Wall", threshold=0.05):
     for e, _, _ in g.triples((None, RDF.type, FP[element])):
         name = prefixed(g, e).split(":")[-1]
 
-        poly = g.value(e, FP["3d-shape"])
-        if g.value(poly, RDF.type) != POLY["Polyhedron"]:
-            continue
-        vertices = get_list_values(g, poly, POLY["points"])
-        positions = list()
-        for point in vertices:
-            p = get_point_position(g, point)
-            if element in ["Window", "Entryway"]:
-                if p["y"] == 0.0:
-                    p["y"] = p["y"] - threshold
-                else:
-                    p["y"] = p["y"] + threshold
+        for poly in g.objects(e, FP["3d-shape"]):
+            poly_name = prefixed(g, poly).split(":")[-1]
+            if g.value(poly, RDF.type) != POLY["Polyhedron"]:
+                continue
+            vertices = get_list_values(g, poly, POLY["points"])
+            positions = list()
+            for point in vertices:
+                p = get_point_position(g, point)
+                if element in ["Window", "Entryway"]:
+                    if p["y"] == 0.0:
+                        p["y"] = p["y"] - threshold
+                    else:
+                        p["y"] = p["y"] + threshold
 
-            x, y, z = get_waypoint_coord_wrt_world(g, p, coords_m)
-            positions.append((x, y, z))
+                x, y, z = get_waypoint_coord_wrt_world(g, p, coords_m)
+                positions.append((x, y, z))
 
-        faces_nodes = get_list_values(g, poly, POLY["faces"])
-        faces = list()
-        for f in faces_nodes:
-            face_vertices = get_list_from_ptr(g, f)
-            face = [vertices.index(point) for point in face_vertices]
-            faces.append(face)
+            faces_nodes = get_list_values(g, poly, POLY["faces"])
+            faces = list()
+            for f in faces_nodes:
+                face_vertices = get_list_from_ptr(g, f)
+                face = [vertices.index(point) for point in face_vertices]
+                faces.append(face)
 
-        d = {"name": name, "vertices": positions, "faces": faces}
-        if element in ["Entryway", "Window"]:
-            voids = get_list_values(g, e, FP["voids"])
-            d["voids"] = [prefixed(g, v).split(":")[-1] for v in voids]
-        elements.append(d)
+            d = {"name": name, "vertices": positions, "faces": faces}
+            if element in ["Entryway", "Window"]:
+                d["name"] = (
+                    f"{name}-{poly_name}"  # TODO Quick fix for openings defined with more than one solid
+                )
+                voids = get_list_values(g, e, FP["voids"])
+                d["voids"] = [prefixed(g, v).split(":")[-1] for v in voids]
+            elements.append(d)
 
     return elements
 
@@ -350,6 +360,8 @@ def get_point_positions_in_space(g: Graph, space):
     logger.debug("Querying points from polygon attribute for %s", prefixed(g, space))
     polygon = g.value(space, FP["shape"])
 
+    if polygon is None:
+        return
     point_nodes = get_list_values(g, polygon, POLY["points"])
 
     positions = []
@@ -359,6 +371,24 @@ def get_point_positions_in_space(g: Graph, space):
         positions.append(position)
 
     return {"name": prefixed(g, space), "points": positions}
+
+
+def get_point_positions_in_space_from_polyhedron(g: Graph, space):
+    logger.debug("Querying points from polyhedron attribute for %s", prefixed(g, space))
+
+    polyhedron = g.value(space, FP["3d-shape"])
+
+    all_points = list()
+    for f in list(rdflib.collection.Collection(g, g.value(polyhedron, POLY["faces"]))):
+        positions = []
+        logger.debug("Querying point positions")
+        for idx in rdflib.collection.Collection(g, f):
+            position = get_point_position(g, idx)
+            positions.append(position)
+        d = {"name": prefixed(g, space), "points": positions}
+        all_points.append(d)
+
+    return all_points
 
 
 def get_coordinates_map(g: Graph):
