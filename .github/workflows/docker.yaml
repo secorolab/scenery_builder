@@ -124,6 +124,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v7
         with:
+          context: .
           platforms: ${{ matrix.target.platform }}
           labels: ${{ needs.prepare.outputs.meta-labels }}
           outputs: |
