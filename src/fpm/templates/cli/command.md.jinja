@@ -1,0 +1,42 @@
+---
+layout: default
+title: {{ cmd.name }}
+{% if cmd.parent %}parent: {{ cmd.parent }}{% endif %}
+---
+
+# {{ cmd.name }}
+
+{{ cmd.help | replace("\n    ", "\n") }}
+
+Usage:
+
+```bash
+{{ cmd.usage }}
+```
+
+{% if cmd.params -%}
+## Options
+
+{% for g, params in cmd.params|groupby("required")|reverse -%}
+### {{ "Required" if g else "Optional" }}
+
+{%+ for p in params -%}
+{%- if not p.hidden and p.name != "help" -%}
+- {% for opt in p.opts -%}
+`{{ opt }}`{{ ", " if not loop.last else "" }}
+{%- endfor %} ({{ p.type.param_type | upper }})
+    {{ p.help }}.
+    {%- if p.default %}
+    Default: `{{ p.default }}`
+    {%- endif %}
+{%- endif %}
+{% endfor +%}
+{% endfor -%}
+{%- endif -%}
+{%- if cmd.commands -%}
+## Commands
+
+{% for k, v in cmd.commands.items() -%}
+- [`{{ k }}`]({{ k }}) - {{ v.short_help }}
+{% endfor -%}
+{%- endif -%}

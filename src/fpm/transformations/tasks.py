@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
 # SPDX-License-Identifier: LGPL-3.0-or-later
-from rdflib import RDF
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as Pol
+import logging
 
 from fpm.graph import (
-    get_point_position,
-    prefixed,
-    traverse_to_world_origin,
-    get_list_from_ptr,
+    get_space_points,
+    get_coordinates_map,
+    get_waypoint_coord_wrt_world,
 )
-from fpm.constants import FP, POLY, GEOM, COORD, COORD_EXT
-from fpm.utils import build_transformation_matrix
+
+logger = logging.getLogger("floorplan.transformations.tasks")
+logger.setLevel(logging.DEBUG)
 
 
 def inset_shape(points, width=0.3):
@@ -60,12 +60,11 @@ def inset_shape(points, width=0.3):
 
 def create_inset_json_ld(model, width):
 
-    inset_graph = []
     tree_structure = []
 
     for space in model:
 
-        points = []
+        points = list()
         for point in space["points"]:
             xs = point["x"]
             ys = point["y"]
@@ -74,84 +73,27 @@ def create_inset_json_ld(model, width):
         points.append(points[0])
         points = np.array(points)
         inset = inset_shape(points, width)
-        space_name = space["name"][16:]
+        space_name = space["name"].split(":")[1]
 
         # create a coordinate relation per point
         tree_points = []
         for i, point in enumerate(inset):
             point = {
-                "name": "position-inset-point-{i}-to-{name}-frame".format(
+                "name": "position-inset-point-{i:04d}-to-{name}-frame".format(
                     i=i, name=space_name
                 ),
-                "as-seen-by": "fp:frame-center-{name}".format(name=space_name),
+                "as-seen-by": "fpm:{name}-frame".format(name=space_name),
                 "x": point[0],
                 "y": point[1],
+                "z": 0.0,
             }
             tree_points.append(point)
 
         # create a polygon with all points
-        polygon = {"fp:points": tree_points, "name": space_name}
+        polygon = {"points": tree_points, "name": space_name}
         tree_structure.append(polygon)
 
     return tree_structure
-
-
-def get_point_positions_in_space(g, space):
-    polygon = g.value(space, FP["shape"])
-
-    point_ptr = g.value(polygon, POLY["points"])
-
-    point_nodes = get_list_from_ptr(g, point_ptr)
-
-    positions = []
-    for point in point_nodes:
-        position = get_point_position(g, point)
-        positions.append(position)
-
-    return {"name": prefixed(g, space), "points": positions}
-
-
-def get_coordinates_map(g):
-    coordinates_map = {}
-
-    for coord, _, _ in g.triples((None, RDF.type, COORD["PoseCoordinate"])):
-        coordinates_map[prefixed(g, g.value(coord, COORD["of-pose"]))] = {
-            "x": g.value(coord, COORD["x"]).toPython(),
-            "y": g.value(coord, COORD["y"]).toPython(),
-            "theta": g.value(coord, COORD_EXT["theta"]).toPython(),
-        }
-
-    return coordinates_map
-
-
-def get_waypoint_coord(g, point, coordinates_map):
-    frame = point["as-seen-by"]
-    path = traverse_to_world_origin(g, frame)
-
-    path_positions = [str(prefixed(g, p)) for p in path]
-    path_positions = [p for p in path_positions if "pose" in p]
-
-    p = np.array([[point["x"]], [point["y"]], [0], [1]]).astype(float)
-
-    path_positions = path_positions[::-1]
-    path_positions.append(0)
-    for pose, next_pose in zip(path_positions[:-1], path_positions[1:]):
-
-        coordinates = coordinates_map[pose]
-        T = build_transformation_matrix(
-            coordinates["x"], coordinates["y"], 0, coordinates["theta"]
-        ).astype(float)
-        if not next_pose == 0:
-            if next_pose.count("wall") > 1:
-                T = np.linalg.pinv(T)
-
-        p = np.dot(T, p)
-
-    # inset_points.append([round(p[0, 0].item(), 2), round(p[1, 0].item(), 2), 0])
-    x = round(p[0, 0].item(), 2)
-    y = round(p[1, 0].item(), 2)
-
-    return x, y
 
 
 def transform_insets(g, inset_model_framed, coordinates_map):
@@ -163,12 +105,14 @@ def transform_insets(g, inset_model_framed, coordinates_map):
 
         inset_points = []
 
-        for point in inset["fp:points"]:
-            name = point["name"][26:-6]
-            point_name = point["name"][15:22]
-            name = "{}-{}".format(name, point_name)
+        for point in inset["points"]:
 
-            x, y = get_waypoint_coord(g, point, coordinates_map)
+            # Get the space name and point ID from the inset ID
+            # TODO Fix this so we don't rely on human-readable IDs with semantic meaning
+            id_sem = point["name"].split("-")
+            name = "{}-point-{}".format(id_sem[5], id_sem[3])
+
+            x, y, _ = get_waypoint_coord_wrt_world(g, point, coordinates_map)
 
             inset_points.append({"id": name, "x": x, "y": y, "z": 0, "yaw": 0})
 
@@ -192,27 +136,16 @@ def transform_insets(g, inset_model_framed, coordinates_map):
 
 def get_all_disinfection_tasks(g, inset_width):
 
-    floorplan = g.value(predicate=RDF.type, object=FP["FloorPlan"])
+    space_points = get_space_points(g)
 
-    # Get the list of spaces
-    print("Querying all spaces...")
-    space_ptr = g.value(floorplan, FP["spaces"])
-    spaces = get_list_from_ptr(g, space_ptr)
-
-    # for each space, find the polygon
-    print("Get all points...")
-    space_points = []
-    for space in spaces:
-        space_points_json = get_point_positions_in_space(g, space)
-        space_points.append(space_points_json)
-
-    print("Creating the insets...")
+    logger.debug("Creating the insets...")
     inset_model_framed = create_inset_json_ld(space_points, inset_width)
 
-    print("Calculating transformation path...")
+    logger.debug("Calculating transformation path...")
+    # This just gets the coordinates of all poses in the graph, it doesn't calculate anything
     coordinates_map = get_coordinates_map(g)
 
-    print("Transforming the insets")
+    logger.debug("Transforming the insets")
     insets = transform_insets(g, inset_model_framed, coordinates_map)
 
     return [dict(id=inset["name"], task=[inset]) for inset in insets]

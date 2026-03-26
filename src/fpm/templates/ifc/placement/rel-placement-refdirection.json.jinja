@@ -1,0 +1,9 @@
+[
+  {
+    "@id": "pose-coord-{{ placement_id }}",
+    "@type": "DirectionCosineXYZ",
+    "unit": "UNITLESS",
+    {% set refdirection = list(rdflib.collection.Collection(g, g[relative_placement : IFC_CONCEPTS["refdirection"] / IFC_CONCEPTS["directionratios"]].__next__())) -%}
+    "direction-cosine-x": [{{ refdirection[0] }}, {{ refdirection[1] }}, {{ refdirection[2] }}]
+  }
+]

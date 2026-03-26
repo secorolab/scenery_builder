@@ -1,29 +1,115 @@
 <?xml version='1.0' encoding='utf-8'?>
 <sdf version="1.6">
   <world name="{{model.name}}">
-    <gravity>0 0 -9.8</gravity>
-    <physics default="0" name="default_physics" type="ode">
-      <max_step_size>0.001</max_step_size>
+    <physics name='1ms' type='ignored'>
+      <max_step_size>0.003</max_step_size>
       <real_time_factor>1</real_time_factor>
       <real_time_update_rate>1000</real_time_update_rate>
     </physics>
+
+    <!-- Plugin for simulating physics -->
+    <plugin
+      filename="gz-sim-physics-system"
+      name="gz::sim::systems::Physics">
+    </plugin>
+
+    <!-- Plugin for handling user commands -->
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
+
+    <!-- Plugin for broadcasting scene updates -->
+    <plugin
+      filename="gz-sim-scene-broadcaster-system"
+      name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+
+    <!-- Plugin for handling sensors like the LIDAR -->
+    <!-- <plugin
+      filename="gz-sim-sensors-system"
+      name="gz::sim::systems::Sensors">
+      <render_engine>ogre</render_engine>
+    </plugin> -->
+
+    <!-- Plugin for IMU -->
+    <plugin filename="gz-sim-imu-system"
+      name="gz::sim::systems::Imu">
+    </plugin>
+
+    <plugin name="gz::sim::systems::Contact" filename="gz-sim-contact-system" />
+
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type='adiabatic' />
+
     <scene>
       <ambient>0.6 0.6 0.6 1</ambient>
       <background>0.4 0.4 0.4 1</background>
       <shadows>false</shadows>
     </scene>
+
     <include>
-      <uri>model://sun</uri>
+        <uri>
+        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Sun
+        </uri>
     </include>
-    <include>
-      <uri>model://ground_plane</uri>
-      <pose>0 0 0 0 0 0</pose>
-    </include>
+
+    <model name='ground_plane'>
+      <static>1</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <contact>
+              <collide_bitmask>65535</collide_bitmask>
+              <ode />
+            </contact>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+              <torsional>
+                <ode />
+              </torsional>
+            </friction>
+            <bounce />
+          </surface>
+          <max_contacts>10</max_contacts>
+        </collision>
+        <visual name='visual'>
+          <!-- <cast_shadows>0</cast_shadows> -->
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>1 1 1 1</ambient>
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0 0 0 1</specular>
+            <emissive>0.2 0.2 0.2 1</emissive>
+          </material>
+        </visual>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+      </link>
+    </model>
+
     <include>
       <uri>model://{{model.name}}</uri>
       <static>true</static>
       <pose>-0.0 0.0 0.0 0.0 0.0 0.0</pose>
     </include>
+
     {% for instance in model.instances %}
     <include>
       <name>{{instance.instance_name}}</name>
@@ -31,11 +117,36 @@
       <static>{{instance.static}}</static>
       <pose>{{instance.pose}}</pose>
       {% for start_joint_state in instance.start_joint_states %}
-        <plugin name="initial_plugin" filename="libinitial_plugin.so">
-          <joint>{{start_joint_state.joint}}</joint>
-          <position>{{start_joint_state.position}}</position>
-        </plugin>
-      {% endfor %}
+      <plugin name="gz::InitialJointStatePlugin" filename="libinitial_joint_state_plugin.so">
+        <joint>{{start_joint_state.joint}}</joint>
+        <position>{{start_joint_state.position}}</position>
+      </plugin>
+      <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+          <joint_name>{{ start_joint_state.joint }}</joint_name>
+          <topic>{{ instance.instance_name }}_controller</topic>
+          <p_gain>0.05</p_gain>
+          <i_gain>0.0</i_gain>
+          <d_gain>0.0</d_gain>
+          <i_max>1</i_max>
+          <i_min>-1</i_min>
+          <cmd_max>0.2</cmd_max>
+          <cmd_min>1.2</cmd_min>
+          <use_actuator_msg>true</use_actuator_msg>
+          <actuator_number>0</actuator_number>
+          <initial_position>{{start_joint_state.position}}</initial_position>
+      </plugin>
+      <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+          <joint_name>{{ start_joint_state.joint }}</joint_name>
+      </plugin>
+      {%- endfor %}
+      {% for plugin in instance.behaviours -%}
+        {%- if plugin.type == "timed-state-change" -%}
+              {% include "./gazebo/plugins/tsc-plugin.sdf.jinja" with context %}
+        {%- endif %}
+        {% if plugin.type == "distance-triggered-state-change" -%}
+              {% include "./gazebo/plugins/dsc-plugin.sdf.jinja" with context %}
+        {%- endif %}
+      {%- endfor %}
     </include>
     {% endfor %}
   </world>

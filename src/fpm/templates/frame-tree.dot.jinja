@@ -1,0 +1,5 @@
+digraph G {
+{% for k, v in frames.items() -%}
+  {{ v.parent_frame_id | replace("-", "_") }} -> {{ v.frame_id | replace("-", "_") }} [weight=8];
+{% endfor %}
+};

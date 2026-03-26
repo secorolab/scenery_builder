@@ -1,0 +1,38 @@
+[
+  {% set point_id = element_id ~ "-end" %}
+  {
+    "@id": "{{ point_id }}",
+    "@type": [ "3D", "Euclidean", "Point" ]
+  },
+  {
+    "@id": "position-{{ point_id }}",
+    "@type": "Position",
+    "of": "{{ point_id }}",
+    "with-respect-to": "{{ placement_id }}-origin",
+    "quantity-kind": "Length"
+  },
+  {
+    "@id": "position-coord-{{ point_id }}-wrt-{{ element_id }}-origin",
+    "@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
+    "of-position": "position-{{ point_id }}",
+    "as-seen-by": "{{ placement_id }}-frame",
+    "unit": "{{ length_unit }}",
+    "coordinates": [0.0, 0.0, 1000.0]
+  },
+  {
+    "@id": "{{ element_id }}-normal-to-boundary",
+    "@type": "Vector",
+    "start": "{{ placement_id }}-origin",
+    "end": "{{ point_id }}"
+  },
+  {
+    "@id": "{{ opening_id }}",
+    "@type": "Opening",
+    "vectors": [
+      "{{ element_id }}-normal-to-boundary"
+    ],
+    "voids": [
+      "{{ wall_id }}"
+    ]
+  }
+]

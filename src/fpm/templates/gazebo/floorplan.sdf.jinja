@@ -5,18 +5,43 @@
       <visual name="visual">
 	    <geometry>
           <mesh>
-            <uri>model://{{model.name}}/meshes/{{model.name}}.stl</uri>
+            <uri>model://{{model.name}}.stl</uri>
           </mesh>
         </geometry>
+        <material>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+        </material>
       </visual>
       <collision name="collision">
         <geometry>
           <mesh>
-            <uri>model://{{model.name}}/meshes/{{model.name}}.stl</uri>
+            <uri>model://{{model.name}}.stl</uri>
           </mesh>
         </geometry>
-      </collision>    
+      </collision>
+      {% if model.contact_sensors -%}
+      <sensor name='sensor_contact' type='contact'>
+          <contact>
+              <collision>collision</collision> <!-- Name of the collision link -->
+              <topic>/wall_contact</topic>
+          </contact>
+          <always_on>1</always_on>
+          <update_rate>100</update_rate>
+      </sensor>
+      {%- endif %}
     </link>
-  <static>1</static>
+    <static>1</static>
+    {% if model.contact_sensors -%}
+    <plugin filename="gz-sim-touchplugin-system"
+              name="gz::sim::systems::TouchPlugin">
+      <target>turtlebot4</target>
+      <namespace>walls</namespace>
+      <time>0.001</time>
+      <enabled>true</enabled>
+    </plugin>
+    {%- endif %}
   </model>
 </sdf>

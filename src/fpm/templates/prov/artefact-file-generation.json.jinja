@@ -1,0 +1,35 @@
+{
+  "@context": [
+    {
+      "prov": "http://www.w3.org/ns/prov#",
+      "models": "{{ model_base_iri }}"
+    },
+    "https://secorolab.github.io/metamodels/prov.json"
+  ],
+  "@graph": [
+    {
+      "@id": "models:{{ env_id }}",
+      "@type": "Collection",
+      "hadMember": [
+        {% for gen_file in generated_files -%}
+          "models:{{ env_id }}/{{ gen_file }}",
+        {% endfor -%}
+        {% for source_file in source_files -%}
+        "models:{{ env_id }}/{{ source_file }}/"{% if not loop.last %},{% endif %}
+        {%- endfor %}
+      ]
+    },
+    {% for gen_file in generated_files -%}
+    {
+      "@id": "models:{{ env_id }}/{{ gen_file }}",
+      "@type": "Entity",
+      "wasDerivedFrom": [
+        {% for source_file in source_files -%}
+        "models:{{ env_id }}/{{ source_file }}/"{% if not loop.last %},{% endif %}
+        {%- endfor %}
+      ],
+      "generatedAtTime": "{{ gen_time }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}

@@ -1,4 +1,9 @@
-from fpm.utils import load_template, save_file
+import logging
+
+from fpm.utils import load_template, save_file, get_output_path
+
+logger = logging.getLogger("floorplan.generators.ros")
+logger.setLevel(logging.DEBUG)
 
 
 def generate_launch_file(model_name, output_path, file_name, **custom_args):
@@ -8,6 +13,30 @@ def generate_launch_file(model_name, output_path, file_name, **custom_args):
 
     ros_pkg = custom_args.get("ros_pkg", "floorplan_models")
 
-    output = template.render(pkg_path=ros_pkg, model_name=model_name)
+    output = template.render(ros_pkg=ros_pkg, model_name=model_name)
 
-    save_file(output_path, file_name, output)
+    return save_file(output_path, file_name, output)
+
+
+def gazebo_world_launch(model_name, base_path, **kwargs):
+    logger.info("Generating gazebo world launch file")
+    template_path = kwargs.get("template_path")
+    output_path = get_output_path(base_path, "ros/launch")
+
+    if kwargs.get("ros_version", "ROS2") == "ROS2":
+        file_name = "{name}.ros2.launch".format(name=model_name)
+        template_name = "ros/world.ros2.launch.jinja"
+    else:
+        file_name = "{name}.ros1.launch".format(name=model_name)
+        template_name = "ros/world.ros1.launch.jinja"
+
+    f = generate_launch_file(
+        model_name,
+        output_path,
+        file_name,
+        template_name=template_name,
+        template_path=template_path,
+        **kwargs,
+    )
+
+    return [f]

@@ -1,0 +1,7 @@
+{% for task in model %}
+{% set goal = task.nav2_goal %}
+- id: {{ task.name }}
+  position: {{ goal.p }}
+  orientation: {{ goal.q }}
+  frame: world-frame
+{% endfor %}

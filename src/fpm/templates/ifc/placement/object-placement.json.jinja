@@ -1,0 +1,26 @@
+{% set placement_frame = placement_id + "-frame" %}
+{% set placement_origin = placement_id + "-origin" %}
+{% set pose_id = "pose-" + placement_id %}
+{% set coord_id = "pose-coord-" + placement_id %}
+[
+  {
+    "@id": "{{ coord_id }}",
+    "@type": ["PoseReference", "PoseCoordinate", "DirectionCosineXYZ", "VectorXYZ"],
+    "of-pose": "{{ pose_id }}"
+  },
+  {
+    "@id": "{{ pose_id }}",
+    "@type": "Pose",
+    "of": "{{ placement_frame }}",
+    "quantity-kind": [ "Angle", "Length" ]
+  },
+  {
+    "@id": "{{ placement_frame }}",
+    "@type": "Frame",
+    "origin": "{{ placement_origin }}"
+  },
+  {
+    "@id": "{{ placement_origin }}",
+    "@type": [ "3D", "Euclidean", "Point" ]
+  }
+]

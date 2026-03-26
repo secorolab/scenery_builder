@@ -1,0 +1,43 @@
+[
+  {
+    "@id":  "{{ parent_id }}",
+    "3d-shape": "{{ element_id }}-polyhedron"
+  },
+{
+  "@id": "{{ element_id }}-polyhedron",
+  "@type": "Polyhedron",
+  "points": [
+    {% for p in coords[:4] -%}
+    "{{ element_id }}-point-{{ loop.index }}",
+    {% endfor %}
+    {%- for p in coords[:4] -%}
+    "{{ element_id }}-point-{{ loop.index + 4 }}"{% if not loop.last %},{% endif %}
+    {% endfor -%}
+  ],
+  "faces": [
+  ]
+},
+{%- for p in coords[:4] -%}
+{% set point_id = element_id ~ "-point-" ~ (loop.index + 4)  %}
+{
+"@id": "{{ point_id }}",
+"@type": [ "3D", "Euclidean", "Point" ]
+},
+{
+"@id": "position-{{ point_id }}",
+"@type": "Position",
+"of": "{{ point_id }}",
+"with-respect-to": "{{ element_id }}-origin",
+"quantity-kind": "Length"
+},
+{
+"@id": "position-coord-{{ point_id }}-wrt-{{ element_id }}-origin",
+"@type": [ "PositionReference", "PositionCoordinate", "VectorXYZ" ],
+"of-position": "position-{{ point_id }}",
+"as-seen-by": "{{ element_id }}-frame",
+"unit": "{{ length_unit }}",
+{% set z = depth.toPython() * extruded_dir[-1].toPython() %}
+"coordinates": [{{ p[0] }}, {{ p[1] }}, {{ z }} ]
+}{% if not loop.last %},{% endif %}
+{% endfor %}
+]

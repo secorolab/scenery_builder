@@ -1,0 +1,6 @@
+      <plugin name="gz::DistanceTriggeredJointStateChangePlugin" filename="libdistance_triggered_joint_state_change_plugin.so">
+        <joint>{{ plugin.joint_name }}</joint>
+        <trigger_dist>{{ plugin.trigger_dist }}</trigger_dist>
+        <end_joint_angle>{{ plugin.target_joint_angle }}</end_joint_angle>
+        <target>turtlebot4</target>
+      </plugin>

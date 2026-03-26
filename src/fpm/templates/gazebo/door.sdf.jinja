@@ -1,68 +1,93 @@
 <?xml version="1.0"?>
-{%- macro geometry_box_macro(model) -%}
-<box>
-<size>{{model.size}}</size>
-</box>
+{%- macro geometry_macro(model) -%}
+    {%- if model.type == 'box' -%}
+                    <box>
+                        <size>{{model.size}}</size>
+                    </box>
+    {%- endif %}
 {%- endmacro -%}
-{% macro geometry_macro(model) %}
-{%- if model.type == 'box' -%}
-{{geometry_box_macro(model)}}
-{%- endif -%}
-{% endmacro %}
-{% macro link_macro(model) %}
-<link name="{{model.name}}">
-<pose>{{model.pose}}</pose>
-<inertial>
-<mass>{{model.inertial.mass}}</mass>
-<inertia> 
-<ixx>{{model.inertial.inertia.ixx}}</ixx>
-<ixy>0.0</ixy>
-<ixz>0.0</ixz>
-<iyy>{{model.inertial.inertia.iyy}}</iyy> 
-<iyz>0.0</iyz>
-<izz>{{model.inertial.inertia.izz}}</izz>
-</inertia>
-</inertial>
-<collision name="collision">
-<geometry>
-{{geometry_macro(model.collision)}}
-</geometry>
-</collision>
-<visual name="visual">
-<geometry>
-{{geometry_macro(model.visual)}}
-</geometry>
-{%- if model.material != None -%}
-<material><script><name>Gazebo/{{model.material}}</name></script></material>
-{%- endif -%}
-</visual>
-</link>
+{%- macro link_macro(model, contact_sensors) %}
+        <link name="{{model.name}}">
+            <pose>{{model.pose}}</pose>
+            <inertial>
+                <mass>{{model.inertial.mass}}</mass>
+                <inertia>
+                    <ixx>{{model.inertial.inertia.ixx}}</ixx>
+                    <ixy>0.0</ixy>
+                    <ixz>0.0</ixz>
+                    <iyy>{{model.inertial.inertia.iyy}}</iyy>
+                    <iyz>0.0</iyz>
+                    <izz>{{model.inertial.inertia.izz}}</izz>
+                </inertia>
+            </inertial>
+            <collision name="collision">
+                <geometry>
+                    {{geometry_macro(model.collision)}}
+                </geometry>
+            </collision>
+            <visual name="visual">
+                <geometry>
+                    {{geometry_macro(model.visual)}}
+                </geometry>
+                {% if model.material != None -%}
+                <material>
+                    <script>
+                        <uri>file://media/materials/scripts/gazebo.material</uri>
+                        <name>Gazebo/{{model.material}}</name>
+                    </script>
+                </material>
+                {%- endif %}
+            </visual>
+            {% if contact_sensors -%}
+            <sensor name='sensor_contact' type='contact'>
+                <contact>
+                    <collision>collision</collision> <!-- Name of the collision link -->
+                    <topic>/{{ model.name | replace(":", "/")| replace("-", "_")}}_contact</topic>
+                </contact>
+                <always_on>1</always_on>
+                <update_rate>100</update_rate>
+            </sensor>
+            {%- endif %}
+        </link>
 {%- endmacro -%}
 {%- macro joint_macro(model) -%}
-<joint type="{{model.type}}" name="{{model.name}}">
-<pose frame="{{model.parent}}">{{model.pose}}</pose>
-<child>{{model.children[0]}}</child>
-<parent>{{model.parent}}</parent>
-<axis>
-<xyz>{{model.axis}}</xyz>
-{% if model.limits.lower != None and model.limits.upper != None %}
-<limit>
-<lower>{{model.limits.lower}}</lower>
-<upper>{{model.limits.upper}}</upper>
-</limit>
-{% endif %}
-</axis>
-</joint>
+        <joint type="{{model.type}}" name="{{model.name}}">
+            <pose frame="{{model.parent}}">{{model.pose}}</pose>
+            <child>{{model.children[0]}}</child>
+            <parent>{{model.parent}}</parent>
+            <axis>
+                <xyz>{{model.axis}}</xyz>
+                {% if model.limits.lower != None and model.limits.upper != None -%}
+                <limit>
+                    <lower>{{model.limits.lower}}</lower>
+                    <upper>{{model.limits.upper}}</upper>
+                    <velocity>0.25</velocity>
+                </limit>
+                <dynamics>
+                    <damping>0.20</damping>
+                </dynamics>
+                {%- endif %}
+            </axis>
+        </joint>
 {%- endmacro -%}
 <sdf version="1.4">
-<model name="{{model.name}}">
-<pose>0 0 0 0 0 0</pose>
-<static>{{model.static}}</static>
-{% for link in model.links %}
-{{link_macro(link)}}
-{% endfor %}
-{% for joint in model.joints %}
-{{joint_macro(joint)}}
-{% endfor %}
-</model>
+    <model name="{{model.name}}">
+        <pose>0 0 0 0 0 0</pose>
+        <static>{{model.static}}</static>
+        {% for link in model.links -%}
+        {{link_macro(link, model.contact_sensors)}}
+        {%- endfor %}
+        {% if model.contact_sensors -%}
+        <plugin filename="gz-sim-touchplugin-system"
+                name="gz::sim::systems::TouchPlugin">
+            <target>turtlebot4</target>
+            <namespace>door</namespace>
+            <time>0.001</time>
+            <enabled>true</enabled>
+        </plugin>
+        {%- endif %}
+        {% for joint in model.joints -%}
+        {{joint_macro(joint)}}
+        {%- endfor %}
+    </model>
 </sdf>
