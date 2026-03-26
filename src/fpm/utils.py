@@ -57,22 +57,6 @@ def save_file(output_path, file_name, contents):
             json.dump(contents, f, indent=4)
     elif ext in [".pgm", ".jpg"]:
         contents.save(output_file, quality=100)
-    elif ext in [".stl"]:
-        import bpy
-
-        # Use different STL export method depending on Blender version
-        if bpy.app.version >= (4, 1, 0):
-            bpy.ops.wm.stl_export(filepath=output_file)
-        else:
-            bpy.ops.export_mesh.stl(filepath=output_file)
-    elif ext in [".dae"]:
-        import bpy
-
-        bpy.ops.wm.collada_export(filepath=output_file)
-    elif ext == ".gltf":
-        import bpy
-
-        bpy.ops.export_scene.gltf(filepath=output_file)
     else:
         with open(output_file, "w") as f:
             f.write(contents)

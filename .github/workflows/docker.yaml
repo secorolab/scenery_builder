@@ -49,6 +49,8 @@ jobs:
             type=sha,format=short
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
+      - name: Check path
+        run: ls -a
     outputs:
       image: ${{ steps.set-outputs.outputs.image }}
       push: ${{ steps.set-outputs.outputs.push }}
@@ -122,6 +124,7 @@ jobs:
         id: build
         uses: docker/build-push-action@v7
         with:
+          context: .
           platforms: ${{ matrix.target.platform }}
           labels: ${{ needs.prepare.outputs.meta-labels }}
           outputs: |
