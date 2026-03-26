@@ -9,7 +9,6 @@ name: Deploy Jekyll site to Pages
 on:
   push:
     branches: 
-      - "main"
       - "devel"
     paths:
       - "docs/**"
