@@ -147,7 +147,7 @@ def floorplan(ctx, docs):
 @click.option(
     "--model-base-iri",
     type=click.STRING,
-    default="https://secorolab.github.io/models/",
+    default="https://secorolab.github.io/models/floorplan/",
     show_default=True,
     help="Default model IRI to be used as a prefix in the PROV models",
 )
@@ -182,7 +182,9 @@ def transform(ctx, model_path, output_path, debug, **kwargs):
                 tmp_path = os.path.join(tmpdir, "json-ld")
                 generator(mm, model, output_path=tmp_path, overwrite=True)
                 g = build_graph_from_directory([tmp_path])
-            output_file = save_compact_graph(g, output_path)
+            output_file = save_compact_graph(
+                g, output_path, model_base_iri=kwargs.get("model_base_iri")
+            )
             res = [output_file]
     except Exception as e:
         logger.error(f"Error transforming model: {e}")

@@ -45,12 +45,12 @@ def build_graph_from_directory(inputs: tuple, draw_dot=False):
     return g
 
 
-def save_compact_graph(g: Graph, output_path: str):
+def save_compact_graph(g: Graph, output_path: str, model_base_iri: str):
     model_name = get_floorplan_model_name(g)
     context = {
         "@context": [
             {
-                model_name: f"https://secorolab.github.io/models/floorplan/{model_name}/",
+                model_name: f"{model_base_iri}{model_name}/",
             },
             "http://comp-rob2b.github.io/metamodels/qudt.json",
             "https://comp-rob2b.github.io/metamodels/geometry/coordinates.json",
