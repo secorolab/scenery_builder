@@ -1,6 +1,8 @@
 import os
 import glob
 import logging
+import json
+from pyld import jsonld
 
 import numpy as np
 
@@ -41,6 +43,33 @@ def build_graph_from_directory(inputs: tuple, draw_dot=False):
             rdf2dot(g, dotfile)
 
     return g
+
+
+def save_compact_graph(g: Graph, output_path: str):
+    model_name = get_floorplan_model_name(g)
+    context = {
+        "@context": [
+            {
+                model_name: f"https://secorolab.github.io/models/floorplan/{model_name}/",
+            },
+            "http://comp-rob2b.github.io/metamodels/qudt.json",
+            "https://comp-rob2b.github.io/metamodels/geometry/coordinates.json",
+            "https://secorolab.github.io/metamodels/geometry/coordinates.json",
+            "https://secorolab.github.io/metamodels/geometry/polytope.json",
+            "https://comp-rob2b.github.io/metamodels/geometry/structural-entities.json",
+            "https://secorolab.github.io/metamodels/floorplan/floorplan.json",
+            "https://comp-rob2b.github.io/metamodels/geometry/spatial-relations.json",
+        ]
+    }
+    d = json.loads(g.serialize(format="json-ld"))
+    output_file = os.path.join(output_path, "floorplan.fpm.json")
+
+    compact_graph = jsonld.compact(d, context)
+
+    with open(output_file, "w+") as fp:
+        json.dump(compact_graph, fp)
+
+    return output_file
 
 
 def prefixed(g, node):
