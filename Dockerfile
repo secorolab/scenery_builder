@@ -11,7 +11,7 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt update && \
     apt install -y git \
-    blender draco libdraco7 python3-numpy --no-install-recommends \
+    blender draco libdraco8 python3-numpy --no-install-recommends \
      && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -37,7 +37,6 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     mkdir src \
     && python -m pip install . --no-cache-dir
 
-USER appuser
 # Copy the rest of the application
 COPY . .
 
@@ -45,6 +44,7 @@ COPY . .
 RUN pip install --no-cache-dir --no-deps . \
     && rm -rf .git
 
+USER appuser
 # Switch to the non-privileged user to run the application.
 
 CMD ["floorplan" ,"generate", "-i", "/usr/src/app/models/", "-o", "/usr/src/app/output/", "mesh", "tasks", "gazebo", "occ-grid", "polyline", "door-keyframes"]
