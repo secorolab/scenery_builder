@@ -29,7 +29,7 @@ console_formatter = AnsiColorFormatter(
     "{asctime} | {levelname:<8s} | {name:<30s} | {message}",
     style="{",
 )
-# ch.setFormatter(console_formatter)
+ch.setFormatter(console_formatter)
 logger.addHandler(ch)
 
 # fh = logging.FileHandler("floorplan-cli.log")
