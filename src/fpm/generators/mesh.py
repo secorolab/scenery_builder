@@ -63,7 +63,6 @@ def run_blender(elements):
     Runs the blender transformation as a subprocess
     """
     with tempfile.NamedTemporaryFile(suffix=".json") as f:
-        print(f.name)
         with open(f.name, "w") as json_file:
             json.dump(elements, json_file)
 
