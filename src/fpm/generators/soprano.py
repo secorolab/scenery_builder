@@ -23,7 +23,7 @@ from fpm.graph import (
 from fpm.utils import render_model_template, get_output_path, save_file
 from ifcld.interpreters.namespaces import IFC_CONCEPTS
 
-logger = logging.getLogger("floorplan.generators.tts")
+logger = logging.getLogger("floorplan.generators.soprano")
 logger.setLevel(logging.DEBUG)
 
 
@@ -39,7 +39,7 @@ def get_dim_and_center(element):
 def gen_tts_wall_description(g, base_path, **kwargs):
     logger.info("Generating wall description for simulator...")
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "tts")
+    output_path = get_output_path(base_path, "soprano")
 
     entryways_elements = get_3d_structure(g, "Entryway")
     window_elements = get_3d_structure(g, "Window")
@@ -66,7 +66,7 @@ def gen_tts_wall_description(g, base_path, **kwargs):
         model,
         output_path,
         "HDT-wall-description.json",
-        "tts/walls.json.jinja",
+        "soprano/walls.json.jinja",
         template_path,
     )
 
@@ -283,7 +283,7 @@ def convert_to_nav2_goal_format(goals: list) -> list:
 def gen_tts_task_description(g, base_path, **kwargs):
     logger.info("Generating task description...")
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "tts")
+    output_path = get_output_path(base_path, "soprano")
 
     tasks = list()
 
@@ -315,7 +315,7 @@ def gen_tts_task_description(g, base_path, **kwargs):
         tasks,
         output_path,
         "nav-goals.yaml",
-        "tts/nav-goals.yaml.jinja",
+        "soprano/nav-goals.yaml.jinja",
         template_path,
     )
     return outlets, ducts
@@ -324,7 +324,7 @@ def gen_tts_task_description(g, base_path, **kwargs):
 def gen_ros_frames(g, base_path, **kwargs):
     logger.info("Generating ROS frames launch file...")
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "tts")
+    output_path = get_output_path(base_path, "ros")
     floorplan_elements = ["Space", "Opening", "Wall", "Door", "Entryway"]
     element_poses = get_floorplan_elements(g, floorplan_elements)
     frames = get_frame_tree(g, element_poses)
@@ -332,6 +332,6 @@ def gen_ros_frames(g, base_path, **kwargs):
         frames,
         output_path,
         "frames-ros2.launch",
-        "tts/frames-ros2.launch.jinja",
+        "ros/frames-ros2.launch.jinja",
         template_path,
     )
