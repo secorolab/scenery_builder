@@ -28,6 +28,8 @@ from fpm.generators.soprano import (
     gen_tts_wall_description,
     gen_tts_task_description,
     gen_ros_frames,
+    get_avt_tasks,
+    get_soprano_tasks,
 )
 from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
@@ -688,6 +690,13 @@ def soprano_gui(ctx, **kwargs):
         draw_map=True,
         source="bim",
     )
+    get_avt_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
+
+
+@generate.command(help="Generate artefacts for the SOPRANO tasks")
+@click.pass_context
+def soprano_tasks(ctx, **kwargs):
+    get_soprano_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command()
@@ -723,24 +732,16 @@ def soprano_hdt(ctx, **kwargs):
     logger.info("Generating artefacts for the SOPRANO TTS simulator...")
     logger.debug("Arguments: %s", kwargs)
     gen_tts_wall_description(**ctx.obj, **ctx.parent.params, **kwargs)
-    outlets, ducts = gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
+    tasks = gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
     if kwargs.get("ros_frames"):
         gen_ros_frames(**ctx.obj, **ctx.parent.params, **kwargs)
     if kwargs.get("visualize"):
-        logger.info("Visualizing milling task for the outlets on occupancy grid")
+        logger.info("Visualizing milling task in the occupancy grid")
         get_occ_grid(
             **ctx.obj,
             **ctx.parent.params,
             **kwargs,
-            outlets=outlets,
-            source="bim",
-            save=False,
-        )
-        get_occ_grid(
-            **ctx.obj,
-            **ctx.parent.params,
-            **kwargs,
-            ducts=ducts,
+            milling_task=tasks,
             source="bim",
             save=False,
         )

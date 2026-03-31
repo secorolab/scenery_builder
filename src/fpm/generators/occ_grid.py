@@ -289,22 +289,12 @@ def get_occ_grid(g, base_path, save=True, **kwargs):
         plt.tight_layout()
         fig.savefig(os.path.join(output_path, name_image), dpi=300, bbox_inches="tight")
 
-    if kwargs.get("outlets"):
+    if kwargs.get("milling_task"):
         logger.debug("Drawing outlet task elements")
         draw_tasks(
             im,
             center,
-            tasks="outlets",
-            map_name=map_name,
-            output_path=output_path,
-            **kwargs,
-        )
-    if kwargs.get("ducts"):
-        logger.debug("Drawing duct task elements")
-        draw_tasks(
-            im,
-            center,
-            tasks="ducts",
+            tasks="milling_task",
             map_name=map_name,
             output_path=output_path,
             **kwargs,
