@@ -671,8 +671,23 @@ def soprano_poly(ctx, **kwargs):
 
 @generate.command(help="Generate artefacts for the SOPRANO GUI")
 @click.pass_context
-def soprano_gui():
-    pass
+@click.option("--grid", is_flag=True, help="Show grid in the map")
+@click.option(
+    "--grid-resolution",
+    type=click.FLOAT,
+    default=1.0,
+    show_default=True,
+    help="Resolution of minor ticks in meters",
+)
+def soprano_gui(ctx, **kwargs):
+    get_occ_grid(
+        **ctx.obj,
+        **ctx.parent.params,
+        **kwargs,
+        save=False,
+        draw_map=True,
+        source="bim",
+    )
 
 
 @generate.command()
@@ -714,10 +729,20 @@ def soprano_hdt(ctx, **kwargs):
     if kwargs.get("visualize"):
         logger.info("Visualizing milling task for the outlets on occupancy grid")
         get_occ_grid(
-            **ctx.obj, **ctx.parent.params, **kwargs, outlets=outlets, source="bim"
+            **ctx.obj,
+            **ctx.parent.params,
+            **kwargs,
+            outlets=outlets,
+            source="bim",
+            save=False,
         )
         get_occ_grid(
-            **ctx.obj, **ctx.parent.params, **kwargs, ducts=ducts, source="bim"
+            **ctx.obj,
+            **ctx.parent.params,
+            **kwargs,
+            ducts=ducts,
+            source="bim",
+            save=False,
         )
         logger.info("Visualizing frames on occupancy grid")
         get_occ_grid(
@@ -726,6 +751,7 @@ def soprano_hdt(ctx, **kwargs):
             **kwargs,
             visualize_frames=["outlet", "duct", "wall"],
             source="bim",
+            save=False,
         )
 
 

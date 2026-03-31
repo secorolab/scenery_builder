@@ -23,10 +23,8 @@ logger = logging.getLogger("floorplan.generators.occ_grid")
 logger.setLevel(logging.DEBUG)
 
 
-def generate_occ_grid(g, output_path, **custom_args):
-    output_files = []
+def generate_occ_grid(g, map_name, **custom_args):
     plt.clf()
-    map_name = get_floorplan_model_name(g)
     logger.info("Map name: {}".format(map_name))
 
     resolution = custom_args.get("resolution", 0.05)
@@ -35,11 +33,6 @@ def generate_occ_grid(g, output_path, **custom_args):
     occupied = custom_args.get("occupied_value", 0)
     free = custom_args.get("free_value", 255)
     border = custom_args.get("border", 50)
-
-    if "{{model_name}}" in output_path:
-        output_path = output_path.replace("{{model_name}}", map_name)
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
 
     points = []
     directions = []
@@ -79,8 +72,7 @@ def generate_occ_grid(g, output_path, **custom_args):
         0,
     ]
 
-    f = save_map_metadata(output_path, map_name, center, **custom_args)
-    output_files.append(f)
+    metadata = get_map_metadata(map_name, center, **custom_args)
 
     # Create canvas
     floor = (
@@ -116,48 +108,7 @@ def generate_occ_grid(g, output_path, **custom_args):
     )
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
 
-    if custom_args.get("outlets"):
-        logger.debug("Drawing outlet task elements")
-        draw_tasks(
-            g,
-            im,
-            center,
-            tasks="outlets",
-            map_name=map_name,
-            output_path=output_path,
-            **custom_args,
-        )
-    if custom_args.get("ducts"):
-        logger.debug("Drawing duct task elements")
-        draw_tasks(
-            g,
-            im,
-            center,
-            tasks="ducts",
-            map_name=map_name,
-            output_path=output_path,
-            **custom_args,
-        )
-
-    for frame_type in custom_args.get("visualize_frames", []):
-        plt.clf()
-        logger.debug("Drawing frames for %s", frame_type)
-        draw_frames(
-            g,
-            im,
-            center,
-            map_name=map_name,
-            output_path=output_path,
-            frame_type=frame_type,
-            **custom_args,
-        )
-    im = ImageOps.flip(im)
-
-    for ext in ["jpg", "pgm"]:
-        name_image = "{}.{}".format(map_name, ext)
-        f = save_file(output_path, name_image, im)
-        output_files.append(f)
-    return output_files
+    return metadata, im
 
 
 def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
@@ -295,8 +246,7 @@ def get_2d_shape(west, south, resolution, border, points=None, shape=None):
     return shape
 
 
-def save_map_metadata(output_path, map_name, center, **custom_args):
-    file_name = "{}.yaml".format(map_name)
+def get_map_metadata(map_name, center: list, **custom_args):
     map_metadata = {
         "resolution": custom_args.get("resolution", 0.05),
         "origin": center,
@@ -307,15 +257,76 @@ def save_map_metadata(output_path, map_name, center, **custom_args):
         "laser_height": custom_args.get("laser_height", 0.7),
     }
 
-    return save_file(output_path, file_name, map_metadata)
+    return map_metadata
 
 
-def get_occ_grid(g, base_path, **kwargs):
+def get_occ_grid(g, base_path, save=True, **kwargs):
+    output_files = []
+    map_name = get_floorplan_model_name(g)
     output_path = get_output_path(base_path, "maps")
-    return generate_occ_grid(g, output_path, **kwargs)
+    if "{{model_name}}" in output_path:
+        output_path = output_path.replace("{{model_name}}", map_name)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
+    map_metadata, im = generate_occ_grid(g, map_name, **kwargs)
+    center = map_metadata.get("origin", [])
+
+    if save:
+        # Save the occupancy grid and its metadata
+        file_name = f"{map_name}.yaml"
+        f = save_file(output_path, file_name, map_metadata)
+        output_files.append(f)
+
+        img = ImageOps.flip(im)
+        name_image = f"{map_name}.pgm"
+        f = save_file(output_path, name_image, img)
+        output_files.append(f)
+
+    if kwargs.get("draw_map"):
+        fig, _ = draw_map(im, center, **kwargs)
+        name_image = f"{map_name}.jpg"
+        plt.tight_layout()
+        fig.savefig(os.path.join(output_path, name_image), dpi=300, bbox_inches="tight")
+
+    if kwargs.get("outlets"):
+        logger.debug("Drawing outlet task elements")
+        draw_tasks(
+            im,
+            center,
+            tasks="outlets",
+            map_name=map_name,
+            output_path=output_path,
+            **kwargs,
+        )
+    if kwargs.get("ducts"):
+        logger.debug("Drawing duct task elements")
+        draw_tasks(
+            im,
+            center,
+            tasks="ducts",
+            map_name=map_name,
+            output_path=output_path,
+            **kwargs,
+        )
+
+    for frame_type in kwargs.get("visualize_frames", []):
+        plt.clf()
+        logger.debug("Drawing frames for %s", frame_type)
+        draw_frames(
+            g,
+            im,
+            center,
+            map_name=map_name,
+            output_path=output_path,
+            frame_type=frame_type,
+            **kwargs,
+        )
+
+    return output_files
 
 
-def _get_im_map(im, center, **kwargs) -> AxesImage:
+def _get_im_map(im, center: list[float], **kwargs) -> AxesImage:
     resolution = kwargs.get("resolution", 0.05)
     w, h = im.size
     orig_x, orig_y, _ = center
@@ -335,7 +346,7 @@ def _get_im_map(im, center, **kwargs) -> AxesImage:
     return imax
 
 
-def draw_map(im, center, grid=False, grid_resolution=1.0, **kwargs):
+def draw_map(im, center: list[float], grid=False, grid_resolution=1.0, **kwargs):
     imax = _get_im_map(im, center, **kwargs)
     fig = imax.get_figure()
     ax = fig.get_axes().pop()
@@ -350,12 +361,15 @@ def draw_map(im, center, grid=False, grid_resolution=1.0, **kwargs):
 
         ax.grid(grid, alpha=0.5, which="both")
 
+    ax.set_xlim(center[0])
+    ax.set_ylim(center[1])
+
     return fig, ax
 
 
-def draw_tasks(g, im, center, tasks, **kwargs):
+def draw_tasks(im, center, tasks, **kwargs):
     logger.info("Drawing tasks: %s", tasks)
-    fig, ax = draw_map(im, center, **kwargs)
+    fig, ax = draw_map(im, center, grid=True, **kwargs)
     for task in kwargs.get(tasks, []):
         name = task["name"]
         nav_pose = task.get("nav_pose")
@@ -388,5 +402,4 @@ def draw_frames(g, im, center, map_name, output_path, frame_type, **kwargs):
         m[3, 3] = 0.25
         plot_2d_frame(ax, m)
 
-    plt.tight_layout()
     fig.savefig(os.path.join(output_path, name_image), dpi=300)
