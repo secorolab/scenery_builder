@@ -4,6 +4,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
+from matplotlib.image import AxesImage
 
 from fpm.graph import (
     get_space_points,
@@ -314,14 +315,10 @@ def get_occ_grid(g, base_path, **kwargs):
     return generate_occ_grid(g, output_path, **kwargs)
 
 
-def draw_tasks(g, im, center, tasks, **kwargs):
+def _get_im_map(im, center, **kwargs) -> AxesImage:
     resolution = kwargs.get("resolution", 0.05)
     w, h = im.size
-    border = kwargs.get("border", 50)
     orig_x, orig_y, _ = center
-
-    logger.info("Drawing tasks: %s", tasks)
-
     imax = plt.imshow(
         im,
         cmap="gray",
@@ -334,8 +331,31 @@ def draw_tasks(g, im, center, tasks, **kwargs):
             orig_y,
         ),
     )
+
+    return imax
+
+
+def draw_map(im, center, grid=False, grid_resolution=1.0, **kwargs):
+    imax = _get_im_map(im, center, **kwargs)
     fig = imax.get_figure()
     ax = fig.get_axes().pop()
+    ax.yaxis.set_inverted(False)
+    ax.set_aspect("equal", adjustable="box")
+
+    if grid:
+        x_val = ax.get_xticks()
+        ax.set_xticks(np.arange(x_val[0], x_val[-1], step=grid_resolution), minor=True)
+        y_val = ax.get_yticks()
+        ax.set_yticks(np.arange(y_val[0], y_val[-1], step=grid_resolution), minor=True)
+
+        ax.grid(grid, alpha=0.5, which="both")
+
+    return fig, ax
+
+
+def draw_tasks(g, im, center, tasks, **kwargs):
+    logger.info("Drawing tasks: %s", tasks)
+    fig, ax = draw_map(im, center, **kwargs)
     for task in kwargs.get(tasks, []):
         name = task["name"]
         nav_pose = task.get("nav_pose")
@@ -356,40 +376,17 @@ def draw_tasks(g, im, center, tasks, **kwargs):
     map_name = kwargs.get("map_name")
     output_path = kwargs.get("output_path")
     name_image = "tasks-{}-{}.{}".format(tasks, map_name, "jpg")
-    ax.yaxis.set_inverted(False)
-    ax.set_aspect("equal", adjustable="box")
 
     fig.savefig(os.path.join(output_path, name_image), dpi=300)
 
 
 def draw_frames(g, im, center, map_name, output_path, frame_type, **kwargs):
-
-    resolution = kwargs.get("resolution", 0.05)
-    w, h = im.size
-    orig_x, orig_y, _ = center
-
-    imax = plt.imshow(
-        im,
-        cmap="gray",
-        interpolation="none",
-        origin="upper",
-        extent=(
-            orig_x,
-            (w * resolution) - abs(orig_x),
-            (h * resolution) - abs(orig_y),
-            orig_y,
-        ),
-    )
-    fig = imax.get_figure()
-    ax = fig.get_axes().pop()
+    fig, ax = draw_map(im, center, grid=True, **kwargs)
     name_image = "{}-frames-{}.{}".format(frame_type, map_name, "jpg")
     matrices = get_frame_transform(g, frame_type)
     for m in matrices:
         m[3, 3] = 0.25
         plot_2d_frame(ax, m)
 
-    ax.yaxis.set_inverted(False)
-    ax.set_aspect("equal", adjustable="box")
-    ax.grid(True)
     plt.tight_layout()
     fig.savefig(os.path.join(output_path, name_image), dpi=300)
