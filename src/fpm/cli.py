@@ -1,6 +1,7 @@
 import os
 import click
 import logging
+import tempfile
 
 from fpm import __version__
 from fpm.generators.dot import visualize_frame_tree
@@ -12,7 +13,11 @@ from fpm.generators.prov import (
     artefact_prov_metadata,
     jsonld_prov_metadata,
 )
-from fpm.graph import build_graph_from_directory, get_floorplan_model_name
+from fpm.graph import (
+    build_graph_from_directory,
+    get_floorplan_model_name,
+    save_compact_graph,
+)
 from fpm.generators.gazebo import gazebo_world, door_object_models
 from fpm.generators.tasks import get_disinfection_tasks
 from fpm.generators.occ_grid import get_occ_grid
@@ -130,7 +135,7 @@ def floorplan(ctx, docs):
 @click.option(
     "-o",
     "--output-path",
-    type=click.Path(exists=True, resolve_path=True),
+    type=click.Path(resolve_path=True),
     default=os.path.join("."),
     help="Output path for generated artefacts",
 )
@@ -142,11 +147,15 @@ def floorplan(ctx, docs):
 @click.option(
     "--model-base-iri",
     type=click.STRING,
-    default="https://secorolab.github.io/models/",
+    default="https://secorolab.github.io/models/floorplan/",
     show_default=True,
     help="Default model IRI to be used as a prefix in the PROV models",
 )
-def transform(ctx, model_path, output_path, **kwargs):
+@click.option(
+    "--debug",
+    is_flag=True,
+)
+def transform(ctx, model_path, output_path, debug, **kwargs):
     """Transform an FPM model into JSON-LD
 
     This command is equivalent to using TextX's CLI to transform the fpm model:
@@ -157,13 +166,26 @@ def transform(ctx, model_path, output_path, **kwargs):
 
     This requires that the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) is installed.
     """
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
     logger.debug("transform command arguments: %s", kwargs)
     logger.debug("%s %s", model_path, output_path)
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(model_path)
     try:
-        res = generator(mm, model, output_path, overwrite=True)
+        if debug:
+            res = generator(mm, model, output_path=output_path, overwrite=True)
+        else:
+            with tempfile.TemporaryDirectory(prefix="scg_") as tmpdir:
+                tmp_path = os.path.join(tmpdir, "json-ld")
+                generator(mm, model, output_path=tmp_path, overwrite=True)
+                g = build_graph_from_directory([tmp_path])
+            output_file = save_compact_graph(
+                g, output_path, model_base_iri=kwargs.get("model_base_iri")
+            )
+            res = [output_file]
     except Exception as e:
         logger.error(f"Error transforming model: {e}")
 
@@ -284,9 +306,13 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     default=os.path.join("."),
     help="Output path for generated artefacts",
 )
-def ifc(ctx, model_path, output_path, **kwargs):
+@click.option(
+    "--debug",
+    is_flag=True,
+)
+def ifc(ctx, model_path, output_path, debug, **kwargs):
 
-    generate_fpm_rep_from_rdf(model_path, output_path)
+    generate_fpm_rep_from_rdf(model_path, output_path, debug)
 
 
 @floorplan.group(

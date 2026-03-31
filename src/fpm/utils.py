@@ -42,7 +42,7 @@ def load_template(template_name, template_folder=None):
     return env.get_template(template_name)
 
 
-def save_file(output_path, file_name, contents):
+def save_file(output_path, file_name, contents, debug=False):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
@@ -54,7 +54,10 @@ def save_file(output_path, file_name, contents):
             yaml.dump(contents, f, default_flow_style=None)
     elif ext == ".json":
         with open(output_file, "w") as f:
-            json.dump(contents, f, indent=4)
+            if debug:
+                json.dump(contents, f, indent=4)
+            else:
+                json.dump(contents, f)
     elif ext in [".pgm", ".jpg"]:
         contents.save(output_file, quality=100)
     else:
