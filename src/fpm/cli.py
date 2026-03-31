@@ -24,7 +24,7 @@ from fpm.generators.occ_grid import get_occ_grid
 from fpm.generators.mesh import get_3d_mesh
 from fpm.generators.polyline import get_polyline_floorplan
 from fpm.generators.door_keyframes import get_keyframes
-from fpm.generators.tts import (
+from fpm.generators.soprano import (
     gen_tts_wall_description,
     gen_tts_task_description,
     gen_ros_frames,
@@ -586,7 +586,7 @@ def gazebo(ctx, **kwargs):
     type=click.Choice(["fpm", "bim"], case_sensitive=False),
     default="fpm",
     show_default=True,
-    help="ROS version for launch files",
+    help="Type of source model being used",
 )
 @click.option(
     "--visualize-frames",
@@ -615,13 +615,6 @@ def occ_grid(ctx, **kwargs):
             ctx.parent.params.get("base_path"),
             model_base_iri=ctx.parent.params.get("model_base_iri"),
         )
-
-
-@generate.command(short_help="Generate a 3D polyline representation of the floorplan")
-@click.pass_context
-def polyline(ctx, **kwargs):
-    """Generate a 3D polyline representation of the floorplan"""
-    get_polyline_floorplan(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command(
@@ -669,6 +662,19 @@ def door_keyframes(ctx, **kwargs):
     get_keyframes(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
+@generate.command(short_help="Generate a 3D polyline representation for SOPRANO")
+@click.pass_context
+def soprano_poly(ctx, **kwargs):
+    """Generate a 3D polyline representation of the floorplan"""
+    get_polyline_floorplan(**ctx.obj, **ctx.parent.params, **kwargs)
+
+
+@generate.command(help="Generate artefacts for the SOPRANO GUI")
+@click.pass_context
+def soprano_gui():
+    pass
+
+
 @generate.command()
 @click.pass_context
 @click.option(
@@ -697,9 +703,9 @@ def door_keyframes(ctx, **kwargs):
     is_flag=True,
     help="Generate images visualizing the environment and tasks",
 )
-def tts(ctx, **kwargs):
-    """Generate the artefacts for the TTS simulator"""
-    logger.info("Generating artefacts for the TTS simulator...")
+def soprano_hdt(ctx, **kwargs):
+    """Generate the artefacts for the SOPRANO TTS simulator"""
+    logger.info("Generating artefacts for the SOPRANO TTS simulator...")
     logger.debug("Arguments: %s", kwargs)
     gen_tts_wall_description(**ctx.obj, **ctx.parent.params, **kwargs)
     outlets, ducts = gen_tts_task_description(**ctx.obj, **ctx.parent.params, **kwargs)
