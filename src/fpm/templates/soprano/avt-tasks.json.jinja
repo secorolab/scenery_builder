@@ -5,6 +5,7 @@
     "type": "{{ task["type"] }}",
     "position": {{ task["position"] }},
     "unit": "{{ task["unit"] }}",
+    "action": "{{ task["action"] }}",
     "space": "{{ task["space"] }}"
   }{% if not loop.last %},{% endif %}
   {% endfor %}

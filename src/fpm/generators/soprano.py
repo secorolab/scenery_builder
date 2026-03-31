@@ -124,6 +124,7 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
             "origin": m_start_wrt_world[:3, 3],
             "voids": wall_id,
             "unit": "M",  # Internally the scenery builder always uses Meters
+            "action": "milling",
         }
         elements.append(element)
 
@@ -246,6 +247,7 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
             "nav_pose": nav_pose,
             "voids": wall_id,
             "unit": "M",  # Internally the scenery builder always uses Meters
+            "action": "milling",
         }
         elements.append(element)
 
@@ -270,6 +272,7 @@ def convert_to_nav2_goal_format(goals: list) -> list:
             "thickness": g["thickness"],
             "position": list(g["origin"]),
             "unit": g["unit"],
+            "action": g["action"],
         }
         if g.get("radius"):
             t["radius"] = g["radius"]
