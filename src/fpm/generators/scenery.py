@@ -39,7 +39,7 @@ def add_polyhedron_faces(floorplan):
             f["faces"].append([p1, p2, p3, p4])
 
 
-def generate_fpm_rep_from_rdf(model_path, output_path):
+def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     logger.debug("Output path: %s", output_path)
     model_name = os.path.basename(model_path).lower().replace(".ifc.json", "")
 
@@ -70,55 +70,78 @@ def generate_fpm_rep_from_rdf(model_path, output_path):
         },
         {"@id": "world-origin", "@type": ["3D", "Euclidean", "Point"]},
     ]
-    save_file(
-        output_path,
-        "{}.floorplan.fpm.json".format(model_name),
-        {"@graph": floorplan, "@context": fpm_ctx},
-    )
+    if debug:
+        save_file(
+            output_path,
+            "{}.floorplan.fpm.json".format(model_name),
+            {"@graph": floorplan, "@context": fpm_ctx},
+        )
 
     length_unit = str(g.namespace_manager.curie(query_ifc_units(g)[0])).split(":")[-1]
 
     logger.info("Transforming IFC local placements...")
     placements = query_ifc_local_placements(g, length_unit)
-    save_file(
-        output_path,
-        "{}.placement.fpm.json".format(model_name),
-        {"@graph": placements, "@context": fpm_ctx},
-    )
+    if debug:
+        save_file(
+            output_path,
+            "{}.placement.fpm.json".format(model_name),
+            {"@graph": placements, "@context": fpm_ctx},
+        )
+    else:
+        floorplan.extend(placements)
 
     logger.info("Transforming IFC walls...")
     walls = query_ifc_walls(g, length_unit)
-    save_file(
-        output_path,
-        "{}.walls.fpm.json".format(model_name),
-        {"@graph": walls, "@context": fpm_ctx},
-    )
+    if debug:
+        save_file(
+            output_path,
+            "{}.walls.fpm.json".format(model_name),
+            {"@graph": walls, "@context": fpm_ctx},
+        )
+    else:
+        floorplan.extend(walls)
 
     logger.info("Transforming IFC doors...")
     doors = query_ifc_doors(g, length_unit)
-    save_file(
-        output_path,
-        "{}.doors.fpm.json".format(model_name),
-        {"@graph": doors, "@context": fpm_ctx},
-    )
+    if debug:
+        save_file(
+            output_path,
+            "{}.doors.fpm.json".format(model_name),
+            {"@graph": doors, "@context": fpm_ctx},
+        )
+    else:
+        floorplan.extend(doors)
 
     logger.info("Transforming IFC spaces...")
     spaces = query_ifc_spaces(g, model_name, length_unit)
-    save_file(
-        output_path,
-        "{}.spaces.fpm.json".format(model_name),
-        {"@graph": spaces, "@context": fpm_ctx},
-    )
+    if debug:
+        save_file(
+            output_path,
+            "{}.spaces.fpm.json".format(model_name),
+            {"@graph": spaces, "@context": fpm_ctx},
+        )
+    else:
+        floorplan.extend(spaces)
 
     logger.info("Transforming task elements...")
     task_elements = query_ifc_task_elements(g, length_unit)
-    save_file(
-        output_path,
-        "{}.task.fpm.json".format(model_name),
-        {"@graph": task_elements, "@context": fpm_ctx},
-    )
+    if debug:
+        save_file(
+            output_path,
+            "{}.task.fpm.json".format(model_name),
+            {"@graph": task_elements, "@context": fpm_ctx},
+        )
+    else:
+        floorplan.extend(task_elements)
 
     stats(g)
+
+    if not debug:
+        save_file(
+            output_path,
+            "{}.fpm.json".format(model_name),
+            {"@graph": floorplan, "@context": fpm_ctx},
+        )
 
     # doc = list()
     # for l in [placements, walls, doors, spaces]:
