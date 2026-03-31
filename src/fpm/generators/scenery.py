@@ -75,6 +75,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
             output_path,
             "{}.floorplan.fpm.json".format(model_name),
             {"@graph": floorplan, "@context": fpm_ctx},
+            debug=debug,
         )
 
     length_unit = str(g.namespace_manager.curie(query_ifc_units(g)[0])).split(":")[-1]
@@ -86,6 +87,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
             output_path,
             "{}.placement.fpm.json".format(model_name),
             {"@graph": placements, "@context": fpm_ctx},
+            debug=debug,
         )
     else:
         floorplan.extend(placements)
@@ -97,6 +99,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
             output_path,
             "{}.walls.fpm.json".format(model_name),
             {"@graph": walls, "@context": fpm_ctx},
+            debug=debug,
         )
     else:
         floorplan.extend(walls)
@@ -108,6 +111,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
             output_path,
             "{}.doors.fpm.json".format(model_name),
             {"@graph": doors, "@context": fpm_ctx},
+            debug=debug,
         )
     else:
         floorplan.extend(doors)
@@ -119,6 +123,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
             output_path,
             "{}.spaces.fpm.json".format(model_name),
             {"@graph": spaces, "@context": fpm_ctx},
+            debug=debug,
         )
     else:
         floorplan.extend(spaces)
@@ -130,6 +135,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
             output_path,
             "{}.task.fpm.json".format(model_name),
             {"@graph": task_elements, "@context": fpm_ctx},
+            debug=debug,
         )
     else:
         floorplan.extend(task_elements)
@@ -141,6 +147,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
             output_path,
             "{}.fpm.json".format(model_name),
             {"@graph": floorplan, "@context": fpm_ctx},
+            debug=debug,
         )
 
     # doc = list()
