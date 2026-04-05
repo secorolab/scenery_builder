@@ -1,4 +1,5 @@
 import os
+import glob
 import click
 import logging
 import tempfile
@@ -313,6 +314,297 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
 def ifc(ctx, model_path, output_path, debug, **kwargs):
 
     generate_fpm_rep_from_rdf(model_path, output_path, debug)
+
+
+@floorplan.command(short_help="Complete pipeline: variations -> transform -> generate")
+@click.pass_context
+@click.option(
+    "-m",
+    "--model",
+    "model_path",
+    type=click.Path(exists=True, resolve_path=True, file_okay=True, dir_okay=False),
+    required=True,
+    help="Path to the .variation model file",
+)
+@click.option(
+    "-n",
+    "--variations",
+    "--num-variations",
+    type=click.INT,
+    default=1,
+    show_default=True,
+    help="Number of variations to generate",
+)
+@click.option(
+    "-o",
+    "--output-path",
+    type=click.Path(resolve_path=True),
+    required=True,
+    help="Base output path for all generated files",
+)
+@click.option(
+    "--targets",
+    multiple=True,
+    type=click.Choice(
+        ["occ-grid", "gazebo", "mesh", "tasks", "polyline", "door-keyframes"],
+        case_sensitive=False,
+    ),
+    default=["occ-grid", "gazebo"],
+    show_default=True,
+    help="Target generators to run (can be specified multiple times)",
+)
+@click.option(
+    "--keep-intermediates",
+    is_flag=True,
+    help="Keep intermediate variation and JSON-LD files",
+)
+@click.option(
+    "--ros-version",
+    type=click.Choice(["ROS2", "ROS1"], case_sensitive=False),
+    default="ROS2",
+    show_default=True,
+    help="ROS version for launch files (used with gazebo target)",
+)
+@click.option(
+    "--ros-pkg",
+    type=click.STRING,
+    default="floorplan_models",
+    show_default=True,
+    help="Name of the ROS package (used with gazebo target)",
+)
+def pipeline(
+    ctx,
+    model_path,
+    variations,
+    output_path,
+    targets,
+    keep_intermediates,
+    ros_version,
+    ros_pkg,
+    **kwargs,
+):
+    """Complete pipeline: Generate variations, transform to JSON-LD, and generate artifacts
+
+    This command combines the three-step workflow into a single command:
+
+    1. Generate FPM variations from a .variation file
+
+    2. Transform each variation to JSON-LD
+
+    3. Generate final artifacts (occ-grid, gazebo, etc.)
+
+    Example:
+
+    \b
+    floorplan pipeline -m rooms/rooms.variation -n 3 -o output --targets occ-grid --targets gazebo
+
+    This is equivalent to running:
+
+    \b
+    1. floorplan variation -m rooms.variation -n 3 -o output/variations
+    2. floorplan transform -m output/variations/rooms_XXXX.fpm -o output/json-ld (for each variation)
+    3. floorplan generate -i output/json-ld -o output occ-grid gazebo
+    """
+    import tempfile
+    import shutil
+
+    # Create output directory structure
+    os.makedirs(output_path, exist_ok=True)
+
+    # Use temporary directories or subdirectories based on keep_intermediates flag
+    if keep_intermediates:
+        variations_path = os.path.join(output_path, "variations")
+        jsonld_path = os.path.join(output_path, "json-ld")
+        os.makedirs(variations_path, exist_ok=True)
+        os.makedirs(jsonld_path, exist_ok=True)
+        cleanup_required = False
+    else:
+        variations_path = tempfile.mkdtemp(prefix="fpm_variations_")
+        jsonld_path = tempfile.mkdtemp(prefix="fpm_jsonld_")
+        cleanup_required = True
+
+    try:
+        # Step 1: Generate variations
+        click.echo(
+            click.style(
+                f"\n=== Step 1/3: Generating {variations} variation(s) ===",
+                fg="cyan",
+                bold=True,
+            )
+        )
+        click.echo(f"Input: {model_path}")
+        click.echo(f"Output: {variations_path}")
+
+        ctx.invoke(
+            variation,
+            model_path=model_path,
+            variations=variations,
+            output_path=variations_path,
+        )
+
+        # Find all generated .fpm files
+        fpm_files = glob.glob(os.path.join(variations_path, "*.fpm"))
+
+        if not fpm_files:
+            raise click.ClickException(f"No .fpm files found in {variations_path}")
+
+        click.echo(
+            click.style(f"✓ Generated {len(fpm_files)} variation(s)", fg="green")
+        )
+
+        # Step 2: Transform each variation to JSON-LD
+        click.echo(
+            click.style(
+                f"\n=== Step 2/3: Transforming variations to JSON-LD ===",
+                fg="cyan",
+                bold=True,
+            )
+        )
+
+        variation_jsonld_paths = []
+        # Transform each variation into its own subdirectory
+        for i, fpm_file in enumerate(sorted(fpm_files), 1):
+            fpm_basename = os.path.basename(fpm_file)
+            # Create subdirectory for this variation (e.g., rooms_1234)
+            variation_name = os.path.splitext(fpm_basename)[0]
+            variation_jsonld_path = os.path.join(jsonld_path, variation_name)
+            os.makedirs(variation_jsonld_path, exist_ok=True)
+
+            click.echo(f"[{i}/{len(fpm_files)}] Transforming {fpm_basename}...")
+            try:
+                ctx.invoke(
+                    transform,
+                    model_path=fpm_file,
+                    output_path=variation_jsonld_path,
+                )
+                variation_jsonld_paths.append(variation_jsonld_path)
+
+            except Exception as e:
+                click.echo(
+                    click.style(
+                        f"✗ Error transforming {fpm_basename}: {str(e)}", fg="red"
+                    )
+                )
+                if i == 1:
+                    # If first variation fails, it's likely a systematic issue
+                    raise click.ClickException(f"Transform failed: {str(e)}")
+                # Continue with other variations if not the first
+                click.echo(f"  Continuing with remaining variations...")
+                continue
+
+        click.echo(click.style(f"✓ Transformed all variations to JSON-LD", fg="green"))
+
+        # Step 3: Generate final artifacts for each JSON-LD variation
+        click.echo(
+            click.style(
+                f"\n=== Step 3/3: Generating artifacts ===", fg="cyan", bold=True
+            )
+        )
+        click.echo(f"Targets: {', '.join(targets)}")
+        click.echo(f"Output: {output_path}")
+
+        for i, variation_jsonld_path in enumerate(sorted(variation_jsonld_paths), 1):
+            variation_name = os.path.basename(variation_jsonld_path)
+            click.echo(
+                click.style(
+                    f"\n[{i}/{len(variation_jsonld_paths)}] Generating for {variation_name}",
+                    fg="yellow",
+                )
+            )
+
+            # Build graph from the JSON-LD directory
+            g = build_graph_from_directory([variation_jsonld_path])
+            try:
+                model_name = get_floorplan_model_name(g)
+            except ValueError as e:
+                click.echo(
+                    click.style(f"✗ Skipping {variation_name}: {str(e)}", fg="red")
+                )
+                continue
+
+            # Prepare context object
+            obj = {"model_name": model_name, "g": g}
+
+            # Each variation will output to a subfolder named after it.
+            variation_output_path = os.path.join(
+                output_path, "artifacts", variation_name
+            )
+            os.makedirs(variation_output_path, exist_ok=True)
+
+            params = {
+                "inputs": [variation_jsonld_path],
+                "base_path": variation_output_path,
+                "templates": ".",
+            }
+
+            # Run each target generator
+            for target in targets:
+                click.echo(f"  Generating {target}...")
+
+                if target == "occ-grid":
+                    get_occ_grid(**obj, **params)
+                elif target == "gazebo":
+                    gazebo_kwargs = {
+                        "ros_version": ros_version,
+                        "ros_pkg": ros_pkg,
+                        "behavior_config_file": None,
+                        "world_frame": "world-frame",
+                        "contact_sensors": False,
+                        "behaviors": None,
+                    }
+                    door_object_models(**obj, **params, **gazebo_kwargs)
+                    gazebo_world(**obj, **params, **gazebo_kwargs)
+
+                    subfolders = [
+                        "gazebo/models",
+                        "gazebo/worlds/",
+                        "3d-mesh",
+                        "behaviors",
+                    ]
+                    subpaths = [
+                        os.path.join(variation_output_path, subfolder).replace(
+                            " ", "\\ "
+                        )
+                        for subfolder in subfolders
+                    ]
+                    click.echo(
+                        "  For Gazebo to find these models, make sure to add them to the GZ_SIM_RESOURCE_PATH:"
+                        "\n  export GZ_SIM_RESOURCE_PATH={}\n".format(
+                            ":".join(subpaths)
+                        )
+                    )
+                elif target == "mesh":
+                    get_3d_mesh(**obj, **params)
+                elif target == "tasks":
+                    get_disinfection_tasks(**obj, **params, dist_to_corner=0.7)
+                elif target == "polyline":
+                    get_polyline_floorplan(**obj, **params)
+                elif target == "door-keyframes":
+                    keyframe_kwargs = {
+                        "start_frame": 0,
+                        "end_frame": 180,
+                        "start_state": 0.0,
+                        "sampling_interval": 30,
+                        "state_change_probability": 0.5,
+                    }
+                    get_keyframes(**obj, **params, **keyframe_kwargs)
+
+        click.echo(
+            click.style(f"\n✓ Pipeline completed successfully!", fg="green", bold=True)
+        )
+        click.echo(f"\nOutput location: {output_path}")
+
+        if keep_intermediates:
+            click.echo(f"Variations: {variations_path}")
+            click.echo(f"JSON-LD: {jsonld_path}")
+
+    finally:
+        # Cleanup temporary directories if needed
+        if cleanup_required:
+            if os.path.exists(variations_path):
+                shutil.rmtree(variations_path)
+            if os.path.exists(jsonld_path):
+                shutil.rmtree(jsonld_path)
 
 
 @floorplan.group(
