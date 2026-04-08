@@ -3,6 +3,7 @@ import os
 import logging
 
 import rdflib
+from pyld import jsonld
 from rdflib import Graph, RDF
 from rdflib.plugins.sparql import prepareQuery
 
@@ -83,72 +84,48 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     logger.info("Transforming IFC local placements...")
     placements = query_ifc_local_placements(g, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.placement.fpm.json".format(model_name),
-            {"@graph": placements, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.placement.fpm.json".format(model_name)
+        save_compact_graph(placements, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(placements)
 
     logger.info("Transforming IFC walls...")
     walls = query_ifc_walls(g, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.walls.fpm.json".format(model_name),
-            {"@graph": walls, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.walls.fpm.json".format(model_name)
+        save_compact_graph(walls, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(walls)
 
     logger.info("Transforming IFC doors...")
     doors = query_ifc_doors(g, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.doors.fpm.json".format(model_name),
-            {"@graph": doors, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.doors.fpm.json".format(model_name)
+        save_compact_graph(doors, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(doors)
 
     logger.info("Transforming IFC spaces...")
     spaces = query_ifc_spaces(g, model_name, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.spaces.fpm.json".format(model_name),
-            {"@graph": spaces, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.spaces.fpm.json".format(model_name)
+        save_compact_graph(doors, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(spaces)
 
     logger.info("Transforming task elements...")
     task_elements = query_ifc_task_elements(g, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.task.fpm.json".format(model_name),
-            {"@graph": task_elements, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.task.fpm.json".format(model_name)
+        save_compact_graph(task_elements, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(task_elements)
 
     stats(g)
 
     if not debug:
-        save_file(
-            output_path,
-            "{}.fpm.json".format(model_name),
-            {"@graph": floorplan, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.fpm.json".format(model_name)
+        save_compact_graph(floorplan, fpm_ctx, output_path, file_name, debug=debug)
 
     # doc = list()
     # for l in [placements, walls, doors, spaces]:
@@ -159,6 +136,17 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     # full_doc["@graph"] = doc
     #
     # save_file(output_path, "{}.compacted.fpm.json".format(model_name), full_doc)
+
+
+def save_compact_graph(g, ctx, output_path, file_name, debug=False):
+    flattened = jsonld.flatten({"@graph": g, "@context": ctx})
+    compact = jsonld.compact(flattened, {"@context": ctx})
+    save_file(
+        output_path,
+        file_name,
+        compact,
+        debug=debug,
+    )
 
 
 def get_entity_id(g, e, entity_type="placement"):
