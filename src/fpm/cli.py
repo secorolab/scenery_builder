@@ -302,7 +302,7 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
 @click.option(
     "-o",
     "--output-path",
-    type=click.Path(exists=True, resolve_path=True),
+    type=click.Path(resolve_path=True),
     default=os.path.join("."),
     help="Output path for generated artefacts",
 )
@@ -311,6 +311,9 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     is_flag=True,
 )
 def ifc(ctx, model_path, output_path, debug, **kwargs):
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     generate_fpm_rep_from_rdf(model_path, output_path, debug)
 
