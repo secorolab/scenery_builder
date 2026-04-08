@@ -1,9 +1,23 @@
 import os
 import click
 import logging
+import tempfile
 
+from fpm import __version__
 from fpm.generators.dot import visualize_frame_tree
-from fpm.graph import build_graph_from_directory, get_floorplan_model_name
+from fpm.generators.prov import (
+    fpm_prov_generation_graph,
+    artefact_prov_generation_graph,
+    var_prov_generation_graph,
+    var_prov_metadata,
+    artefact_prov_metadata,
+    jsonld_prov_metadata,
+)
+from fpm.graph import (
+    build_graph_from_directory,
+    get_floorplan_model_name,
+    save_compact_graph,
+)
 from fpm.generators.gazebo import gazebo_world, door_object_models
 from fpm.generators.tasks import get_disinfection_tasks
 from fpm.generators.occ_grid import get_occ_grid
@@ -17,6 +31,10 @@ from fpm.generators.tts import (
 )
 from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
+
+from fpm.logging import logger as floorplan_logger
+
+floorplan_logger.setLevel(logging.DEBUG)
 
 logger = logging.getLogger("floorplan.cli")
 logger.setLevel(logging.DEBUG)
@@ -97,7 +115,9 @@ def config_behaviors(ctx, param, filename):
     callback=_gen_docs,
     help="Generate the documentation for this CLI",
 )
-def floorplan(docs):
+@click.version_option(__version__)
+@click.pass_context
+def floorplan(ctx, docs):
     """CLI for the scenery builder artefact generation"""
     pass
 
@@ -115,11 +135,27 @@ def floorplan(docs):
 @click.option(
     "-o",
     "--output-path",
-    type=click.Path(exists=True, resolve_path=True),
+    type=click.Path(resolve_path=True),
     default=os.path.join("."),
     help="Output path for generated artefacts",
 )
-def transform(ctx, model_path, output_path, **kwargs):
+@click.option(
+    "--prov",
+    is_flag=True,
+    help="Flag to whether to generate a PROV graph of this activity",
+)
+@click.option(
+    "--model-base-iri",
+    type=click.STRING,
+    default="https://secorolab.github.io/models/floorplan/",
+    show_default=True,
+    help="Default model IRI to be used as a prefix in the PROV models",
+)
+@click.option(
+    "--debug",
+    is_flag=True,
+)
+def transform(ctx, model_path, output_path, debug, **kwargs):
     """Transform an FPM model into JSON-LD
 
     This command is equivalent to using TextX's CLI to transform the fpm model:
@@ -130,15 +166,32 @@ def transform(ctx, model_path, output_path, **kwargs):
 
     This requires that the [FloorPlan DSL](https://github.com/secorolab/FloorPlan-DSL) is installed.
     """
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
     logger.debug("transform command arguments: %s", kwargs)
     logger.debug("%s %s", model_path, output_path)
     generator = generator_for_language_target("fpm", "json-ld")
     mm = metamodel_for_language("fpm")
     model = mm.model_from_file(model_path)
     try:
-        generator(mm, model, output_path, overwrite=True)
+        if debug:
+            res = generator(mm, model, output_path=output_path, overwrite=True)
+        else:
+            with tempfile.TemporaryDirectory(prefix="scg_") as tmpdir:
+                tmp_path = os.path.join(tmpdir, "json-ld")
+                generator(mm, model, output_path=tmp_path, overwrite=True)
+                g = build_graph_from_directory([tmp_path])
+            output_file = save_compact_graph(
+                g, output_path, model_base_iri=kwargs.get("model_base_iri")
+            )
+            res = [output_file]
     except Exception as e:
         logger.error(f"Error transforming model: {e}")
+
+    jsonld_prov_metadata(model_path, res)
+    if kwargs.get("prov"):
+        fpm_prov_generation_graph(model, model_path, res, output_path, **kwargs)
 
 
 @floorplan.command(short_help="Generate FPM variations from a variation model")
@@ -175,6 +228,18 @@ def transform(ctx, model_path, output_path, **kwargs):
     default=os.path.join("."),
     help="Output path for generated variations",
 )
+@click.option(
+    "--prov",
+    is_flag=True,
+    help="Flag to whether to generate a PROV graph of this activity",
+)
+@click.option(
+    "--model-base-iri",
+    type=click.STRING,
+    default="https://secorolab.github.io/models/",
+    show_default=True,
+    help="Default model IRI to be used as a prefix in the PROV models",
+)
 def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     """Generate FPM model variations from a variation specification
 
@@ -204,7 +269,7 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     mm = metamodel_for_language("fpm-variation")
     model = mm.model_from_file(model_path)
     try:
-        generator(
+        f, res = generator(
             mm,
             model,
             output_path,
@@ -215,6 +280,11 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
         )
     except Exception as e:
         logger.error(f"Error generating variations: {e}")
+
+    var_prov_metadata(model_path, f, res)
+
+    if kwargs.get("prov"):
+        var_prov_generation_graph(model_path, f, res, output_path, **kwargs)
 
 
 @floorplan.command(
@@ -236,9 +306,13 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
     default=os.path.join("."),
     help="Output path for generated artefacts",
 )
-def ifc(ctx, model_path, output_path, **kwargs):
+@click.option(
+    "--debug",
+    is_flag=True,
+)
+def ifc(ctx, model_path, output_path, debug, **kwargs):
 
-    generate_fpm_rep_from_rdf(model_path, output_path)
+    generate_fpm_rep_from_rdf(model_path, output_path, debug)
 
 
 @floorplan.group(
@@ -280,6 +354,18 @@ def ifc(ctx, model_path, output_path, **kwargs):
     show_default=True,
     callback=configure,
 )
+@click.option(
+    "--prov",
+    is_flag=True,
+    help="Flag to whether to generate a PROV graph of this activity",
+)
+@click.option(
+    "--model-base-iri",
+    type=click.STRING,
+    default="https://secorolab.github.io/models/",
+    show_default=True,
+    help="Default model IRI to be used as a prefix in the PROV models",
+)
 def generate(ctx, inputs, **kwargs):
     """Generate execution artefacts from JSON-LD models"""
 
@@ -310,13 +396,26 @@ def _load_graph_to_ctx(ctx, input_paths):
 @click.option(
     "--format",
     type=click.Choice(["stl", "gltf"], case_sensitive=False),
-    default="stl",
+    default=["stl"],
     show_default=True,
+    multiple=True,
     help="Output format of the 3D mesh",
 )
 def mesh(ctx, **kwargs):
     """Generate a 3D-mesh in STL or gltF 2.0 format"""
-    get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_file = get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
+
+    artefact_prov_metadata(ctx.parent.params.get("inputs"), output_file)
+    prov = ctx.parent.params.get("prov")
+    if prov:
+        artefact_prov_generation_graph(
+            ctx.obj.get("model_name"),
+            ctx.parent.params.get("inputs"),
+            output_file,
+            "3D-Mesh",
+            ctx.parent.params.get("base_path"),
+            model_base_iri=ctx.parent.params.get("model_base_iri"),
+        )
 
 
 @generate.command(short_help="Generate navigation waypoints for all rooms")
@@ -386,8 +485,24 @@ def tasks(ctx, **kwargs):
 )
 def gazebo(ctx, **kwargs):
     """Generate Gazebo world, models and launch files"""
-    door_object_models(**ctx.obj, **ctx.parent.params, **kwargs)
-    gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_files = []
+    files = door_object_models(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_files.extend(files)
+
+    files = gazebo_world(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_files.extend(files)
+
+    artefact_prov_metadata(ctx.parent.params.get("inputs"), output_files)
+    prov = ctx.parent.params.get("prov")
+    if prov:
+        artefact_prov_generation_graph(
+            ctx.obj.get("model_name"),
+            ctx.parent.params.get("inputs"),
+            output_files,
+            "GazeboModel",
+            ctx.parent.params.get("base_path"),
+            model_base_iri=ctx.parent.params.get("model_base_iri"),
+        )
 
     base_path = ctx.parent.params.get("base_path")
     subfolders = ["gazebo/models", "gazebo/worlds/", "3d-mesh", "behaviors"]
@@ -485,7 +600,21 @@ def occ_grid(ctx, **kwargs):
     """Generate the occupancy grid map of the floorplan"""
     logger.info("Generating occupancy grid...")
     logger.debug("Arguments: %s", kwargs)
-    get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
+    output_files = get_occ_grid(**ctx.obj, **ctx.parent.params, **kwargs)
+
+    artefact_prov_metadata(
+        ctx.parent.params.get("inputs"), output_files, ignored_extensions=[".jpg"]
+    )
+    prov = ctx.parent.params.get("prov")
+    if prov:
+        artefact_prov_generation_graph(
+            ctx.obj.get("model_name"),
+            ctx.parent.params.get("inputs"),
+            output_files,
+            "OccupancyGrid",
+            ctx.parent.params.get("base_path"),
+            model_base_iri=ctx.parent.params.get("model_base_iri"),
+        )
 
 
 @generate.command(short_help="Generate a 3D polyline representation of the floorplan")

@@ -1,14 +1,11 @@
 import logging
-import bpy
+import json
+import os.path
+import subprocess
+import tempfile
 
-from fpm.transformations.blender import (
-    boolean_operation_difference,
-    clear_scene,
-    create_mesh,
-    create_collection,
-)
 from fpm.graph import get_floorplan_model_name, get_3d_structure
-from fpm.utils import save_file, get_output_path
+from fpm.utils import get_output_path
 
 logger = logging.getLogger("floorplan.generators.mesh")
 logger.setLevel(logging.DEBUG)
@@ -18,68 +15,71 @@ def generate_3d_mesh(g, output_path, include_doors=False, **custom_args):
     file_format = custom_args.get("format", "stl")
     logger.info("Generating 3D mesh in %s format", file_format)
 
+    elements = {}
     model_name = get_floorplan_model_name(g)
-
-    building = create_collection(model_name)
-    # clear the blender scene
-    clear_scene()
+    elements["model_name"] = model_name
 
     logger.debug("Getting 3D structure for walls")
-    elements = get_3d_structure(g, "Wall")
-    create_element_mesh(building, elements)
+    walls = get_3d_structure(g, "Wall")
+    elements["walls"] = walls
 
     logger.debug("Getting 3D structure for columns")
     columns = get_3d_structure(g, "Column")
-    create_element_mesh(building, columns)
+    elements["columns"] = columns
 
     logger.debug("Getting 3D structure for dividers")
     dividers = get_3d_structure(g, "Divider")
-    create_element_mesh(building, dividers)
+    elements["dividers"] = dividers
 
     if include_doors:
         logger.debug("Getting 3D structure for doors")
         doors = get_3d_structure(g, "Door")
-        create_element_mesh(building, doors)
+        elements["doors"] = doors
 
         logger.debug("Getting 3D structure for door linings")
         door_linings = get_3d_structure(g, "DoorLining")
-        create_element_mesh(building, door_linings)
+        elements["door_linings"] = door_linings
 
     logger.debug("Getting 3D structure for entryways")
     entryways = get_3d_structure(g, "Entryway")
-    create_element_mesh(building, entryways)
-    subtract_opening(entryways)
+    elements["entryways"] = entryways
 
     logger.debug("Getting 3D structure for windows")
     windows = get_3d_structure(g, "Window")
-    create_element_mesh(building, windows)
-    subtract_opening(windows)
+    elements["windows"] = windows
 
-    file_name = "{name}.{ext}".format(name=model_name, ext=file_format)
-    save_file(output_path, file_name, None)
+    output_files = []
+    for e in file_format:
+        file_name = "{name}.{ext}".format(name=model_name, ext=e)
+        elements.setdefault("output_files", []).append((output_path, file_name))
+        output_files.append(os.path.join(output_path, file_name))
 
-
-def create_element_mesh(building, elements):
-    for e in elements:
-        name = e.get("name")
-        vertices = e.get("vertices")
-        faces = e.get("faces")
-        create_mesh(building, name, vertices, faces)
+    run_blender(elements)
+    return output_files
 
 
-def subtract_opening(openings):
-    # boolean operation for walls and opening
-    for opening in openings:
-        name = opening.get("name")
-        for wall in opening.get("voids", list()):
-            try:
-                boolean_operation_difference(wall, name)
-            except KeyError as e:
-                logger.error(e)
-        bpy.data.objects[name].select_set(True)
-        bpy.ops.object.delete()
+def run_blender(elements):
+    """
+    Runs the blender transformation as a subprocess
+    """
+    with tempfile.NamedTemporaryFile(suffix=".json") as f:
+        with open(f.name, "w") as json_file:
+            json.dump(elements, json_file)
+
+        curr_path = os.path.dirname(os.path.realpath(__file__))
+        blender_script = os.path.join(curr_path, "../transformations/blender.py")
+        cmd = [
+            "blender",
+            "-b",
+            "--python",
+            os.path.abspath(blender_script),
+            "--",
+            f.name,
+        ]
+        result = subprocess.run(cmd)
+        result.check_returncode()
 
 
 def get_3d_mesh(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "3d-mesh")
-    generate_3d_mesh(g, output_path, **kwargs)
+    return generate_3d_mesh(g, output_path, **kwargs)

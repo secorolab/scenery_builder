@@ -1,0 +1,27 @@
+{
+  "@context": [
+    {
+      "prov": "http://www.w3.org/ns/prov#",
+      "dcterms": "http://purl.org/dc/terms/",
+      "models": "{{ model_base_iri }}"
+    },
+    "https://secorolab.github.io/metamodels/prov.json"
+  ],
+  "@graph": [
+    {
+      "@id": "models:{{ fpm_file }}",
+      "@type": "Entity"
+    },
+    {
+      "@id": "models:{{ var_file }}",
+      "@type": "Entity",
+      "references":  "models:{{ fpm_file }}"
+    },
+    {
+      "@id": "models:{{ gen_file }}",
+      "@type": "Entity",
+      "generatedAtTime":  "{{ gen_time }}",
+      "wasDerivedFrom": "models:{{ var_file }}"
+    }
+  ]
+}

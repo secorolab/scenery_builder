@@ -1,33 +1,50 @@
 # syntax=docker/dockerfile:1
-FROM ubuntu:24.04
+ARG PYTHON_VERSION=3.11
+FROM python:${PYTHON_VERSION}-slim
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Prevents Python from writing pyc files.
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Keeps Python from buffering stdout and stderr to avoid situations where
+# the application crashes without emitting any logs due to buffering.
+ENV PYTHONUNBUFFERED=1
 
 RUN apt update && \
-    apt install -y software-properties-common git \
-    python3 python3-pip \
-    blender
+    apt install -y git \
+    blender draco libdraco8 python3-numpy --no-install-recommends \
+     && rm -rf /var/lib/apt/lists/*
 
+WORKDIR /app
 
-WORKDIR /tmp
+# Create a non-privileged user that the app will run under.
+# See https://docs.docker.com/go/dockerfile-user-best-practices/
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/home/appuser" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    appuser
 
-# Copy only dependency files first to leverage Docker cache
-COPY pyproject.toml .
-RUN mkdir src
+RUN python -m pip install --upgrade pip
 
-# Install dependencies separately (this layer will be cached)
-RUN pip install --no-cache-dir . -t /usr/src/app/modules
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml,rw=true \
+    --mount=type=bind,source=.git,target=.git \
+    --mount=type=bind,source=docs,target=docs \
+    mkdir src \
+    && python -m pip install . --no-cache-dir
 
 # Copy the rest of the application
 COPY . .
 
 # Install the application itself
-RUN pip install --no-cache-dir --no-deps . -t /usr/src/app/modules
+RUN pip install --no-cache-dir --no-deps . \
+    && rm -rf .git
 
-ENV BLENDER_USER_SCRIPTS=/usr/src/app
+USER appuser
+# Switch to the non-privileged user to run the application.
 
-WORKDIR /usr/src/app/
-
-ENTRYPOINT ["blender", "-b", "--python", "modules/fpm/cli.py", "--"]
-
-CMD ["generate", "-i", "/usr/src/app/models/", "--output-path", "/usr/src/app/output/", "mesh", "tasks", "gazebo", "occ-grid", "polyline", "door-keyframes"]
+CMD ["floorplan" ,"generate", "-i", "/usr/src/app/models/", "-o", "/usr/src/app/output/", "mesh", "tasks", "gazebo", "occ-grid", "polyline", "door-keyframes"]

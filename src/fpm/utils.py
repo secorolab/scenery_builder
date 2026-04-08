@@ -4,7 +4,6 @@ import logging
 
 import yaml
 import json
-import bpy
 
 import numpy as np
 
@@ -31,7 +30,7 @@ def render_model_template(
     elif file_name.endswith(".yaml"):
         output = yaml.safe_load(output)
 
-    save_file(output_folder, file_name, output)
+    return save_file(output_folder, file_name, output)
 
 
 def load_template(template_name, template_folder=None):
@@ -43,7 +42,7 @@ def load_template(template_name, template_folder=None):
     return env.get_template(template_name)
 
 
-def save_file(output_path, file_name, contents):
+def save_file(output_path, file_name, contents, debug=False):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
@@ -55,24 +54,18 @@ def save_file(output_path, file_name, contents):
             yaml.dump(contents, f, default_flow_style=None)
     elif ext == ".json":
         with open(output_file, "w") as f:
-            json.dump(contents, f, indent=4)
+            if debug:
+                json.dump(contents, f, indent=4)
+            else:
+                json.dump(contents, f)
     elif ext in [".pgm", ".jpg"]:
         contents.save(output_file, quality=100)
-    elif ext in [".stl"]:
-        # Use different STL export method depending on Blender version
-        if bpy.app.version >= (4, 1, 0):
-            bpy.ops.wm.stl_export(filepath=output_file)
-        else:
-            bpy.ops.export_mesh.stl(filepath=output_file)
-    elif ext in [".dae"]:
-        bpy.ops.wm.collada_export(filepath=output_file)
-    elif ext == ".gltf":
-        bpy.ops.export_scene.gltf(filepath=output_file)
     else:
         with open(output_file, "w") as f:
             f.write(contents)
 
     logger.info("Generated {path}".format(path=output_file))
+    return output_file
 
 
 def build_transformation_matrix(x, y, z, alpha=None, beta=0.0, gamma=0.0, **kwargs):

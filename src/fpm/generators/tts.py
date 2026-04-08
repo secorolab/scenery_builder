@@ -117,7 +117,7 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
         logger.debug("Position: [%s, %s, %s]", round(x, 2), round(y, 2), round(z, 2))
         element = {
             "name": name,
-            "depth": height,
+            "thickness": height,
             "milling_vector": positions,
             "nav_pose": nav_pose,
             "radius": radius,
@@ -239,7 +239,7 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
             "name": name,
             "width": width,
             "thickness": thickness,
-            "depth": depth,
+            "length": depth,
             "milling_vector": milling_vector,
             "origin": m_start_wrt_world[:3, 3],
             "nav_pose": nav_pose,
@@ -254,6 +254,9 @@ def convert_to_nav2_goal_format(goals: list) -> list:
     nav2_goals = list()
     for g in goals:
         m = g["nav_pose"]
+        milling_dir = np.array(g["milling_vector"])
+        milling_dir = milling_dir[1] - milling_dir[0]
+        milling_dir = milling_dir / np.linalg.norm(milling_dir)
         t = {
             "name": g["name"],
             "voids": g["voids"],
@@ -261,8 +264,9 @@ def convert_to_nav2_goal_format(goals: list) -> list:
                 "p": list(m[:3, 3]),
                 "q": list(mat2quat(m[:3, :3])),
             },
-            "milling_vector": [list(p) for p in g["milling_vector"]],
-            "depth": g["depth"],
+            # "milling_vector": [list(p) for p in g["milling_vector"]],
+            "milling_vector": list(milling_dir),
+            "thickness": g["thickness"],
             "position": list(g["origin"]),
         }
         if g.get("radius"):
@@ -270,7 +274,7 @@ def convert_to_nav2_goal_format(goals: list) -> list:
             t["type"] = "outlet"
         else:
             t["width"] = g["width"]
-            t["thickness"] = g["thickness"]
+            t["length"] = g["length"]
             t["type"] = "duct"
         nav2_goals.append(t)
     return nav2_goals
