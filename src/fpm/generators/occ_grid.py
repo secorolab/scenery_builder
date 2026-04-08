@@ -40,27 +40,30 @@ def generate_occ_grid(g, output_path, **custom_args):
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
-    points = []
     directions = []
 
     logger.debug("Getting coordinates map")
     coords_m = get_coordinates_map(g)
     logger.debug("Getting space points")
-    space_points = get_space_points(g)
-    for s in space_points:
-        logger.debug("Getting waypoint coords")
-        w_coords = get_waypoint_coord_list(g, s.get("points"), coords_m)
-
-        w_coords = np.array(w_coords)
-        points.append(w_coords)
-
+    points = get_free_space_points(g, coords_m)
+    for s in points:
         # Get the left/right, top/bottom of each space
         directions.append(
             [
-                np.amax(w_coords[:, 1]),  # north
-                np.amin(w_coords[:, 1]),  # south
-                np.amax(w_coords[:, 0]),  # east
-                np.amin(w_coords[:, 0]),  # west
+                np.amax(s[:, 1]),  # north
+                np.amin(s[:, 1]),  # south
+                np.amax(s[:, 0]),  # east
+                np.amin(s[:, 0]),  # west
+            ]
+        )
+    wall_points = get_obstacle_points(g, "Wall", coords_m)
+    for w in wall_points:
+        directions.append(
+            [
+                np.amax(w[:, 1]),  # north
+                np.amin(w[:, 1]),  # south
+                np.amax(w[:, 0]),  # east
+                np.amin(w[:, 0]),  # west
             ]
         )
 
@@ -91,12 +94,17 @@ def generate_occ_grid(g, output_path, **custom_args):
     draw = ImageDraw.Draw(im)
 
     # Draw free space from floorplan spaces (rooms)
-    logger.debug("Drawing free space")
-    draw_floorplan_element(points, draw, free, west=west, south=south, **custom_args)
+    if len(points) > 0:
+        logger.debug("Drawing free space")
+        draw_floorplan_element(
+            points, draw, free, west=west, south=south, **custom_args
+        )
+    else:
+        logger.debug("No free spaces found")
 
     # Draw obstacles (walls and columns)
     logger.debug("Drawing walls")
-    draw_floorplan_obstacle(
+    draw_floorplan_opening(
         g, "Wall", draw, west, south, occupied, coords_m, **custom_args
     )
     logger.debug("Drawing columns")
@@ -159,12 +167,25 @@ def generate_occ_grid(g, output_path, **custom_args):
     return output_files
 
 
-def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
-    column_points = get_element_points(g, element)
+def get_free_space_points(g, coords_map, **kwargs):
+    space_points = get_space_points(g)
+    points = []
+    for s in space_points:
+        logger.debug("Getting waypoint coords")
+        w_coords = get_waypoint_coord_list(g, s.get("points"), coords_map)
+
+        w_coords = np.array(w_coords)
+        points.append(w_coords)
+
+    return points
+
+
+def get_obstacle_points(g, element, coords_map, **kwargs):
+    obstacle_points = get_element_points(g, element)
     c_points = list()
 
     laser_height = kwargs.get("laser_height", 0.7)
-    for s in column_points:
+    for s in obstacle_points:
         height = s.get("height")
         if laser_height > height:
             # Don't process elements that are below the laser height
@@ -175,6 +196,11 @@ def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **k
 
         c_coords = np.array(c_coords)
         c_points.append(c_coords)
+    return c_points
+
+
+def draw_floorplan_obstacle(g, element, draw, west, south, fill, coords_map, **kwargs):
+    c_points = get_obstacle_points(g, element, coords_map, **kwargs)
 
     draw_floorplan_element(
         c_points,

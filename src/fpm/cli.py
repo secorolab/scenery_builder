@@ -302,7 +302,7 @@ def variation(ctx, model_path, variations, seed, output_path, **kwargs):
 @click.option(
     "-o",
     "--output-path",
-    type=click.Path(exists=True, resolve_path=True),
+    type=click.Path(resolve_path=True),
     default=os.path.join("."),
     help="Output path for generated artefacts",
 )
