@@ -687,38 +687,21 @@ def query_ifc_doors(g: Graph, length_unit):
                 )
             )
 
-            handle = 1
-            lining = 1
-            panel = 1
+            aspects = {}
             for i in g.objects(rep, IFC_CONCEPTS["items"]):
                 shape_aspect = str(get_shape_aspect(g, i)).lower()
-                if shape_aspect == "lining":
-                    parent_id = f"{door_id}-{shape_aspect}-{lining}"
-                    dl = render_ifc_template(
-                        "ifc/doors/door-lining.json.jinja",
+                if shape_aspect in ["framing", "lining", "panel", "handle"]:
+                    aspect_id = aspects.setdefault(shape_aspect, 1)
+                    parent_id = f"{door_id}-{shape_aspect}-{aspect_id}"
+                    aspects[shape_aspect] = aspect_id + 1
+                    sa = render_ifc_template(
+                        "ifc/base/shape-aspect.json.jinja",
+                        parent_id=door_id,
                         element_id=parent_id,
-                        door_id=door_id,
+                        element_type=f"Door{shape_aspect.capitalize()}",
+                        property=shape_aspect,
                     )
-                    graph_contents.extend(dl)
-                    lining = lining + 1
-                elif shape_aspect == "handle":
-                    parent_id = f"{door_id}-{shape_aspect}-{handle}"
-                    dh = render_ifc_template(
-                        "ifc/doors/door-handle.json.jinja",
-                        door_id=door_id,
-                        element_id=parent_id,
-                    )
-                    graph_contents.extend(dh)
-                    handle = handle + 1
-                elif shape_aspect == "panel":
-                    parent_id = f"{door_id}-{shape_aspect}-{panel}"
-                    dp = render_ifc_template(
-                        "ifc/doors/door-panel.json.jinja",
-                        door_id=door_id,
-                        element_id=parent_id,
-                    )
-                    graph_contents.extend(dp)
-                    panel = panel + 1
+                    graph_contents.extend(sa)
                 else:
                     raise ValueError("Unknown shape aspect: %s" % shape_aspect)
 
