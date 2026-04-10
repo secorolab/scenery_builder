@@ -199,6 +199,26 @@ def query_ifc_local_placements(g: Graph, length_unit):
     return placements
 
 
+def create_obj_placement(
+    g: Graph, placement_id, ref_placement_id, position, length_unit
+):
+    graph_contents = []
+    axis_placement = transform_axis_placement_3d(g, position, placement_id, length_unit)
+    graph_contents.extend(axis_placement)
+    solid_placement = render_ifc_template(
+        "ifc/placement/object-placement.json.jinja",
+        placement_id=placement_id,
+    )
+    graph_contents.extend(solid_placement)
+    rel_placement = render_ifc_template(
+        "ifc/placement/placement-rel-to.json.jinja",
+        placement_id=placement_id,
+        ref_placement_id=ref_placement_id,
+    )
+    graph_contents.extend(rel_placement)
+    return graph_contents
+
+
 def transform_axis_placement_3d(g: Graph, rel_placement, entity, length_unit):
     placement = list()
     vars = dict(
@@ -288,19 +308,10 @@ def query_ifc_walls(g: Graph, length_unit):
             # Wall placement
             # TODO for now it assumes position is not None
             # TODO this also implies that position is 0, 0?
-            ap = transform_axis_placement_3d(g, position, wall_id, length_unit)
-            wall_json.extend(ap)
-            op = render_ifc_template(
-                "ifc/placement/object-placement.json.jinja",
-                placement_id=wall_id,
+            obj_placement = create_obj_placement(
+                g, wall_id, placement_id, position, length_unit
             )
-            wall_json.extend(op)
-            rp = render_ifc_template(
-                "ifc/placement/placement-rel-to.json.jinja",
-                placement_id=wall_id,
-                ref_placement_id=placement_id,
-            )
-            wall_json.extend(rp)
+            wall_json.extend(obj_placement)
 
     return wall_json
 
@@ -309,40 +320,27 @@ def transform_extruded_area_solid(
     g: Graph, element_id, representation, length_unit, parent_id=None
 ):
     logger.debug("Transforming extruded area solid %s", element_id)
-    graph_contents = list()
+    graph_contents = []
     if parent_id is None:
         parent_id = element_id
     depth, position, swept_area, ext_dir = query_extruded_area_solid(g, representation)
 
     swept_area_type = g.value(swept_area, RDF["type"])
     if swept_area_type == IFC_CONCEPTS["IFCARBITRARYCLOSEDPROFILEDEF"]:
-        coords = query_arbitrary_closed_profile(g, swept_area)
-
-        w_polygon = render_ifc_template(
-            "ifc/walls/wall-polygon.json.jinja",
-            parent_id=parent_id,
-            element_id=element_id,
-            coords=coords,
-            length_unit=length_unit,
+        coords, graph_contents = transform_arbitrary_closed_profile(
+            g,
+            swept_area,
+            element_id,
+            parent_id,
+            length_unit,
+            depth,
+            ext_dir,
         )
-        graph_contents.extend(w_polygon)
-        w_polyhedron = render_ifc_template(
-            "ifc/walls/wall-polyhedron.json.jinja",
-            parent_id=parent_id,
-            element_id=element_id,
-            coords=coords,
-            depth=depth,
-            extruded_dir=ext_dir,
-            length_unit=length_unit,
-        )
-        graph_contents.extend(w_polyhedron)
-        add_polyhedron_faces(graph_contents)
         return depth, position, coords, ext_dir, graph_contents
     elif swept_area_type == IFC_CONCEPTS["IFCCIRCLEPROFILEDEF"]:
         center_pos = g.value(swept_area, IFC_CONCEPTS["position"])
         radius = g.value(swept_area, IFC_CONCEPTS["radius"])
         circle_id = get_entity_id(g, swept_area, "circle-profile")
-        # center = transform_axis_placement_3d(g, position, parent_id)
         poly = render_ifc_template(
             "ifc/base/circle-profile.json.jinja",
             parent_id=parent_id,
@@ -392,6 +390,39 @@ def transform_extruded_area_solid(
         logger.warning("Support for {} not implemented yet".format(swept_area_type))
 
 
+def transform_arbitrary_closed_profile(
+    g: Graph, swept_area, element_id, parent_id, length_unit, depth, ext_dir
+):
+    logger.debug(f"Arbitrary closed profile for {element_id}")
+    graph_contents = []
+
+    coords = query_arbitrary_closed_profile(g, swept_area)
+
+    w_polygon = render_ifc_template(
+        "ifc/walls/wall-polygon.json.jinja",
+        parent_id=parent_id,
+        element_id=element_id,
+        coords=coords,
+        length_unit=length_unit,
+    )
+    graph_contents.extend(w_polygon)
+    w_polyhedron = render_ifc_template(
+        "ifc/walls/wall-polyhedron.json.jinja",
+        parent_id=parent_id,
+        element_id=element_id,
+        coords=coords,
+        depth=depth,
+        extruded_dir=ext_dir,
+        length_unit=length_unit,
+    )
+    graph_contents.extend(w_polyhedron)
+
+    # FIXME: This only applies for rectangular prisms
+    add_polyhedron_faces(graph_contents)
+
+    return coords, graph_contents
+
+
 def query_extruded_area_solid(g: Graph, representation):
     rep_query = """
     SELECT ?ext_dir ?depth ?swept_area ?position
@@ -413,9 +444,10 @@ def query_extruded_area_solid(g: Graph, representation):
 
 def query_arbitrary_closed_profile(g: Graph, profile):
     rep_query = """
-    SELECT ?points
+    SELECT ?points ?curve
     WHERE {
-        ?swept_area ifc:outercurve/ifc:points ?points .
+        ?swept_area ifc:outercurve ?curve .
+        ?curve ifc:points ?points .
     }
     """
     q = prepareQuery(rep_query, initNs={"ifc": IFC_CONCEPTS, "rdf": RDF})
@@ -424,12 +456,17 @@ def query_arbitrary_closed_profile(g: Graph, profile):
     assert len(qres) == 1
     res = list(qres)[0]
 
-    coords = list()
+    segments = g.value(res["curve"], IFC_CONCEPTS["segments"])
+
+    coords = []
     for ptr in get_list_values(g, res["points"], IFC_CONCEPTS["coordlist"]):
         c = get_list_from_ptr(g, ptr)
         c = [coord.toPython() for coord in c]
         coords.append(c)
 
+    # TODO For now assuming the points are in order. Change this to use the indices in the list
+    if segments is None:
+        coords = coords[:-1]
     return coords
 
 
@@ -502,19 +539,8 @@ def transform_mapped_item(
     target_id = get_entity_id(g, target, "mapping-target")
 
     # Transformation of mapping origin (T) to mapping target (ref)
-    axis_placement = transform_axis_placement_3d(g, origin, origin_id, length_unit)
-    graph_contents.extend(axis_placement)
-    e = render_ifc_template(
-        "ifc/placement/object-placement.json.jinja",
-        placement_id=origin_id,
-    )
-    graph_contents.extend(e)
-    pj = render_ifc_template(
-        "ifc/placement/placement-rel-to.json.jinja",
-        placement_id=origin_id,
-        ref_placement_id=target_id,
-    )
-    graph_contents.extend(pj)
+    obj_placement = create_obj_placement(g, origin_id, target_id, origin, length_unit)
+    graph_contents.extend(obj_placement)
 
     # mapping target (T) to object placement (ref)
     cto = transform_cartesian_transformation_operator(g, target, target_id, length_unit)
@@ -546,19 +572,8 @@ def transform_mapped_extruded_area_solid(
     graph_contents.extend(poly)
 
     # Transformation of extruded area solid (mapped repr, T) to mapping origin (ref)
-    axis_placement = transform_axis_placement_3d(g, position, solid_id, length_unit)
-    graph_contents.extend(axis_placement)
-    e = render_ifc_template(
-        "ifc/placement/object-placement.json.jinja",
-        placement_id=solid_id,
-    )
-    graph_contents.extend(e)
-    pj = render_ifc_template(
-        "ifc/placement/placement-rel-to.json.jinja",
-        placement_id=solid_id,
-        ref_placement_id=origin_id,
-    )
-    graph_contents.extend(pj)
+    obj_placement = create_obj_placement(g, solid_id, origin_id, position, length_unit)
+    graph_contents.extend(obj_placement)
 
     return graph_contents
 
@@ -660,38 +675,21 @@ def query_ifc_doors(g: Graph, length_unit):
                 )
             )
 
-            handle = 1
-            lining = 1
-            panel = 1
+            aspects = {}
             for i in g.objects(rep, IFC_CONCEPTS["items"]):
                 shape_aspect = str(get_shape_aspect(g, i)).lower()
-                if shape_aspect == "lining":
-                    parent_id = f"{door_id}-{shape_aspect}-{lining}"
-                    dl = render_ifc_template(
-                        "ifc/doors/door-lining.json.jinja",
+                if shape_aspect in ["framing", "lining", "panel", "handle"]:
+                    aspect_id = aspects.setdefault(shape_aspect, 1)
+                    parent_id = f"{door_id}-{shape_aspect}-{aspect_id}"
+                    aspects[shape_aspect] = aspect_id + 1
+                    sa = render_ifc_template(
+                        "ifc/base/shape-aspect.json.jinja",
+                        parent_id=door_id,
                         element_id=parent_id,
-                        door_id=door_id,
+                        element_type=f"Door{shape_aspect.capitalize()}",
+                        property=shape_aspect,
                     )
-                    graph_contents.extend(dl)
-                    lining = lining + 1
-                elif shape_aspect == "handle":
-                    parent_id = f"{door_id}-{shape_aspect}-{handle}"
-                    dh = render_ifc_template(
-                        "ifc/doors/door-handle.json.jinja",
-                        door_id=door_id,
-                        element_id=parent_id,
-                    )
-                    graph_contents.extend(dh)
-                    handle = handle + 1
-                elif shape_aspect == "panel":
-                    parent_id = f"{door_id}-{shape_aspect}-{panel}"
-                    dp = render_ifc_template(
-                        "ifc/doors/door-panel.json.jinja",
-                        door_id=door_id,
-                        element_id=parent_id,
-                    )
-                    graph_contents.extend(dp)
-                    panel = panel + 1
+                    graph_contents.extend(sa)
                 else:
                     raise ValueError("Unknown shape aspect: %s" % shape_aspect)
 
@@ -771,7 +769,6 @@ def query_ifc_spaces(g: Graph, model_name, length_unit):
         space_placement = g.value(s, IFC_CONCEPTS["objectplacement"])
         space_placement_id = get_entity_id(g, space_placement, "placement")
         logger.info("Processing %s", space_id)
-        parent = query_placement_rel_to(g, space_placement)
         space_json = render_ifc_template(
             "ifc/spaces/space-entity.json.jinja",
             space_id=space_id,
@@ -783,27 +780,63 @@ def query_ifc_spaces(g: Graph, model_name, length_unit):
 
         space_reps = query_product_shape_representations(g, s)
         for space_shape in g.objects(space_reps, IFC_CONCEPTS["items"]):
-            solid_id = get_entity_id(g, space_shape, "polygonal-face-set")
-            # TODO Check if the space frame is needed.
-            #  The points could be defined wrt to the space_placement_id directly
-            poly = transform_polygonal_face_set(
-                g, space_shape, space_id, length_unit, placement_id=space_id
+            space_shape_rep = get_space_shape_rep(
+                g, space_shape, space_id, length_unit, space_placement_id
             )
-            graph_contents.extend(poly)
-            # TODO We create a polygon of the space by identifying the face that has an equal and the minimum z value
-            #  This has assumptions about frames and coords that may not generalize.
-            #  This is currently needed for the scenery_builder queries
-            points = get_space_polygon_points(g, space_shape)
-            polygon = render_ifc_template(
-                "ifc/spaces/space-polygon.json.jinja",
-                parent_id=space_id,
-                element_id=solid_id,
-                points=points,
-            )
-            graph_contents.extend(polygon)
+            graph_contents.extend(space_shape_rep)
 
     # TODO This is needed because "spaces" in the metamodel has a @list container. It should probably be a set instead
     graph_contents.append({"@id": model_name, "spaces": spaces})
+    return graph_contents
+
+
+def get_space_shape_rep(
+    g: Graph, space_shape, space_id, length_unit, space_placement_id=None
+):
+    graph_contents = []
+    shape_type = g.value(space_shape, RDF["type"])
+
+    if shape_type == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
+        solid_id = get_entity_id(g, space_shape, "polygonal-face-set")
+        # TODO Check if the space frame is needed.
+        #  The points could be defined wrt to the space_placement_id directly
+        poly = transform_polygonal_face_set(
+            g, space_shape, space_id, length_unit, placement_id=space_id
+        )
+        graph_contents.extend(poly)
+        # TODO We create a polygon of the space by identifying the face that has an equal and the minimum z value
+        #  This has assumptions about frames and coords that may not generalize.
+        #  This is currently needed for the scenery_builder queries
+        points = get_space_polygon_points(g, space_shape)
+        polygon = render_ifc_template(
+            "ifc/spaces/space-polygon.json.jinja",
+            parent_id=space_id,
+            element_id=solid_id,
+            points=points,
+        )
+        graph_contents.extend(polygon)
+        placement = render_ifc_template(
+            "ifc/spaces/space-placement-polygonal.json.jinja",
+            space_id=space_id,
+            space_ref_frame=space_placement_id,
+            length_unit=length_unit,
+        )
+        graph_contents.extend(placement)
+    elif shape_type == IFC_CONCEPTS["IFCEXTRUDEDAREASOLID"]:
+        _, pos, _, _, graph_poly = transform_extruded_area_solid(
+            g,
+            space_id,
+            space_shape,
+            length_unit,
+        )
+        graph_contents.extend(graph_poly)
+        placement = render_ifc_template(
+            "ifc/spaces/space-placement-polygonal.json.jinja",
+            space_id=space_id,
+            space_ref_frame=space_placement_id,
+            length_unit=length_unit,
+        )
+        graph_contents.extend(placement)
     return graph_contents
 
 
