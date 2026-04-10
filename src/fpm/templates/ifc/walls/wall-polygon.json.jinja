@@ -7,13 +7,13 @@
   "@id": "{{ element_id }}-polygon",
   "@type": "Polygon",
   "points": [
-    {%- for p in coords[:4] -%}
+    {%- for p in coords -%}
     {% set point_id = element_id ~ "-point-" ~ loop.index  %}
     "{{ point_id }}"{% if not loop.last %},{% endif %}
     {%- endfor %}
   ]
 },
-{%- for p in coords[:4] -%}
+{%- for p in coords -%}
 {% set point_id = element_id ~ "-point-" ~ loop.index  %}
 {
 "@id": "{{ point_id }}",
