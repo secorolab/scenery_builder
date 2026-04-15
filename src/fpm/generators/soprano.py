@@ -278,11 +278,13 @@ def convert_to_nav2_goal_format(goals: list, frame_id="map") -> list:
         milling_dir = np.array(g["milling_vector"])
         milling_dir = milling_dir[1] - milling_dir[0]
         milling_dir = milling_dir / np.linalg.norm(milling_dir)
+        nav_position = list(m[:3, 3])
+        nav_position[2] = 0.0
         t = {
             "name": g["name"],
             "voids": g["voids"],
             "nav2_goal": {
-                "p": list(m[:3, 3]),
+                "p": nav_position,
                 "q": list(mat2quat(m[:3, :3])),
                 "frame_id": frame_id,
             },
