@@ -39,7 +39,7 @@ def get_dim_and_center(element):
 def gen_tts_wall_description(g, base_path, **kwargs):
     logger.info("Generating wall description for simulator...")
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "soprano")
+    output_path = get_output_path(base_path, "soprano/hdt")
 
     entryways_elements = get_3d_structure(g, "Entryway")
     window_elements = get_3d_structure(g, "Window")
@@ -320,7 +320,7 @@ def query_milling_tasks(g: Graph, **kwargs) -> list:
 def gen_tts_task_description(g, base_path, **kwargs):
     logger.info("Generating task description...")
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "soprano")
+    output_path = get_output_path(base_path, "soprano/hdt")
 
     tasks = query_milling_tasks(g, **kwargs)
 
@@ -361,12 +361,12 @@ def gen_ros_frames(g, base_path, **kwargs):
 def get_avt_tasks(g, base_path, **kwargs):
     logger.info("Generating tasks for the AVT component...")
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "soprano")
+    output_path = get_output_path(base_path, "soprano/avt")
     tasks = query_milling_tasks(g, **kwargs)
     render_model_template(
         convert_to_nav2_goal_format(tasks),
         output_path,
-        "AVT-tasks.json",
+        "tasks-gui.json",
         "soprano/avt-tasks.json.jinja",
         template_path,
     )
