@@ -4,7 +4,7 @@ import rdflib
 from rdflib import Graph, RDF
 from transforms3d.quaternions import mat2quat
 
-from fpm.constants import FP, POLY, GEO, COORD, GEOM
+from fpm.constants import FP, POLY, GEO, COORD, GEOM, BDD_ENV
 from fpm.graph import (
     get_3d_structure,
     get_coordinates_map,
@@ -77,6 +77,7 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
     coords_m = get_coordinates_map(g)
     for e, _, _ in g.triples((None, RDF.type, FP[element_type])):
         name = prefixed(g, e).split(":")[-1]
+        space, workspace = get_space_and_workspace(g, e)
         wall = (g.value(e, FP["voids"] / RDF["first"]),)
         assert len(wall) == 1
         wall = wall[0]
@@ -125,6 +126,8 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
             "voids": wall_id,
             "unit": "M",  # Internally the scenery builder always uses Meters
             "action": "milling",
+            "space": space,
+            "workspace": workspace,
         }
         elements.append(element)
 
@@ -156,6 +159,15 @@ def get_milling_plane(g: Graph, opening):
     return plane
 
 
+def get_space_and_workspace(g: Graph, element):
+    workspace = g.value(element, BDD_ENV["has-workspace"])
+    space = g.value(
+        predicate=BDD_ENV["has-workspace"] / BDD_ENV["has-workspace"],
+        object=workspace,
+    )
+    return prefixed(g, space).split(":")[-1], prefixed(g, workspace).split(":")[-1]
+
+
 def get_start_pose_coords(g: Graph, point):
     frame = g.value(predicate=GEO["origin"], object=point)
     start_pose = g.value(predicate=GEOM["of"], object=frame)
@@ -168,6 +180,8 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
     elements = []
     for e, _, _ in g.triples((None, RDF.type, FP[element_type])):
         name = prefixed(g, e).split(":")[-1]
+
+        space, workspace = get_space_and_workspace(g, e)
 
         wall = (g.value(e, FP["voids"] / RDF["first"]),)
         assert len(wall) == 1
@@ -248,6 +262,8 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
             "voids": wall_id,
             "unit": "M",  # Internally the scenery builder always uses Meters
             "action": "milling",
+            "space": space,
+            "workspace": workspace,
         }
         elements.append(element)
 
@@ -273,6 +289,7 @@ def convert_to_nav2_goal_format(goals: list) -> list:
             "position": list(g["origin"]),
             "unit": g["unit"],
             "action": g["action"],
+            "space": g["space"],
         }
         if g.get("radius"):
             t["radius"] = g["radius"]

@@ -942,13 +942,14 @@ def query_ifc_task_elements(g, length_unit, elements=["IFCOUTLET", "IFCDUCTSEGME
                 "%s <-- voids -- %s <-- fills -- %s", wall_id, opening_id, object_id
             )
 
-            space_placement, plane_pos, plane_shape = query_space_boundary_rel(
+            space, space_placement, plane_pos, plane_shape = query_space_boundary_rel(
                 g, row["object"]
             )
             plane_id = object_id + "-milling"
             plane_pos = transform_axis_placement_3d(g, plane_pos, plane_id, length_unit)
             graph_contents.extend(plane_pos)
             space_placement_id = get_entity_id(g, space_placement, "placement")
+            space_id = get_entity_id(g, space, "space")
             plane_placement = render_ifc_template(
                 "ifc/placement/object-placement.json.jinja",
                 placement_id=plane_id,
@@ -967,6 +968,7 @@ def query_ifc_task_elements(g, length_unit, elements=["IFCOUTLET", "IFCDUCTSEGME
                 opening_id=opening_id,
                 wall_id=wall_id,
                 length_unit=length_unit,
+                space_id=space_id,
             )
             graph_contents.extend(plane_normal)
 
@@ -998,11 +1000,12 @@ def query_ifc_task_elements(g, length_unit, elements=["IFCOUTLET", "IFCDUCTSEGME
 
 def query_space_boundary_rel(g: Graph, obj):
     space_boundary_query = """
-    SELECT DISTINCT ?boundary ?space_placement ?position ?shape
+    SELECT DISTINCT ?boundary ?space_placement ?position ?shape ?space
     WHERE {
         ?boundary rdf:type ifc:IFCRELSPACEBOUNDARY .
         ?boundary ifc:relatedbuildingelement ?object .
-        ?boundary ifc:relatingspace/ifc:objectplacement ?space_placement .
+        ?boundary ifc:relatingspace ?space .
+        ?space ifc:objectplacement ?space_placement .
         ?boundary ifc:connectiongeometry/ifc:surfaceonrelatingelement ?plane .
         ?plane ifc:basissurface/ifc:position ?position .
         ?plane ifc:outerboundary ?shape .
@@ -1012,7 +1015,7 @@ def query_space_boundary_rel(g: Graph, obj):
     qres = g.query(q, initBindings={"object": obj})
     assert len(qres) == 1
     res = list(qres)[0]
-    return res["space_placement"], res["position"], res["shape"]
+    return res["space"], res["space_placement"], res["position"], res["shape"]
 
 
 def stats(g):

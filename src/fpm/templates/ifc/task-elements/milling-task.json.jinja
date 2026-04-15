@@ -27,12 +27,28 @@
   },
   {
     "@id": "{{ opening_id }}",
-    "@type": "Opening",
+    "@type": ["Opening","MillingGoal"],
     "vectors": [
       "{{ element_id }}-normal-to-boundary"
     ],
     "voids": [
       "{{ wall_id }}"
-    ]
+    ],
+    "has-workspace": "{{ space_id }}-{{ wall_id }}-{{ opening_id }}"
+  },
+  {
+    "@id": "{{ space_id }}",
+    "@type": "Workspace",
+    "has-workspace": "{{ space_id }}-{{ wall_id }}"
+  },
+  {
+    "@id": "{{ space_id }}-{{ wall_id }}",
+    "@type": "Workspace",
+    "has-workspace": "{{ space_id }}-{{ wall_id }}-{{ opening_id }}"
+  },
+  {
+    "@id": "{{ space_id }}-{{ wall_id }}-{{ opening_id }}",
+    "@type": "Workspace",
+    "frame" : "{{ space_id }}-{{ wall_id }}-{{ opening_id }}-frame"
   }
 ]
