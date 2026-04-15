@@ -66,7 +66,7 @@ def gen_tts_wall_description(g, base_path, **kwargs):
         model,
         output_path,
         "HDT-wall-description.json",
-        "soprano/walls.json.jinja",
+        "soprano/hdt-walls.json.jinja",
         template_path,
     )
 
@@ -327,21 +327,13 @@ def gen_tts_task_description(g, base_path, **kwargs):
 
     tasks = query_milling_tasks(g, **kwargs)
 
-    save_file(
+    render_model_template(
+        convert_to_nav2_goal_format(tasks),
         output_path,
         "HDT-task-description.json",
-        [
-            {
-                "entity_name": "KukaPlatform1",
-                "tasks": convert_to_nav2_goal_format(tasks),
-            },
-            {
-                "entity_name": "Human1",
-                "tasks": [],
-            },
-        ],
+        "soprano/hdt-tasks.json.jinja",
+        template_path,
     )
-
     return tasks
 
 

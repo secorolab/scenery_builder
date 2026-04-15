@@ -1,0 +1,37 @@
+[
+  {
+    "entity_name": "KukaPlatform1",
+    "tasks": [
+  {% for task in model %}
+  {
+    {% set goal = task.nav2_goal %}
+    "navpos": {
+      "position": {{ goal.p }},
+      "orientation": {{ goal.q }},
+      "frame_id": "{{ goal.frame_id }}"
+    },
+
+    "drill_poses": [
+      {
+        "hole_id": "{{ task["name"] }}",
+        "position_x": {{ task["position"][0] }},
+        "position_y": {{ task["position"][1] }},
+        "position_z": {{ task["position"][2] }},
+        "n_sockets": 2,
+        "direction_sockets": false,
+        "direction_cable_duct": 1,
+        "frame_id": "map"
+      }
+    ],
+    "unit": "{{ task.unit }}",
+    "action": "{{ task.action }}",
+    "space": "{{ task.space }}"
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+]
+  },
+  {
+  "entity_name": "Human1",
+  "tasks": []
+  }
+]
