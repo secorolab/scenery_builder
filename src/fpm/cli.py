@@ -684,6 +684,22 @@ def soprano_poly(ctx, **kwargs):
     show_default=True,
     help="Resolution of minor ticks in meters",
 )
+@click.option(
+    "--robot-translation-x",
+    "x",
+    type=click.FLOAT,
+    default=-1.0,
+    show_default=True,
+    help="Translation of the robot in x wrt to a task element for a navigation goal",
+)
+@click.option(
+    "--robot-translation-z",
+    "z",
+    type=click.FLOAT,
+    default=1.7,
+    show_default=True,
+    help="Translation of the robot in z wrt to a task element for a navigation goal",
+)
 def soprano_gui(ctx, **kwargs):
     get_occ_grid(
         **ctx.obj,
@@ -698,6 +714,22 @@ def soprano_gui(ctx, **kwargs):
 
 @generate.command()
 @click.pass_context
+@click.option(
+    "--robot-translation-x",
+    "x",
+    type=click.FLOAT,
+    default=-1.0,
+    show_default=True,
+    help="Translation of the robot in x wrt to a task element for a navigation goal",
+)
+@click.option(
+    "--robot-translation-z",
+    "z",
+    type=click.FLOAT,
+    default=1.7,
+    show_default=True,
+    help="Translation of the robot in z wrt to a task element for a navigation goal",
+)
 def soprano_rci(ctx, **kwargs):
     """Generate artefacts for the SOPRANO RCI tasks"""
     get_rci_tasks(**ctx.obj, **ctx.parent.params, **kwargs)

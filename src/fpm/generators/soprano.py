@@ -138,6 +138,7 @@ def translate_nav_pose(g: Graph, pose_ref, x=0.0, y=0.0, z=0.0, **_):
     # Navigation actions require a robot transformation wrt to the outlet/duct
     # Rotation: X axis of the robot must be parallel to the wall.
     # This (currently) matches the space boundary frame in the IFC model
+    logger.debug(f"Nav goal translation [{x}, {y}, {z}]")
     translation = np.array(
         [
             [1.0, 0.0, 0.0, x],
