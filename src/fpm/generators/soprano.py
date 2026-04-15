@@ -270,7 +270,7 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
     return elements
 
 
-def convert_to_nav2_goal_format(goals: list) -> list:
+def convert_to_nav2_goal_format(goals: list, frame_id="map") -> list:
     nav2_goals = []
     for g in goals:
         m = g["nav_pose"]
@@ -283,6 +283,7 @@ def convert_to_nav2_goal_format(goals: list) -> list:
             "nav2_goal": {
                 "p": list(m[:3, 3]),
                 "q": list(mat2quat(m[:3, :3])),
+                "frame_id": frame_id,
             },
             "milling_vector": list(milling_dir),
             "thickness": g["thickness"],
@@ -371,14 +372,21 @@ def get_avt_tasks(g, base_path, **kwargs):
     )
 
 
-def get_soprano_tasks(g, base_path, **kwargs):
+def get_rci_tasks(g, base_path, **kwargs):
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "soprano")
+    output_path = get_output_path(base_path, "soprano/rci")
     tasks = query_milling_tasks(g, **kwargs)
     render_model_template(
         convert_to_nav2_goal_format(tasks),
         output_path,
         "nav-goals.yaml",
         "soprano/nav-goals.yaml.jinja",
+        template_path,
+    )
+    render_model_template(
+        convert_to_nav2_goal_format(tasks),
+        output_path,
+        "RCI-tasks.json",
+        "soprano/rci-tasks.json.jinja",
         template_path,
     )

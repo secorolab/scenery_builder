@@ -29,7 +29,7 @@ from fpm.generators.soprano import (
     gen_tts_task_description,
     gen_ros_frames,
     get_avt_tasks,
-    get_soprano_tasks,
+    get_rci_tasks,
 )
 from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
@@ -696,10 +696,11 @@ def soprano_gui(ctx, **kwargs):
     get_avt_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
-@generate.command(help="Generate artefacts for the SOPRANO tasks")
+@generate.command()
 @click.pass_context
-def soprano_tasks(ctx, **kwargs):
-    get_soprano_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
+def soprano_rci(ctx, **kwargs):
+    """Generate artefacts for the SOPRANO RCI tasks"""
+    get_rci_tasks(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command()
