@@ -336,7 +336,7 @@ def _get_im_map(im, center: list[float], **kwargs) -> AxesImage:
     return imax
 
 
-def draw_map(im, center: list[float], grid=False, grid_resolution=1.0, **kwargs):
+def draw_map(im, center: list[float], grid=False, grid_resolution=0.5, **kwargs):
     imax = _get_im_map(im, center, **kwargs)
     fig = imax.get_figure()
     ax = fig.get_axes().pop()
