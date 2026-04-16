@@ -3,5 +3,5 @@
 - id: {{ task.name }}
   position: {{ goal.p }}
   orientation: {{ goal.q }}
-  frame: world-frame
+  frame_id: {{ goal.frame_id }}
 {% endfor %}

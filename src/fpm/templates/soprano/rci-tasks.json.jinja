@@ -1,0 +1,27 @@
+[
+  {% for task in model %}
+  {
+    "$schema": "../schemas/kuka_robot.schema.json",
+
+    {% set goal = task.nav2_goal %}
+    "navpos": {
+      "position": {{ goal.p }},
+      "orientation": {{ goal.q }},
+      "frame_id": "{{ goal.frame_id }}"
+    },
+
+    "drill_poses": [
+      {
+        "hole_id": "{{ task["name"] }}",
+        "position_x": {{ task["position"][0] }},
+        "position_y": {{ task["position"][1] }},
+        "position_z": {{ task["position"][2] }},
+        "n_sockets": 2,
+        "direction_sockets": false,
+        "direction_cable_duct": 1,
+        "frame_id": "map"
+      }
+    ]
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+]

@@ -7,6 +7,7 @@ FP = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan/floorpla
 FPMODEL = rdflib.Namespace("https://secorolab.github.io/models/floorplan/")
 OBJ = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan/object#")
 ST = rdflib.Namespace("https://secorolab.github.io/metamodels/floorplan/state#")
+BDD_ENV = rdflib.Namespace("https://secorolab.github.io/metamodels/environment#")
 
 # Kinematic chain metamodels
 KIN = rdflib.Namespace(

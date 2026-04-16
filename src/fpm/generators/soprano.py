@@ -4,7 +4,7 @@ import rdflib
 from rdflib import Graph, RDF
 from transforms3d.quaternions import mat2quat
 
-from fpm.constants import FP, POLY, GEO, COORD, GEOM
+from fpm.constants import FP, POLY, GEO, COORD, GEOM, BDD_ENV
 from fpm.graph import (
     get_3d_structure,
     get_coordinates_map,
@@ -23,7 +23,7 @@ from fpm.graph import (
 from fpm.utils import render_model_template, get_output_path, save_file
 from ifcld.interpreters.namespaces import IFC_CONCEPTS
 
-logger = logging.getLogger("floorplan.generators.tts")
+logger = logging.getLogger("floorplan.generators.soprano")
 logger.setLevel(logging.DEBUG)
 
 
@@ -39,7 +39,7 @@ def get_dim_and_center(element):
 def gen_tts_wall_description(g, base_path, **kwargs):
     logger.info("Generating wall description for simulator...")
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "tts")
+    output_path = get_output_path(base_path, "soprano/hdt")
 
     entryways_elements = get_3d_structure(g, "Entryway")
     window_elements = get_3d_structure(g, "Window")
@@ -66,7 +66,7 @@ def gen_tts_wall_description(g, base_path, **kwargs):
         model,
         output_path,
         "HDT-wall-description.json",
-        "tts/walls.json.jinja",
+        "soprano/hdt-walls.json.jinja",
         template_path,
     )
 
@@ -77,6 +77,7 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
     coords_m = get_coordinates_map(g)
     for e, _, _ in g.triples((None, RDF.type, FP[element_type])):
         name = prefixed(g, e).split(":")[-1]
+        space, workspace = get_space_and_workspace(g, e)
         wall = (g.value(e, FP["voids"] / RDF["first"]),)
         assert len(wall) == 1
         wall = wall[0]
@@ -123,6 +124,10 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
             "radius": radius,
             "origin": m_start_wrt_world[:3, 3],
             "voids": wall_id,
+            "unit": "M",  # Internally the scenery builder always uses Meters
+            "action": "milling",
+            "space": space,
+            "workspace": workspace,
         }
         elements.append(element)
 
@@ -133,6 +138,7 @@ def translate_nav_pose(g: Graph, pose_ref, x=0.0, y=0.0, z=0.0, **_):
     # Navigation actions require a robot transformation wrt to the outlet/duct
     # Rotation: X axis of the robot must be parallel to the wall.
     # This (currently) matches the space boundary frame in the IFC model
+    logger.debug(f"Nav goal translation [{x}, {y}, {z}]")
     translation = np.array(
         [
             [1.0, 0.0, 0.0, x],
@@ -154,6 +160,15 @@ def get_milling_plane(g: Graph, opening):
     return plane
 
 
+def get_space_and_workspace(g: Graph, element):
+    workspace = g.value(element, BDD_ENV["has-workspace"])
+    space = g.value(
+        predicate=BDD_ENV["has-workspace"] / BDD_ENV["has-workspace"],
+        object=workspace,
+    )
+    return prefixed(g, space).split(":")[-1], prefixed(g, workspace).split(":")[-1]
+
+
 def get_start_pose_coords(g: Graph, point):
     frame = g.value(predicate=GEO["origin"], object=point)
     start_pose = g.value(predicate=GEOM["of"], object=frame)
@@ -163,9 +178,11 @@ def get_start_pose_coords(g: Graph, point):
 
 def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
     logger.info("Getting 3D structure of all {}s...".format(element_type))
-    elements = list()
+    elements = []
     for e, _, _ in g.triples((None, RDF.type, FP[element_type])):
         name = prefixed(g, e).split(":")[-1]
+
+        space, workspace = get_space_and_workspace(g, e)
 
         wall = (g.value(e, FP["voids"] / RDF["first"]),)
         assert len(wall) == 1
@@ -195,7 +212,7 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
             g,
             g[poly : POLY["faces"]].__next__(),
         )
-        all_faces = list()
+        all_faces = []
         for f in faces:
             face = rdflib.collection.Collection(g, f)
             face_coords = []
@@ -210,15 +227,15 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
 
         # Milling action: Vector of milling is their direction (e.g., bottom-top)
         assert len(all_faces) == 2
-        milling_vector = list()
+        milling_vector = []
         for f in all_faces:
             center_xy = np.mean(f, axis=0)
             milling_vector.append(center_xy)
 
         # Sort bottom to top
-        milling_vector.sort(key=lambda x: x[2])
-        depth = abs(milling_vector[0][2] - milling_vector[1][2])
-        logger.info("Depth: %s", depth)
+        milling_vector.sort(key=lambda x: x[2], reverse=True)
+        length = abs(milling_vector[0][2] - milling_vector[1][2])
+        logger.info("Length: %s", length)
 
         # Calculate width
         base = all_faces[0]
@@ -231,7 +248,7 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
         else:
             width = v2.sum()
             thickness = v1.sum()
-        logger.info("width: %s, thickness: %s", width, thickness)
+        logger.info("Width: %s, Thickness: %s", width, thickness)
 
         nav_pose = translate_nav_pose(g, start_pose_ref, **kwargs)
 
@@ -239,35 +256,44 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
             "name": name,
             "width": width,
             "thickness": thickness,
-            "length": depth,
+            "length": length,
             "milling_vector": milling_vector,
             "origin": m_start_wrt_world[:3, 3],
             "nav_pose": nav_pose,
             "voids": wall_id,
+            "unit": "M",  # Internally the scenery builder always uses Meters
+            "action": "milling",
+            "space": space,
+            "workspace": workspace,
         }
         elements.append(element)
 
     return elements
 
 
-def convert_to_nav2_goal_format(goals: list) -> list:
-    nav2_goals = list()
+def convert_to_nav2_goal_format(goals: list, frame_id="map") -> list:
+    nav2_goals = []
     for g in goals:
         m = g["nav_pose"]
         milling_dir = np.array(g["milling_vector"])
         milling_dir = milling_dir[1] - milling_dir[0]
         milling_dir = milling_dir / np.linalg.norm(milling_dir)
+        nav_position = list(m[:3, 3])
+        nav_position[2] = 0.0
         t = {
             "name": g["name"],
             "voids": g["voids"],
             "nav2_goal": {
-                "p": list(m[:3, 3]),
+                "p": nav_position,
                 "q": list(mat2quat(m[:3, :3])),
+                "frame_id": frame_id,
             },
-            # "milling_vector": [list(p) for p in g["milling_vector"]],
             "milling_vector": list(milling_dir),
             "thickness": g["thickness"],
             "position": list(g["origin"]),
+            "unit": g["unit"],
+            "action": g["action"],
+            "space": g["space"],
         }
         if g.get("radius"):
             t["radius"] = g["radius"]
@@ -280,51 +306,41 @@ def convert_to_nav2_goal_format(goals: list) -> list:
     return nav2_goals
 
 
-def gen_tts_task_description(g, base_path, **kwargs):
-    logger.info("Generating task description...")
-    template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "tts")
-
-    tasks = list()
+def query_milling_tasks(g: Graph, **kwargs) -> list:
+    tasks = []
 
     logger.info("Generating task description for outlets")
     outlets = get_outlet_milling_task(g, "Opening", **kwargs)
-    tasks.extend(convert_to_nav2_goal_format(outlets))
+    tasks.extend(outlets)
 
     logger.info("Generating task description for ducts")
     ducts = get_duct_milling_task(g, "Opening", **kwargs)
-    tasks.extend(convert_to_nav2_goal_format(ducts))
+    tasks.extend(ducts)
 
-    save_file(output_path, "tasks-gui.json", tasks)
-    save_file(
-        output_path,
-        "HDT-task-description.json",
-        [
-            {
-                "entity_name": "KukaPlatform1",
-                "tasks": tasks,
-            },
-            {
-                "entity_name": "Human1",
-                "tasks": list(),
-            },
-        ],
-    )
+    return tasks
+
+
+def gen_tts_task_description(g, base_path, **kwargs):
+    logger.info("Generating task description...")
+    template_path = kwargs.get("template_path")
+    output_path = get_output_path(base_path, "soprano/hdt")
+
+    tasks = query_milling_tasks(g, **kwargs)
 
     render_model_template(
-        tasks,
+        convert_to_nav2_goal_format(tasks),
         output_path,
-        "nav-goals.yaml",
-        "tts/nav-goals.yaml.jinja",
+        "HDT-task-description.json",
+        "soprano/hdt-tasks.json.jinja",
         template_path,
     )
-    return outlets, ducts
+    return tasks
 
 
 def gen_ros_frames(g, base_path, **kwargs):
     logger.info("Generating ROS frames launch file...")
     template_path = kwargs.get("template_path")
-    output_path = get_output_path(base_path, "tts")
+    output_path = get_output_path(base_path, "ros")
     floorplan_elements = ["Space", "Opening", "Wall", "Door", "Entryway"]
     element_poses = get_floorplan_elements(g, floorplan_elements)
     frames = get_frame_tree(g, element_poses)
@@ -332,6 +348,40 @@ def gen_ros_frames(g, base_path, **kwargs):
         frames,
         output_path,
         "frames-ros2.launch",
-        "tts/frames-ros2.launch.jinja",
+        "ros/frames-ros2.launch.jinja",
+        template_path,
+    )
+
+
+def get_avt_tasks(g, base_path, **kwargs):
+    logger.info("Generating tasks for the AVT component...")
+    template_path = kwargs.get("template_path")
+    output_path = get_output_path(base_path, "soprano/avt")
+    tasks = query_milling_tasks(g, **kwargs)
+    render_model_template(
+        convert_to_nav2_goal_format(tasks),
+        output_path,
+        "tasks-gui.json",
+        "soprano/avt-tasks.json.jinja",
+        template_path,
+    )
+
+
+def get_rci_tasks(g, base_path, **kwargs):
+    template_path = kwargs.get("template_path")
+    output_path = get_output_path(base_path, "soprano/rci")
+    tasks = query_milling_tasks(g, **kwargs)
+    render_model_template(
+        convert_to_nav2_goal_format(tasks),
+        output_path,
+        "nav-goals.yaml",
+        "soprano/nav-goals.yaml.jinja",
+        template_path,
+    )
+    render_model_template(
+        convert_to_nav2_goal_format(tasks),
+        output_path,
+        "RCI-tasks.json",
+        "soprano/rci-tasks.json.jinja",
         template_path,
     )

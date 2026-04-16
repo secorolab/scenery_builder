@@ -3,6 +3,7 @@ import os
 import logging
 
 import rdflib
+from pyld import jsonld
 from rdflib import Graph, RDF
 from rdflib.plugins.sparql import prepareQuery
 
@@ -83,72 +84,48 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     logger.info("Transforming IFC local placements...")
     placements = query_ifc_local_placements(g, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.placement.fpm.json".format(model_name),
-            {"@graph": placements, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.placement.fpm.json".format(model_name)
+        save_compact_graph(placements, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(placements)
 
     logger.info("Transforming IFC walls...")
     walls = query_ifc_walls(g, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.walls.fpm.json".format(model_name),
-            {"@graph": walls, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.walls.fpm.json".format(model_name)
+        save_compact_graph(walls, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(walls)
 
     logger.info("Transforming IFC doors...")
     doors = query_ifc_doors(g, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.doors.fpm.json".format(model_name),
-            {"@graph": doors, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.doors.fpm.json".format(model_name)
+        save_compact_graph(doors, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(doors)
 
     logger.info("Transforming IFC spaces...")
     spaces = query_ifc_spaces(g, model_name, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.spaces.fpm.json".format(model_name),
-            {"@graph": spaces, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.spaces.fpm.json".format(model_name)
+        save_compact_graph(spaces, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(spaces)
 
     logger.info("Transforming task elements...")
     task_elements = query_ifc_task_elements(g, length_unit)
     if debug:
-        save_file(
-            output_path,
-            "{}.task.fpm.json".format(model_name),
-            {"@graph": task_elements, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.task.fpm.json".format(model_name)
+        save_compact_graph(task_elements, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(task_elements)
 
     stats(g)
 
     if not debug:
-        save_file(
-            output_path,
-            "{}.fpm.json".format(model_name),
-            {"@graph": floorplan, "@context": fpm_ctx},
-            debug=debug,
-        )
+        file_name = "{}.fpm.json".format(model_name)
+        save_compact_graph(floorplan, fpm_ctx, output_path, file_name, debug=debug)
 
     # doc = list()
     # for l in [placements, walls, doors, spaces]:
@@ -159,6 +136,17 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     # full_doc["@graph"] = doc
     #
     # save_file(output_path, "{}.compacted.fpm.json".format(model_name), full_doc)
+
+
+def save_compact_graph(g, ctx, output_path, file_name, debug=False):
+    flattened = jsonld.flatten({"@graph": g, "@context": ctx})
+    compact = jsonld.compact(flattened, {"@context": ctx})
+    save_file(
+        output_path,
+        file_name,
+        compact,
+        debug=debug,
+    )
 
 
 def get_entity_id(g, e, entity_type="placement"):
@@ -418,19 +406,21 @@ def transform_arbitrary_closed_profile(
         length_unit=length_unit,
     )
     graph_contents.extend(w_polygon)
-    w_polyhedron = render_ifc_template(
-        "ifc/walls/wall-polyhedron.json.jinja",
-        parent_id=parent_id,
-        element_id=element_id,
-        coords=coords,
-        depth=depth,
-        extruded_dir=ext_dir,
-        length_unit=length_unit,
-    )
-    graph_contents.extend(w_polyhedron)
 
     # FIXME: This only applies for rectangular prisms
-    add_polyhedron_faces(graph_contents)
+    if len(coords) == 4:
+        logger.debug("Rectangular prism. Adding polyhedron.")
+        w_polyhedron = render_ifc_template(
+            "ifc/walls/wall-polyhedron.json.jinja",
+            parent_id=parent_id,
+            element_id=element_id,
+            coords=coords,
+            depth=depth,
+            extruded_dir=ext_dir,
+            length_unit=length_unit,
+        )
+        graph_contents.extend(w_polyhedron)
+        add_polyhedron_faces(graph_contents)
 
     return coords, graph_contents
 
@@ -954,13 +944,14 @@ def query_ifc_task_elements(g, length_unit, elements=["IFCOUTLET", "IFCDUCTSEGME
                 "%s <-- voids -- %s <-- fills -- %s", wall_id, opening_id, object_id
             )
 
-            space_placement, plane_pos, plane_shape = query_space_boundary_rel(
+            space, space_placement, plane_pos, plane_shape = query_space_boundary_rel(
                 g, row["object"]
             )
             plane_id = object_id + "-milling"
             plane_pos = transform_axis_placement_3d(g, plane_pos, plane_id, length_unit)
             graph_contents.extend(plane_pos)
             space_placement_id = get_entity_id(g, space_placement, "placement")
+            space_id = get_entity_id(g, space, "space")
             plane_placement = render_ifc_template(
                 "ifc/placement/object-placement.json.jinja",
                 placement_id=plane_id,
@@ -979,6 +970,7 @@ def query_ifc_task_elements(g, length_unit, elements=["IFCOUTLET", "IFCDUCTSEGME
                 opening_id=opening_id,
                 wall_id=wall_id,
                 length_unit=length_unit,
+                space_id=space_id,
             )
             graph_contents.extend(plane_normal)
 
@@ -1010,11 +1002,12 @@ def query_ifc_task_elements(g, length_unit, elements=["IFCOUTLET", "IFCDUCTSEGME
 
 def query_space_boundary_rel(g: Graph, obj):
     space_boundary_query = """
-    SELECT DISTINCT ?boundary ?space_placement ?position ?shape
+    SELECT DISTINCT ?boundary ?space_placement ?position ?shape ?space
     WHERE {
         ?boundary rdf:type ifc:IFCRELSPACEBOUNDARY .
         ?boundary ifc:relatedbuildingelement ?object .
-        ?boundary ifc:relatingspace/ifc:objectplacement ?space_placement .
+        ?boundary ifc:relatingspace ?space .
+        ?space ifc:objectplacement ?space_placement .
         ?boundary ifc:connectiongeometry/ifc:surfaceonrelatingelement ?plane .
         ?plane ifc:basissurface/ifc:position ?position .
         ?plane ifc:outerboundary ?shape .
@@ -1024,7 +1017,7 @@ def query_space_boundary_rel(g: Graph, obj):
     qres = g.query(q, initBindings={"object": obj})
     assert len(qres) == 1
     res = list(qres)[0]
-    return res["space_placement"], res["position"], res["shape"]
+    return res["space"], res["space_placement"], res["position"], res["shape"]
 
 
 def stats(g):

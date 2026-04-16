@@ -96,16 +96,17 @@ def plot_2d_frame(ax: Axes, matrix, name=None, label_axis=False):
                 ha="center",
                 fontsize="xx-small",
             )
-    ax.text(
-        matrix[0, 3],
-        matrix[1, 3],
-        name,
-        color="k",
-        va="bottom",
-        ha="center",
-        fontsize="xx-small",
-        # fontsize=5 * matrix[3, 3] * 2,
-    )
+    if name is not None:
+        ax.text(
+            matrix[0, 3],
+            matrix[1, 3],
+            name,
+            color="k",
+            va="bottom",
+            ha="center",
+            fontsize="xx-small",
+            # fontsize=5 * matrix[3, 3] * 2,
+        )
 
 
 if __name__ == "__main__":
