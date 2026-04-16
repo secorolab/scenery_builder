@@ -109,7 +109,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     spaces = query_ifc_spaces(g, model_name, length_unit)
     if debug:
         file_name = "{}.spaces.fpm.json".format(model_name)
-        save_compact_graph(doors, fpm_ctx, output_path, file_name, debug=debug)
+        save_compact_graph(spaces, fpm_ctx, output_path, file_name, debug=debug)
     else:
         floorplan.extend(spaces)
 
