@@ -406,19 +406,21 @@ def transform_arbitrary_closed_profile(
         length_unit=length_unit,
     )
     graph_contents.extend(w_polygon)
-    w_polyhedron = render_ifc_template(
-        "ifc/walls/wall-polyhedron.json.jinja",
-        parent_id=parent_id,
-        element_id=element_id,
-        coords=coords,
-        depth=depth,
-        extruded_dir=ext_dir,
-        length_unit=length_unit,
-    )
-    graph_contents.extend(w_polyhedron)
 
     # FIXME: This only applies for rectangular prisms
-    add_polyhedron_faces(graph_contents)
+    if len(coords) == 4:
+        logger.debug("Rectangular prism. Adding polyhedron.")
+        w_polyhedron = render_ifc_template(
+            "ifc/walls/wall-polyhedron.json.jinja",
+            parent_id=parent_id,
+            element_id=element_id,
+            coords=coords,
+            depth=depth,
+            extruded_dir=ext_dir,
+            length_unit=length_unit,
+        )
+        graph_contents.extend(w_polyhedron)
+        add_polyhedron_faces(graph_contents)
 
     return coords, graph_contents
 
