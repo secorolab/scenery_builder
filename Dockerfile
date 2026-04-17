@@ -47,4 +47,5 @@ RUN pip install --no-cache-dir --no-deps . \
 USER appuser
 # Switch to the non-privileged user to run the application.
 
-CMD ["floorplan" ,"generate", "-i", "/usr/src/app/models/", "-o", "/usr/src/app/output/", "mesh", "tasks", "gazebo", "occ-grid", "polyline", "door-keyframes"]
+ENTRYPOINT ["floorplan"]
+CMD ["generate", "-i", "/usr/src/app/models/", "-o", "/usr/src/app/output/", "mesh", "tasks", "gazebo", "occ-grid", "polyline", "door-keyframes"]
