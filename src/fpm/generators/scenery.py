@@ -7,6 +7,7 @@ from pyld import jsonld
 from rdflib import Graph, RDF
 from rdflib.plugins.sparql import prepareQuery
 
+from fpm.constants import FP
 from fpm.graph import get_list_values, get_list_from_ptr
 from fpm.utils import load_template, save_file
 from ifcld.interpreters.namespaces import IFC_CONCEPTS
@@ -794,6 +795,9 @@ def query_ifc_spaces(g: Graph, model_name, length_unit):
 
     # TODO This is needed because "spaces" in the metamodel has a @list container. It should probably be a set instead
     graph_contents.append({"@id": model_name, "spaces": spaces})
+    print("Getting boundaries!")
+    boundaries = get_wall_space_boundaries(g, length_unit)
+    graph_contents.extend(boundaries)
     return graph_contents
 
 
@@ -1023,6 +1027,71 @@ def query_space_boundary_rel(g: Graph, obj):
     assert len(qres) == 1
     res = list(qres)[0]
     return res["space"], res["space_placement"], res["position"], res["shape"]
+
+
+def get_wall_space_boundaries(g: Graph, length_unit, objects=("IFCWALL", "IFCSLAB")):
+    graph_contents = []
+    rep_query = """
+    SELECT DISTINCT ?object ?space ?position ?shape ?space_placement
+    WHERE {
+        ?object rdf:type ?obj_type  .
+        ?boundary rdf:type ifc:IFCRELSPACEBOUNDARY .
+        ?boundary ifc:relatedbuildingelement ?object .
+        ?boundary ifc:relatingspace ?space .
+        ?space ifc:objectplacement ?space_placement .
+        ?boundary ifc:connectiongeometry/ifc:surfaceonrelatingelement ?plane .
+        ?plane ifc:basissurface/ifc:position ?position .
+        ?plane ifc:outerboundary ?shape .
+    }
+    """
+    for obj in objects:
+        print(obj)
+        obj_type = obj.lower().replace("ifc", "")
+        qres = g.query(rep_query, initBindings={"obj_type": IFC_CONCEPTS[obj]})
+        for element, space, position, shape, space_placement in qres:
+            print("\t", shape)
+            space_id = get_entity_id(g, space, "space")
+            element_id = get_entity_id(g, element, obj_type)
+            space_placement_id = get_entity_id(g, space_placement, "placement")
+            plane_id = f"{space_id}-{element_id}"
+
+            boundary_ = render_ifc_template(
+                "ifc/spaces/space-boundary.json.jinja",
+                plane_id=plane_id,
+                plane_type=FP["SpaceBoundary"],
+                space_id=space_id,
+                element_id=element_id,
+                property=FP[obj_type],
+            )
+            graph_contents.extend(boundary_)
+
+            plane_pos = transform_axis_placement_3d(g, position, plane_id, length_unit)
+            graph_contents.extend(plane_pos)
+
+            plane_placement = render_ifc_template(
+                "ifc/placement/object-placement.json.jinja",
+                placement_id=plane_id,
+            )
+            graph_contents.extend(plane_placement)
+
+            plane_rel_to = render_ifc_template(
+                "ifc/placement/placement-rel-to.json.jinja",
+                placement_id=plane_id,
+                ref_placement_id=space_placement_id,
+            )
+            graph_contents.extend(plane_rel_to)
+
+            coords = get_points_polycurve(g, g.value(shape, IFC_CONCEPTS["points"]))
+            polygon = render_ifc_template(
+                "ifc/walls/wall-polygon.json.jinja",
+                parent_id=plane_id,
+                element_id=plane_id,
+                coords=coords,
+                length_unit=length_unit,
+            )
+            graph_contents.extend(polygon)
+
+    return graph_contents
 
 
 def stats(g):

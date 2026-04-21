@@ -30,6 +30,7 @@ from fpm.generators.soprano import (
     gen_ros_frames,
     get_avt_tasks,
     get_rci_tasks,
+    get_nvl_representation,
 )
 from fpm.generators.scenery import generate_fpm_rep_from_rdf
 from textx import generator_for_language_target, metamodel_for_language
@@ -671,7 +672,8 @@ def door_keyframes(ctx, **kwargs):
 @click.pass_context
 def soprano_poly(ctx, **kwargs):
     """Generate a 3D polyline representation of the floorplan"""
-    get_polyline_floorplan(**ctx.obj, **ctx.parent.params, **kwargs)
+    # get_polyline_floorplan(**ctx.obj, **ctx.parent.params, **kwargs)
+    get_nvl_representation(**ctx.obj, **ctx.parent.params, **kwargs)
 
 
 @generate.command(help="Generate artefacts for the SOPRANO GUI")
