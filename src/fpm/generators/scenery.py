@@ -460,15 +460,20 @@ def query_arbitrary_closed_profile(g: Graph, profile):
 
     segments = g.value(res["curve"], IFC_CONCEPTS["segments"])
 
-    coords = []
-    for ptr in get_list_values(g, res["points"], IFC_CONCEPTS["coordlist"]):
-        c = get_list_from_ptr(g, ptr)
-        c = [coord.toPython() for coord in c]
-        coords.append(c)
+    coords = get_points_polycurve(g, res["points"])
 
     # TODO For now assuming the points are in order. Change this to use the indices in the list
     if segments is None:
         coords = coords[:-1]
+    return coords
+
+
+def get_points_polycurve(g: Graph, points):
+    coords = []
+    for ptr in get_list_values(g, points, IFC_CONCEPTS["coordlist"]):
+        c = get_list_from_ptr(g, ptr)
+        c = [coord.toPython() for coord in c]
+        coords.append(c)
     return coords
 
 
