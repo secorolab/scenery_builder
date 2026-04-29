@@ -1,4 +1,4 @@
-{% for task in model %}
+{% for task in model.tasks %}
 {% set goal = task.nav2_goal %}
 - id: {{ task.name }}
   position: {{ goal.p }}

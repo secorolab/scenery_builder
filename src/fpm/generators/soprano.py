@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import rdflib
-from rdflib import Graph, RDF
+from rdflib import Graph, RDF, Namespace
 from transforms3d.quaternions import mat2quat
 
 from fpm.constants import FP, POLY, GEO, COORD, GEOM, BDD_ENV
@@ -26,6 +26,8 @@ from ifcld.interpreters.namespaces import IFC_CONCEPTS
 
 logger = logging.getLogger("floorplan.generators.soprano")
 logger.setLevel(logging.DEBUG)
+
+MILLING_KUKA = Namespace("https://soprano-project.github.io/kuka/milling/")
 
 
 def get_dim_and_center(element):
@@ -88,7 +90,7 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
         if g.value(poly, RDF.type) != POLY["Cylinder"]:
             continue
 
-        logger.debug("%s: %s", name, prefixed(g, g.value(poly, RDF.type)))
+        logger.debug("%s: %s", prefixed(g, e), prefixed(g, g.value(poly, RDF.type)))
 
         base = g.value(poly, POLY["base"])
         unit_multiplier = get_unit_multiplier(g, poly)
@@ -118,7 +120,7 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
 
         logger.debug("Position: [%s, %s, %s]", round(x, 2), round(y, 2), round(z, 2))
         element = {
-            "name": name,
+            "name": e,
             "thickness": height,
             "milling_vector": positions,
             "nav_pose": nav_pose,
@@ -194,7 +196,7 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
         if g.value(poly, RDF.type) == POLY["Cylinder"]:
             continue
 
-        logger.debug("%s: %s", name, prefixed(g, g.value(poly, RDF.type)))
+        logger.debug("%s: %s", prefixed(g, e), prefixed(g, g.value(poly, RDF.type)))
 
         plane = get_milling_plane(g, e)
         start = g.value(plane, GEO["start"])
@@ -254,7 +256,7 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
         nav_pose = translate_nav_pose(g, start_pose_ref, **kwargs)
 
         element = {
-            "name": name,
+            "name": e,
             "width": width,
             "thickness": thickness,
             "length": length,
@@ -272,36 +274,37 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
     return elements
 
 
-def convert_to_nav2_goal_format(goals: list, frame_id="map") -> list:
+def convert_to_nav2_goal_format(g: Graph, goals: list, frame_id="map") -> list:
     nav2_goals = []
-    for g in goals:
-        m = g["nav_pose"]
-        milling_dir = np.array(g["milling_vector"])
+    for goal in goals:
+        m = goal["nav_pose"]
+        milling_dir = np.array(goal["milling_vector"])
         milling_dir = milling_dir[1] - milling_dir[0]
         milling_dir = milling_dir / np.linalg.norm(milling_dir)
         nav_position = list(m[:3, 3])
         nav_position[2] = 0.0
         t = {
-            "name": g["name"],
-            "voids": g["voids"],
+            "id": goal["name"],
+            "name": prefixed(g, goal["name"]).split(":")[-1],
+            "voids": goal["voids"],
             "nav2_goal": {
                 "p": nav_position,
                 "q": list(mat2quat(m[:3, :3])),
                 "frame_id": frame_id,
             },
             "milling_vector": list(milling_dir),
-            "thickness": g["thickness"],
-            "position": list(g["origin"]),
-            "unit": g["unit"],
-            "action": g["action"],
-            "space": g["space"],
+            "thickness": goal["thickness"],
+            "position": list(goal["origin"]),
+            "unit": goal["unit"],
+            "action": goal["action"],
+            "space": goal["space"],
         }
-        if g.get("radius"):
-            t["radius"] = g["radius"]
+        if goal.get("radius"):
+            t["radius"] = goal["radius"]
             t["type"] = "outlet"
         else:
-            t["width"] = g["width"]
-            t["length"] = g["length"]
+            t["width"] = goal["width"]
+            t["length"] = goal["length"]
             t["type"] = "duct"
         nav2_goals.append(t)
     return nav2_goals
@@ -329,7 +332,7 @@ def gen_tts_task_description(g, base_path, **kwargs):
     tasks = query_milling_tasks(g, **kwargs)
 
     render_model_template(
-        convert_to_nav2_goal_format(tasks),
+        convert_to_nav2_goal_format(g, tasks),
         output_path,
         "HDT-task-description.json",
         "soprano/hdt-tasks.json.jinja",
@@ -360,7 +363,7 @@ def get_avt_tasks(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "soprano/avt")
     tasks = query_milling_tasks(g, **kwargs)
     render_model_template(
-        convert_to_nav2_goal_format(tasks),
+        convert_to_nav2_goal_format(g, tasks),
         output_path,
         "tasks-gui.json",
         "soprano/avt-tasks.json.jinja",
@@ -372,15 +375,22 @@ def get_rci_tasks(g, base_path, **kwargs):
     template_path = kwargs.get("template_path")
     output_path = get_output_path(base_path, "soprano/rci")
     tasks = query_milling_tasks(g, **kwargs)
+    model = {
+        "tasks": convert_to_nav2_goal_format(g, tasks),
+        "g": g,
+        "MILLING": MILLING_KUKA,
+        "rdflib": rdflib,
+        "list": list,
+    }
     render_model_template(
-        convert_to_nav2_goal_format(tasks),
+        model,
         output_path,
         "nav-goals.yaml",
         "soprano/nav-goals.yaml.jinja",
         template_path,
     )
     render_model_template(
-        convert_to_nav2_goal_format(tasks),
+        model,
         output_path,
         "RCI-tasks.json",
         "soprano/rci-tasks.json.jinja",
