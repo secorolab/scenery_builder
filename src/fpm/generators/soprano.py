@@ -19,6 +19,7 @@ from fpm.graph import (
     _coord_to_np_matrix,
     get_frame_tree,
     get_floorplan_elements,
+    get_spaces,
 )
 from fpm.utils import render_model_template, get_output_path, save_file
 from ifcld.interpreters.namespaces import IFC_CONCEPTS
@@ -385,3 +386,25 @@ def get_rci_tasks(g, base_path, **kwargs):
         "soprano/rci-tasks.json.jinja",
         template_path,
     )
+
+
+def query_nvl_space_data(g: Graph):
+    spaces = get_spaces(g)
+    return spaces
+
+
+def get_nvl_representation(g: Graph, base_path, **kwargs):
+    template_path = kwargs.get("template_path")
+    output_path = get_output_path(base_path, "soprano/nvl")
+
+    spaces = query_nvl_space_data(g)
+    for model in spaces:
+        space = model.get("space")
+        planes = model.get("planes")
+        render_model_template(
+            planes,
+            output_path,
+            f"nvl-{space}.txt",
+            "soprano/nvl-representation.txt.jinja",
+            template_path,
+        )

@@ -1,3 +1,5 @@
+import random
+
 import os
 import glob
 import logging
@@ -585,3 +587,44 @@ def get_floorplan_elements(g: Graph, floorplan_elements: list):
             pose_ref = g.value(predicate=COORD["of-pose"] / GEOM["of"], object=asb)
             poses.append(pose_ref)
     return poses
+
+
+def get_spaces(g: Graph):
+    boundary_query = """
+    SELECT DISTINCT ?boundary ?space ?shape
+    WHERE {
+        ?boundary rdf:type fpm:SpaceBoundary .
+        ?boundary fpm:spaces/rdf:rest*/rdf:first ?space .
+        ?space rdf:type fpm:Space  .
+        ?boundary fpm:shape ?shape .
+    }
+    """
+    space_nodes = g.subjects(predicate=RDF["type"], object=FP["Space"])
+    spaces = []
+
+    for node in space_nodes:
+        result = g.query(
+            boundary_query, initNs={"fpm": FP, "rdf": RDF}, initBindings={"space": node}
+        )
+        planes = []
+        for r, s, shape in result:
+            point = g.value(shape, POLY["points"] / RDF["first"])
+            position_ref = g.value(
+                predicate=COORD["of-position"] / GEOM["of"], object=point
+            )
+            asb = g.value(position_ref, COORD["as-seen-by"])
+            assert g.value(asb, RDF["type"]) == GEO["Frame"]
+            pose_ref = g.value(predicate=COORD["of-pose"] / GEOM["of"], object=asb)
+            normal = get_list_values(g, pose_ref, COORD["direction-cosine-z"])
+            normal = [x.toPython() for x in normal]
+            pose_wrt_world = get_pose_transform_wrt_world(g, pose_ref)
+            planes.append(
+                {
+                    "name": prefixed(g, r).split(":")[-1],
+                    "position": pose_wrt_world[:3, 3].round(4),
+                    "normal": normal,
+                    "color": random.choices(range(256), k=3),
+                }
+            )
+        spaces.append({"space": prefixed(g, node).split(":")[-1], "planes": planes})
+    return spaces

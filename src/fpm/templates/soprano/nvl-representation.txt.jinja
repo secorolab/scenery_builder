@@ -1,0 +1,4 @@
+# plane names, points, normals, lines on plane and colors (as RGB; red, green, blue, yellow)
+{% for plane in model %}
+{{ plane.name }}  {{ plane.position | join(" ") }}  {{ plane.normal | join(" ") }}  200  {{ plane.color |join(" ")}}
+{%- endfor %}
