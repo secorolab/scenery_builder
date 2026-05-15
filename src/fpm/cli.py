@@ -166,6 +166,7 @@ def transform(ctx, model_path, output_path, **kwargs):
         res = generator(mm, model, output_path, overwrite=True)
     except Exception as e:
         logger.error(f"Error transforming model: {e}")
+        raise
 
     jsonld_prov_metadata(model_path, res)
     if kwargs.get("prov"):

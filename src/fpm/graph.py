@@ -1,6 +1,9 @@
 import os
 import glob
 import logging
+import string
+import urllib.parse
+import urllib.request
 
 import numpy as np
 
@@ -8,6 +11,7 @@ import rdflib
 from rdflib import RDF, Graph, Literal
 from rdflib.tools.rdf2dot import rdf2dot
 from transforms3d.quaternions import mat2quat
+from pyld import jsonld
 
 from fpm import traversal
 from fpm.constants import (
@@ -535,6 +539,57 @@ def get_frame_tree(g: Graph, poses=None):
                 new_pose_ref = g.value(predicate=COORD["of-pose"], object=t)
                 coord = get_coordinates(g, new_pose_ref)
     return frames
+
+
+def _urllib_document_loader(url, options={}):
+    """Minimal urllib-based JSON-LD document loader for pyld.
+
+    pyld >= 2.0 ships with no default HTTP loader; this provides one using
+    the standard-library ``urllib`` so that no extra dependencies are needed.
+    """
+    try:
+        pieces = urllib.parse.urlparse(url)
+        if (
+            not all([pieces.scheme, pieces.netloc])
+            or pieces.scheme not in ('http', 'https')
+            or set(pieces.netloc) > set(
+                string.ascii_letters + string.digits + '-.:')
+        ):
+            raise jsonld.JsonLdError(
+                'URL could not be dereferenced; only "http" and "https" '
+                'URLs are supported.',
+                'jsonld.InvalidUrl',
+                {'url': url},
+                code='loading document failed',
+            )
+        headers = options.get('headers') or {
+            'Accept': 'application/ld+json, application/json'
+        }
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=30) as response:
+            content_type = (
+                response.headers.get_content_type()
+                or 'application/octet-stream'
+            )
+            final_url = response.geturl()
+            document = json.loads(response.read().decode('utf-8'))
+        return {
+            'contentType': content_type,
+            'contextUrl': None,
+            'documentUrl': final_url,
+            'document': document,
+        }
+    except jsonld.JsonLdError:
+        raise
+    except Exception as cause:
+        raise jsonld.JsonLdError(
+            'Could not retrieve a JSON-LD document from the URL.',
+            'jsonld.LoadDocumentError',
+            code='loading document failed',
+        ) from cause
+
+
+jsonld.set_document_loader(_urllib_document_loader)
 
 
 def get_floorplan_elements(g: Graph, floorplan_elements: list):
