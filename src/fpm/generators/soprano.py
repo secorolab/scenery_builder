@@ -79,7 +79,6 @@ def get_outlet_milling_task(g: Graph, element_type="Opening", **kwargs):
     elements = list()
     coords_m = get_coordinates_map(g)
     for e, _, _ in g.triples((None, RDF.type, FP[element_type])):
-        name = prefixed(g, e).split(":")[-1]
         space, workspace = get_space_and_workspace(g, e)
         wall = (g.value(e, FP["voids"] / RDF["first"]),)
         assert len(wall) == 1
@@ -183,7 +182,6 @@ def get_duct_milling_task(g: Graph, element_type="Opening", **kwargs):
     logger.info("Getting 3D structure of all {}s...".format(element_type))
     elements = []
     for e, _, _ in g.triples((None, RDF.type, FP[element_type])):
-        name = prefixed(g, e).split(":")[-1]
 
         space, workspace = get_space_and_workspace(g, e)
 

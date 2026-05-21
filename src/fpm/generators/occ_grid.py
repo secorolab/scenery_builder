@@ -361,7 +361,7 @@ def draw_tasks(im, center, tasks, **kwargs):
     logger.info("Drawing tasks: %s", tasks)
     fig, ax = draw_map(im, center, grid=True, **kwargs)
     for task in kwargs.get(tasks, []):
-        name = task["name"]
+        name = task["name"].split("/")[-1]
         nav_pose = task.get("nav_pose")
         plot_2d_robot(ax, nav_pose, 1.4, 1.9)
         nav_pose[3, 3] = 0.25
