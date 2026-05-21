@@ -29,8 +29,8 @@
   {% set vec_z = list(rdflib.collection.Collection(g, g[task.id: MILLING['z-vector']].__next__())) %}
     "kuka-milling-frame": {
       "origin": [ {{ origin[0] }}, {{ origin[1] }}, {{ origin[2] }}],
-      "vector-x": [{{ vec_x[0] }}, {{ vec_x[1] }}, {{ vec_x[2] }}],
-      "vector-z": [{{ vec_z[0] }}, {{ vec_z[1] }}, {{ vec_z[2] }}],
+      "local-x-direction": [{{ vec_x[0] }}, {{ vec_x[1] }}, {{ vec_x[2] }}],
+      "normal": [{{ vec_z[0] }}, {{ vec_z[1] }}, {{ vec_z[2] }}],
       "parent_frame": "{{ g.value(task.id, MILLING['parent_frame']) }}"
     }
   }{% if not loop.last %},{% endif %}
