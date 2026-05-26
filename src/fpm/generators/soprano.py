@@ -396,16 +396,29 @@ def get_rci_tasks(g, base_path, **kwargs):
     )
 
 
-def query_nvl_space_data(g: Graph):
+def query_nvl_space_data(g: Graph, colors):
     spaces = get_spaces(g)
+    for space in spaces:
+        for plane, color in zip(space.get("planes"), colors):
+            plane["color"] = color
     return spaces
 
 
 def get_nvl_representation(g: Graph, base_path, **kwargs):
     template_path = kwargs.get("template_path")
     output_path = get_output_path(base_path, "soprano/nvl")
+    colors = [
+        (255, 0, 0),  # red
+        (0, 255, 0),  # green
+        (0, 0, 255),  # blue
+        (255, 255, 0),  # yellow
+        (255, 0, 255),  # magenta
+        (0, 255, 255),  # cyan
+        (255, 165, 0),  # orange
+        (128, 0, 128),  # purple
+    ]
 
-    spaces = query_nvl_space_data(g)
+    spaces = query_nvl_space_data(g, colors)
     for model in spaces:
         space = model.get("space")
         planes = model.get("planes")
