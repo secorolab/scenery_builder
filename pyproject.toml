@@ -10,14 +10,15 @@ dependencies = [
     "Jinja2>=3.0.3",
     "matplotlib>=3.7.2",
     "numpy>=1.24.4,<2.0.0",
-    "PyLD>=2.0.3",
+    "PyLD==2.0.3",
     "rdflib@git+https://github.com/secorolab/rdflib@fix/multi-type-scoped-context",
     "click>=8.1.7",
     "pyyaml",
     "floorplan_dsl@git+https://github.com/secorolab/FloorPlan-DSL",
     "transforms3d",
     "ifcld@git+https://github.com/secorolab/ifcld",
-    "robofair@git+https://github.com/secorolab/robofair"
+    "robofair@git+https://github.com/secorolab/robofair",
+    "requests>=2.32.3",
 ]
 requires-python = ">= 3.11"
 readme = "docs/README.md"
