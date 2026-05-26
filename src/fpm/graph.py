@@ -1,5 +1,3 @@
-import random
-
 import os
 import glob
 import logging
@@ -623,7 +621,6 @@ def get_spaces(g: Graph):
                     "name": prefixed(g, r).split(":")[-1],
                     "position": pose_wrt_world[:3, 3].round(4),
                     "normal": normal,
-                    "color": random.choices(range(256), k=3),
                 }
             )
         spaces.append({"space": prefixed(g, node).split(":")[-1], "planes": planes})
