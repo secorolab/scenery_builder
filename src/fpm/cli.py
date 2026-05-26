@@ -708,7 +708,8 @@ def soprano_gui(ctx, **kwargs):
         **ctx.parent.params,
         **kwargs,
         save=False,
-        draw_map=True,
+        draw_map=False,
+        avt=True,
         source="bim",
     )
     get_avt_tasks(**ctx.obj, **ctx.parent.params, **kwargs)

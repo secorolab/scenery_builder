@@ -283,11 +283,20 @@ def get_occ_grid(g, base_path, save=True, **kwargs):
         f = save_file(output_path, name_image, img)
         output_files.append(f)
 
+    if kwargs.get("avt", False):
+        img = ImageOps.flip(im)
+        name_image = f"{map_name}.jpg"
+        f = save_file(output_path, name_image, img)
+
     if kwargs.get("draw_map"):
         fig, _ = draw_map(im, center, **kwargs)
         name_image = f"{map_name}.jpg"
         plt.tight_layout()
-        fig.savefig(os.path.join(output_path, name_image), dpi=300, bbox_inches="tight")
+        fig.savefig(
+            os.path.join(output_path, name_image),
+            # dpi=300,
+            bbox_inches="tight",
+        )
 
     if kwargs.get("milling_task"):
         logger.debug("Drawing outlet task elements")
