@@ -2,7 +2,11 @@
   {
     "entity_name": "KukaPlatform1",
     "tasks": [
-  {% for task in model %}
+  {% set g = model.g %}
+  {% set MILLING = model.MILLING %}
+  {% set list = model.list %}
+  {% set rdflib = model.rdflib %}
+  {% for task in model.tasks %}
   {
     {% set goal = task.nav2_goal %}
     "navpos": {
@@ -23,6 +27,15 @@
         "frame_id": "map"
       }
     ],
+    {% set origin = list(rdflib.collection.Collection(g, g[task.id: MILLING['origin']].__next__())) %}
+    {% set vec_x = list(rdflib.collection.Collection(g, g[task.id: MILLING['x-vector']].__next__())) %}
+    {% set vec_z = list(rdflib.collection.Collection(g, g[task.id: MILLING['z-vector']].__next__())) %}
+    "kuka-milling-frame": {
+      "origin": [ {{ origin[0] }}, {{ origin[1] }}, {{ origin[2] }}],
+      "local-x-direction": [{{ vec_x[0] }}, {{ vec_x[1] }}, {{ vec_x[2] }}],
+      "normal": [{{ vec_z[0] }}, {{ vec_z[1] }}, {{ vec_z[2] }}],
+      "parent_frame": "{{ g.value(task.id, MILLING['parent_frame']) }}"
+    },
     "unit": "{{ task.unit }}",
     "action": "{{ task.action }}",
     "space": "{{ task.space }}"

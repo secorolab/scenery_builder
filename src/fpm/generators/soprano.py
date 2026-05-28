@@ -328,9 +328,16 @@ def gen_tts_task_description(g, base_path, **kwargs):
     output_path = get_output_path(base_path, "soprano/hdt")
 
     tasks = query_milling_tasks(g, **kwargs)
+    model = {
+        "tasks": convert_to_nav2_goal_format(g, tasks),
+        "g": g,
+        "MILLING": MILLING_KUKA,
+        "rdflib": rdflib,
+        "list": list,
+    }
 
     render_model_template(
-        convert_to_nav2_goal_format(g, tasks),
+        model,
         output_path,
         "HDT-task-description.json",
         "soprano/hdt-tasks.json.jinja",
