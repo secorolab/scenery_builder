@@ -369,14 +369,19 @@ def _load_graph_to_ctx(ctx, input_paths):
 )
 @click.option(
     "--format",
-    type=click.Choice(["stl", "gltf"], case_sensitive=False),
+    type=click.Choice(["stl", "gltf", "obj"], case_sensitive=False),
     default=["stl"],
     show_default=True,
     multiple=True,
-    help="Output format of the 3D mesh",
+    help="Output format of the 3D mesh (obj includes UV coordinates)",
 )
 def mesh(ctx, **kwargs):
-    """Generate a 3D-mesh in STL or gltF 2.0 format"""
+    """Generate a 3D-mesh in STL, glTF 2.0 or OBJ format
+
+    OBJ is exported with world-scale box UV coordinates (1 UV unit = 1 m), which
+    STL cannot carry -- use it when a downstream consumer (e.g. MuJoCo) needs the
+    mesh's own texcoords to apply textures instead of a projected fallback.
+    """
     output_file = get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
 
     artefact_prov_metadata(ctx.parent.params.get("inputs"), output_file)
