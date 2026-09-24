@@ -602,6 +602,12 @@ def gazebo(ctx, **kwargs):
     help="Which element frames to visualize",
     multiple=True,
 )
+@click.option("--keepout-filter",
+            is_flag=True, help="Generate costmap keepout filter"
+              )
+@click.option("--speed-filter",
+              is_flag=True, help="Generate costmap speed filter"
+              )
 def occ_grid(ctx, **kwargs):
     """Generate the occupancy grid map of the floorplan"""
     logger.info("Generating occupancy grid...")
