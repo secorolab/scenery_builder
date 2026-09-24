@@ -37,10 +37,10 @@ from textx import generator_for_language_target, metamodel_for_language
 
 from fpm.logging import logger as floorplan_logger
 
-floorplan_logger.setLevel(logging.DEBUG)
+floorplan_logger.setLevel(logging.INFO)
 
 logger = logging.getLogger("floorplan.cli")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def configure(ctx, param, filename):
@@ -780,7 +780,7 @@ def soprano_hdt(ctx, **kwargs):
     if kwargs.get("ros_frames"):
         gen_ros_frames(**ctx.obj, **ctx.parent.params, **kwargs)
     if kwargs.get("visualize"):
-        logger.info("Visualizing milling task in the occupancy grid")
+        logger.debug("Visualizing milling task in the occupancy grid")
         get_occ_grid(
             **ctx.obj,
             **ctx.parent.params,
@@ -789,7 +789,7 @@ def soprano_hdt(ctx, **kwargs):
             source="bim",
             save=False,
         )
-        logger.info("Visualizing frames on occupancy grid")
+        logger.debug("Visualizing frames on occupancy grid")
         get_occ_grid(
             **ctx.obj,
             **ctx.parent.params,

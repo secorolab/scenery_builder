@@ -4,7 +4,7 @@ from fpm.graph import get_floorplan_model_name, get_internal_walls
 from fpm.utils import save_file, load_template, get_output_path
 
 logger = logging.getLogger("floorplan.generators.polyline")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def generate_polyline_representation(

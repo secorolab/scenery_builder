@@ -14,7 +14,7 @@ from ifcld.interpreters.namespaces import IFC_CONCEPTS
 from ifcld.query import units_query, convert_units_query, project_units_query
 
 logger = logging.getLogger("floorplan.generators.scenery")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def add_polyhedron_faces(floorplan):
@@ -795,7 +795,6 @@ def query_ifc_spaces(g: Graph, model_name, length_unit):
 
     # TODO This is needed because "spaces" in the metamodel has a @list container. It should probably be a set instead
     graph_contents.append({"@id": model_name, "spaces": spaces})
-    print("Getting boundaries!")
     boundaries = get_wall_space_boundaries(g, length_unit)
     graph_contents.extend(boundaries)
     return graph_contents
@@ -911,6 +910,7 @@ def query_ifc_units(g: Graph):
             )
         )
 
+    print()
     qres = g.query(project_units_query)
     assert len(qres) == 1
     return list(qres)[0]
@@ -1045,11 +1045,11 @@ def get_wall_space_boundaries(g: Graph, length_unit, objects=("IFCWALL", "IFCSLA
     }
     """
     for obj in objects:
-        print(obj)
+        # print(obj)
         obj_type = obj.lower().replace("ifc", "")
         qres = g.query(rep_query, initBindings={"obj_type": IFC_CONCEPTS[obj]})
         for element, space, position, shape, space_placement in qres:
-            print("\t", shape)
+            # print("\t", shape)
             space_id = get_entity_id(g, space, "space")
             element_id = get_entity_id(g, element, obj_type)
             space_placement_id = get_entity_id(g, space_placement, "placement")

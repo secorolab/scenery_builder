@@ -20,7 +20,7 @@ from fpm.utils import load_template, save_file, get_output_path
 from fpm.visualization.plot import plot_2d_frame, plot_2d_robot
 
 logger = logging.getLogger("floorplan.generators.occ_grid")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def generate_occ_grid(g, map_name, **custom_args):
@@ -367,7 +367,7 @@ def draw_map(im, center: list[float], grid=False, grid_resolution=0.5, **kwargs)
 
 
 def draw_tasks(im, center, tasks, **kwargs):
-    logger.info("Drawing tasks: %s", tasks)
+    logger.debug("Drawing tasks: %s", tasks)
     fig, ax = draw_map(im, center, grid=True, **kwargs)
     for task in kwargs.get(tasks, []):
         name = task["name"].split("/")[-1]
