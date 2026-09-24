@@ -88,17 +88,27 @@ def generate_occ_grid(g, map_name, **custom_args):
     draw_floorplan_element(points, draw, free, west=west, south=south, **custom_args)
 
     # Draw obstacles (walls and columns)
+    if custom_args.get("keepout_filter", False):
+        fill_color = unknown
+        mask_color = occupied
+    elif custom_args.get("speed_filter", False):
+        fill_color = unknown
+        mask_color = 128
+    else:
+        fill_color = occupied
+        mask_color = 255
+
     logger.debug("Drawing walls")
     draw_floorplan_obstacle(
-        g, "Wall", draw, west, south, occupied, coords_m, **custom_args
+        g, "Wall", draw, west, south, fill_color, coords_m, **custom_args
     )
     logger.debug("Drawing columns")
     draw_floorplan_obstacle(
-        g, "Column", draw, west, south, occupied, coords_m, **custom_args
+        g, "Column", draw, west, south, fill_color, coords_m, **custom_args
     )
     logger.debug("Drawing dividers")
     draw_floorplan_obstacle(
-        g, "Divider", draw, west, south, occupied, coords_m, **custom_args
+        g, "Divider", draw, west, south, fill_color, coords_m, **custom_args
     )
 
     # Clear out wall openings; mark them as free space
@@ -107,6 +117,16 @@ def generate_occ_grid(g, map_name, **custom_args):
         g, "Entryway", draw, west, south, free, coords_m, **custom_args
     )
     # draw_floorplan_opening(g, "Window", draw, west, south, resolution, border, free, coords_m)
+
+    if custom_args.get("keepout_filter", False) or custom_args.get("speed_filter", False):
+
+        filter_points = [np.array([
+            [-0.85, -0.15, 0.0, 1.0],
+            [-1.35, -0.15, 0.0, 1.0],
+            [-1.35, -0.95, 0.0, 1.0],
+            [-0.85, -0.95, 0.0, 1.0],
+        ])]
+        draw_floorplan_element(filter_points, draw, mask_color, west=west, south=south, **custom_args)
 
     return metadata, im
 
