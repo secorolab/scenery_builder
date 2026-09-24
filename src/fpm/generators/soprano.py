@@ -25,7 +25,7 @@ from fpm.utils import render_model_template, get_output_path, save_file
 from ifcld.interpreters.namespaces import IFC_CONCEPTS
 
 logger = logging.getLogger("floorplan.generators.soprano")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 MILLING_KUKA = Namespace("https://soprano-project.github.io/kuka/milling/")
 

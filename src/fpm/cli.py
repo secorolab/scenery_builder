@@ -37,10 +37,10 @@ from textx import generator_for_language_target, metamodel_for_language
 
 from fpm.logging import logger as floorplan_logger
 
-floorplan_logger.setLevel(logging.DEBUG)
+floorplan_logger.setLevel(logging.INFO)
 
 logger = logging.getLogger("floorplan.cli")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def configure(ctx, param, filename):
@@ -401,14 +401,19 @@ def _load_graph_to_ctx(ctx, input_paths):
 )
 @click.option(
     "--format",
-    type=click.Choice(["stl", "gltf"], case_sensitive=False),
+    type=click.Choice(["stl", "gltf", "obj"], case_sensitive=False),
     default=["stl"],
     show_default=True,
     multiple=True,
-    help="Output format of the 3D mesh",
+    help="Output format of the 3D mesh (obj includes UV coordinates)",
 )
 def mesh(ctx, **kwargs):
-    """Generate a 3D-mesh in STL or gltF 2.0 format"""
+    """Generate a 3D-mesh in STL, glTF 2.0 or OBJ format
+
+    OBJ is exported with world-scale box UV coordinates (1 UV unit = 1 m), which
+    STL cannot carry -- use it when a downstream consumer (e.g. MuJoCo) needs the
+    mesh's own texcoords to apply textures instead of a projected fallback.
+    """
     output_file = get_3d_mesh(**ctx.obj, **ctx.parent.params, **kwargs)
 
     artefact_prov_metadata(ctx.parent.params.get("inputs"), output_file)
@@ -781,7 +786,7 @@ def soprano_hdt(ctx, **kwargs):
     if kwargs.get("ros_frames"):
         gen_ros_frames(**ctx.obj, **ctx.parent.params, **kwargs)
     if kwargs.get("visualize"):
-        logger.info("Visualizing milling task in the occupancy grid")
+        logger.debug("Visualizing milling task in the occupancy grid")
         get_occ_grid(
             **ctx.obj,
             **ctx.parent.params,
@@ -790,7 +795,7 @@ def soprano_hdt(ctx, **kwargs):
             source="bim",
             save=False,
         )
-        logger.info("Visualizing frames on occupancy grid")
+        logger.debug("Visualizing frames on occupancy grid")
         get_occ_grid(
             **ctx.obj,
             **ctx.parent.params,

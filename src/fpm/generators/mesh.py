@@ -8,7 +8,7 @@ from fpm.graph import get_floorplan_model_name, get_3d_structure
 from fpm.utils import get_output_path
 
 logger = logging.getLogger("floorplan.generators.mesh")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def generate_3d_mesh(g, output_path, include_doors=False, **custom_args):

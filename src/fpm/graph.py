@@ -24,7 +24,7 @@ from fpm.constants import (
 from fpm.utils import build_transformation_matrix
 
 logger = logging.getLogger("floorplan.graph")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def build_graph_from_directory(inputs: tuple, draw_dot=False):
