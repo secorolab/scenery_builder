@@ -255,15 +255,21 @@ def get_space_points(g: Graph):
 def get_unit_multiplier(g: Graph, element_id):
     # Convert units if not in M
     pose_units = list(g.objects(element_id, QUDT["unit"]))
+    unit = None
     for unit in pose_units:
         if unit in [QUDT_VOCAB["MilliM"], QUDT_VOCAB["M"]]:
             break
-    if unit == QUDT_VOCAB["M"]:
+    if unit is None:
+        raise ValueError("Unknown unit", unit)
+
+    m = g.value(unit, QUDT["conversionMultiplier"])
+    if m is not None:
+        return m.toPython()
+    elif unit == QUDT_VOCAB["M"]:
         m = 1
     elif unit == QUDT_VOCAB["MilliM"]:
         m = 0.001
-    else:
-        raise ValueError("Unknown unit", unit)
+    # else:
     return m
 
 
@@ -273,9 +279,11 @@ def get_element_points(g: Graph, element_type="Wall"):
     for element, _, _ in g.triples((None, RDF.type, FP[element_type])):
         unit_multiplier = get_unit_multiplier(g, element)
         element_points_json = get_point_positions_in_space(g, element)
+        if element_points_json is None:
+            continue
 
-        height = g.value(element, FP["height"]).toPython() * unit_multiplier
-        element_points_json["height"] = height
+        # height = g.value(element, FP["height"]).toPython() * unit_multiplier
+        # element_points_json["height"] = height
 
         element_points.append(element_points_json)
 
@@ -517,8 +525,8 @@ def get_waypoint_coord_wrt_world(g: Graph, point, coordinates_map):
 def get_waypoint_coord_list(g: Graph, points, coordinates_map):
     w_coords = list()
     for p in points:
-        x, y, _ = get_waypoint_coord_wrt_world(g, p, coordinates_map)
-        w_coords.append([x, y, 0, 1])
+        x, y, z = get_waypoint_coord_wrt_world(g, p, coordinates_map)
+        w_coords.append([x, y, z, 1])
 
     return w_coords
 
