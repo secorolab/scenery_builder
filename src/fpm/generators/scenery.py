@@ -646,12 +646,12 @@ def transform_extruded_area_solid(
         xdim = g.value(swept_area, IFC_CONCEPTS["xdim"])
         ydim = g.value(swept_area, IFC_CONCEPTS["ydim"])
         # TODO Process the position of the profile
-        offset = g.value(swept_area, IFC_CONCEPTS["position"])
-        pos_ = transform_axis_placement_3d(
-            g, offset, "rectangle-profile-def", length_unit
-        )
-        ref_offset = pos_[0]["direction-cosine-x"]
-        loc_offset = pos_[1]["coordinates"]
+        # offset = g.value(swept_area, IFC_CONCEPTS["position"])
+        # pos_ = transform_axis_placement_3d(
+        #     g, offset, "rectangle-profile-def", length_unit
+        # )
+        # ref_offset = pos_[0]["direction-cosine-x"]
+        # loc_offset = pos_[1]["coordinates"]
 
         x = xdim.toPython() / 2
         y = ydim.toPython() / 2
@@ -1224,7 +1224,8 @@ def query_ifc_spaces(g: Graph, elements, model_name, length_unit):
                 )
                 graph_contents.extend(_poly)
             else:
-                raise ValueError("Unsupported shape: {}".format(shape_type))
+                transform_unsupported_shapes(g, space_shape)
+                # raise ValueError("Unsupported shape: {}".format(shape_type))
 
     # TODO This is needed because "spaces" in the metamodel has a @list container. It should probably be a set instead
     graph_contents.append({"@id": model_name, "spaces": space_ids})
