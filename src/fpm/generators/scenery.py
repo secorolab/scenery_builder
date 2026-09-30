@@ -59,14 +59,14 @@ def add_polyhedron_faces(floorplan):
 
 def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     logger.debug("Output path: %s", output_path)
-    model_name = os.path.basename(model_path).lower().replace(".ifc.json", "")
+    model_base_name = os.path.basename(model_path).lower().replace(".ifc.json", "")
 
     # RDF graph
     g = Graph()
     g.parse(model_path, format="json-ld")
     g.bind(
         "ifc-model",
-        "https://secorolab.github.io/models/{}/ifc/data#".format(model_name),
+        "https://secorolab.github.io/models/{}/ifc/data#".format(model_base_name),
     )
     g.bind(
         "ifc",
@@ -88,6 +88,8 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     # project = g.value(predicate=RDF.type, object=IFC_CONCEPTS["IFCPROJECT"])
     qres = g.query(building_storeys)
     for storey, name in qres:
+        model_name = f"{model_base_name}-{name.replace(' ', '-').lower()}"
+        fpm_ctx = json.loads(fp_ctx_template.render(model_id=model_name))
         logger.info("Storey: %s. URI: %s", name, storey)
         children_result = g.query(sp_dec, initBindings={"parent": storey})
         children = list(children_result)
@@ -109,6 +111,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
         storey_output_path = os.path.join(
             output_path, str(name).lower().replace(" ", "-")
         )
+        logger.debug("Output path: %s", storey_output_path)
 
         # Add FloorPlan node
         logger.debug("Adding floorplan node")
@@ -122,10 +125,10 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
             {"@id": "world-origin", "@type": ["3D", "Euclidean", "Point"]},
         ]
         if debug:
-            save_file(
-                output_path,
+            save_compact_graph(
+                {"@graph": floorplan}, fpm_ctx,
+                storey_output_path,
                 "{}.floorplan.fpm.json".format(model_name),
-                {"@graph": floorplan, "@context": fpm_ctx},
                 debug=debug,
             )
 
@@ -133,7 +136,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
         placements = query_ifc_local_placements(g, length_unit)
         if debug:
             file_name = "{}.placement.fpm.json".format(model_name)
-            save_compact_graph(placements, fpm_ctx, output_path, file_name, debug=debug)
+            save_compact_graph(placements, fpm_ctx, storey_output_path, file_name, debug=debug)
         else:
             floorplan.extend(placements)
 
@@ -141,7 +144,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
         walls = query_ifc_walls(g, contains, length_unit)
         if debug:
             file_name = "{}.walls.fpm.json".format(model_name)
-            save_compact_graph(walls, fpm_ctx, output_path, file_name, debug=debug)
+            save_compact_graph(walls, fpm_ctx, storey_output_path, file_name, debug=debug)
         else:
             floorplan.extend(walls)
 
@@ -149,7 +152,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
         doors = query_ifc_doors(g, contains, length_unit)
         if debug:
             file_name = "{}.doors.fpm.json".format(model_name)
-            save_compact_graph(doors, fpm_ctx, output_path, file_name, debug=debug)
+            save_compact_graph(doors, fpm_ctx, storey_output_path, file_name, debug=debug)
         else:
             floorplan.extend(doors)
 
@@ -157,7 +160,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
         spaces = query_ifc_spaces(g, cont_spaces, model_name, length_unit)
         if debug:
             file_name = "{}.spaces.fpm.json".format(model_name)
-            save_compact_graph(spaces, fpm_ctx, output_path, file_name, debug=debug)
+            save_compact_graph(spaces, fpm_ctx, storey_output_path, file_name, debug=debug)
         else:
             floorplan.extend(spaces)
 
@@ -165,16 +168,19 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
         task_elements = query_ifc_task_elements(g, contains, length_unit)
         if debug:
             file_name = "{}.task.fpm.json".format(model_name)
-            save_compact_graph(task_elements, fpm_ctx, output_path, file_name, debug=debug)
+            save_compact_graph(task_elements, fpm_ctx, storey_output_path, file_name, debug=debug)
         else:
             floorplan.extend(task_elements)
 
+        if not debug:
+            save_compact_graph(
+                floorplan, fpm_ctx,
+                storey_output_path,
+                "{}.fpm.json".format(model_name),
+                debug=debug,
+            )
     stats(g)
     # query_spatial_decomposition(g)
-
-    if not debug:
-        file_name = "{}.fpm.json".format(model_name)
-        save_compact_graph(floorplan, fpm_ctx, output_path, file_name, debug=debug)
 
     # doc = list()
     # for l in [placements, walls, doors, spaces]:
