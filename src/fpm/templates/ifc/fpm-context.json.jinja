@@ -2,7 +2,21 @@
     {
       "@base": "https://secorolab.github.io/models/{{ model_id }}/floorplan/",
       "model": "https://secorolab.github.io/models/{{ model_id }}/",
-      "fpm-model": "https://secorolab.github.io/models/{{ model_id }}/floorplan/"
+      "fpm-model": "https://secorolab.github.io/models/{{ model_id }}/floorplan/",
+      "Handle": "floorplan:DoorHandle",
+      "Knob": "floorplan:DoorKnob",
+      "handles": {
+        "@id": "floorplan:handles",
+        "@type": "@id"
+      },
+      "panels": {
+        "@id": "floorplan:panels",
+        "@type": "@id"
+      },
+      "lining": {
+        "@id": "floorplan:lining",
+        "@type": "@id"
+      }
     },
     "http://comp-rob2b.github.io/metamodels/qudt.json",
     "https://comp-rob2b.github.io/metamodels/geometry/coordinates.json",
