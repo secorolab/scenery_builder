@@ -1022,6 +1022,7 @@ def query_ifc_doors(g: Graph, doors, length_unit):
                 handle = 1
                 lining = 1
                 panel = 1
+                element_n = 1
                 logger.debug(
                     "Total representation items: %s",
                     len(list(g.objects(rep, IFC_CONCEPTS["items"]))),
@@ -1062,7 +1063,19 @@ def query_ifc_doors(g: Graph, doors, length_unit):
                         graph_contents.extend(dp)
                         panel = panel + 1
                     else:
-                        raise ValueError("Unknown shape aspect: %s" % shape_aspect)
+                        logger.error("Unsupported shape aspect: %s", shape_aspect)
+                        # TODO: hardcoded ID and type, as there is no standard for the shape aspects in IFC
+                        # Some text in the shape aspects contains unicode that causes issues in JSON
+                        # See https://technical.buildingsmart.org/resources/ifcimplementationguidance/string-encoding/
+                        parent_id = f"{door_id}-element-{element_n}"
+                        dp = render_ifc_template(
+                            "ifc/doors/door-panel.json.jinja",
+                            door_id=door_id,
+                            element_id=parent_id,
+                        )
+                        graph_contents.extend(dp)
+                        element_n = element_n + 1
+                        # raise ValueError("Unknown shape aspect: %s" % shape_aspect)
 
                     if g.value(i, RDF["type"]) == IFC_CONCEPTS["IFCPOLYGONALFACESET"]:
                         shape = transform_polygonal_face_set(
