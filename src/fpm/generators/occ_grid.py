@@ -186,11 +186,11 @@ def get_obstacle_points(g, element, coords_map, **kwargs):
 
     laser_height = kwargs.get("laser_height", 0.7)
     for s in obstacle_points:
-        height = s.get("height")
-        if laser_height > height:
-            # Don't process elements that are below the laser height
-            # This assumes that walls, columns, and dividers start at z=0 (from the floor)
-            continue
+        # height = s.get("height")
+        # if laser_height > height:
+        #     # Don't process elements that are below the laser height
+        #     # This assumes that walls, columns, and dividers start at z=0 (from the floor)
+        #     continue
 
         c_coords = get_waypoint_coord_list(g, s.get("points"), coords_map)
 
