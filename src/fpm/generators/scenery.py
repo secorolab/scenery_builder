@@ -57,14 +57,14 @@ def add_polyhedron_faces(floorplan):
 
 def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     logger.debug("Output path: %s", output_path)
-    model_name = os.path.basename(model_path).lower().replace(".ifc.json", "")
+    model_base_name = os.path.basename(model_path).lower().replace(".ifc.json", "")
 
     # RDF graph
     g = Graph()
     g.parse(model_path, format="json-ld")
     g.bind(
         "ifc-model",
-        "https://secorolab.github.io/models/{}/ifc/data#".format(model_name),
+        "https://secorolab.github.io/models/{}/ifc/data#".format(model_base_name),
     )
     g.bind(
         "ifc",
@@ -86,6 +86,8 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
     # project = g.value(predicate=RDF.type, object=IFC_CONCEPTS["IFCPROJECT"])
     qres = g.query(building_storeys)
     for storey, name in qres:
+        model_name = f"{model_base_name}-{name.replace(' ', '-').lower()}"
+        fpm_ctx = json.loads(fp_ctx_template.render(model_id=model_name))
         logger.info("Storey: %s. URI: %s", name, storey)
         children_result = g.query(sp_dec, initBindings={"parent": storey})
         children = list(children_result)
@@ -107,6 +109,7 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
         storey_output_path = os.path.join(
             output_path, str(name).lower().replace(" ", "-")
         )
+        logger.debug("Output path: %s", storey_output_path)
 
         # Add FloorPlan node
         logger.debug("Adding floorplan node")
@@ -187,16 +190,15 @@ def generate_fpm_rep_from_rdf(model_path, output_path, debug=False):
         else:
             floorplan.extend(task_elements)
 
+        if not debug:
+            save_file(
+                storey_output_path,
+                "{}.fpm.json".format(model_name),
+                {"@graph": floorplan, "@context": fpm_ctx},
+                debug=debug,
+            )
     stats(g)
     # query_spatial_decomposition(g)
-
-    if not debug:
-        save_file(
-            output_path,
-            "{}.fpm.json".format(model_name),
-            {"@graph": floorplan, "@context": fpm_ctx},
-            debug=debug,
-        )
 
     # doc = list()
     # for l in [placements, walls, doors, spaces]:
