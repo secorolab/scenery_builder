@@ -426,7 +426,9 @@ def query_ifc_walls(g: Graph, walls, length_unit):
                 )
                 wall_json.extend(shape)
             elif g.value(s, RDF["type"]) == IFC_CONCEPTS["IFCBOOLEANCLIPPINGRESULT"]:
-                transform_unsupported_shapes(g, s)
+                transform_boolean_clipping_result(
+                    g, s, wall_id, length_unit, placement_id
+                )
             else:
                 raise ValueError("Unsupported type %s" % g.value(s, RDF["type"]))
 
@@ -437,11 +439,53 @@ def transform_unsupported_shapes(g: Graph, element):
     logger.error("Unsupported item type: %s", g.value(element, RDF["type"]))
 
 
+def transform_boolean_clipping_result(
+    g: Graph, element, parent_id=None, length_unit=None, placement_id=None
+):
+    """
+    A boolean clipping result is always a difference between a swept solid and a plane
+    """
+    logger.warning("WIP processing item type: %s", g.value(element, RDF["type"]))
+    solid_id = get_entity_id(g, element, "boolean-clipping-result")
+    logger.debug("Transforming %s", solid_id)
+
+    operator = g.value(element, IFC_CONCEPTS["operator"])
+    operand1 = g.value(element, IFC_CONCEPTS["firstoperand"])
+    operand2 = g.value(element, IFC_CONCEPTS["secondoperand"])
+    print("operator:", operator)
+    print("1st operand:", operand1, g.value(operand1, RDF["type"]))
+    print("2nd operand:", operand2, g.value(operand2, RDF["type"]))
+
+    ba1 = g.value(operand1, IFC_CONCEPTS["basesurface"])
+    af1 = g.value(operand1, IFC_CONCEPTS["agreementflag"])
+    print(ba1, af1)
+    if ba1:
+        print(g.value(ba1, RDF["type"]))
+    ba2 = g.value(operand2, IFC_CONCEPTS["basesurface"])
+    af2 = g.value(operand2, IFC_CONCEPTS["agreementflag"])
+    print(ba2, af2)
+    if ba2:
+        print(g.value(ba2, RDF["type"]))
+
+
 def transform_faceted_brep(
     g: Graph, element, parent_id=None, length_unit=None, placement_id=None
 ):
     solid_id = get_entity_id(g, element, "faceted-brep")
     logger.debug("Transforming %s", solid_id)
+
+    q = """
+    SELECT ?face ?bounds ?bound ?bound_type
+    WHERE {
+        ?shape ifc:outer ?outer .
+        ?outer ifc:cfsfaces ?face .
+        ?face ifc:bounds ?bounds .
+        ?bounds ifc:bound ?bound .
+        ?bound rdf:type ?bound_type .
+    }
+    """
+
+    # qres = g.query(q, initBindings={"shape": element})
 
     faces = list()
     points = set()
@@ -1165,6 +1209,19 @@ def get_space_polygon_points(g: Graph, space_shape):
         face_height = {all_points[idx.toPython() - 1][-1] for idx in coord_idx}
         if len(face_height) == 1 and list(face_height)[0] == min_height:
             return coord_idx
+
+
+def get_space_polygon_points_faceted_brep(all_points: list, faces: list):
+    all_points = np.array(all_points)
+    print(all_points)
+    min_height = np.min(all_points[:, 2])
+    print("Min height", min_height)
+
+    for f in faces:
+        face_height = {all_points[idx][-1] for idx in f}
+        print("Face height", face_height)
+        if len(face_height) == 1 and list(face_height)[0] == min_height:
+            return f
 
 
 def query_ifc_units(g: Graph):
